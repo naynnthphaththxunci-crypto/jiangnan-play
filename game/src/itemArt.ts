@@ -18,10 +18,42 @@ export function itemImageElements(): HTMLImageElement[] {
   return [...sprites.values()].filter((img): img is HTMLImageElement => img instanceof Ctor)
 }
 
+const ART_LINE: Record<string, string> = {
+  food: 'food',
+  meat: 'food',
+  bev: 'bev',
+  mint: 'plant',
+  toy: 'toy',
+  wand: 'toy',
+  bed: 'bed',
+  fish: 'boat',
+  plant: 'plant',
+  coin: 'food',
+  gemline: 'bev',
+  net: 'boat',
+  boat: 'boat',
+}
+
+function usable(img: (CanvasImageSource & { complete?: boolean; naturalWidth?: number }) | undefined) {
+  if (!img) return false
+  if (img.complete === false) return false
+  if ((img.naturalWidth ?? 0) <= 0 && img.complete !== true) return false
+  return true
+}
+
+/** 新链还没有专属图，先借用现有图。名字只在详情栏里写。 */
 export function itemSprite(line: string, level: number): (CanvasImageSource & { complete?: boolean; naturalWidth?: number }) | null {
-  const img = sprites.get(`${line}:${level}`)
-  if (!img) return null
-  if (img.complete === false) return null
-  if ((img.naturalWidth ?? 0) <= 0 && img.complete !== true) return null
-  return img
+  const mapped = ART_LINE[line] ?? 'food'
+  const exact = sprites.get(`${mapped}:${level}`)
+  if (usable(exact)) return exact ?? null
+  for (let step = 1; step <= 11; step++) {
+    const lower = sprites.get(`${mapped}:${level - step}`)
+    if (usable(lower)) return lower ?? null
+    const higher = sprites.get(`${mapped}:${level + step}`)
+    if (usable(higher)) return higher ?? null
+  }
+  for (const [key, img] of sprites) {
+    if (key.startsWith(`${mapped}:`) && usable(img)) return img
+  }
+  return null
 }

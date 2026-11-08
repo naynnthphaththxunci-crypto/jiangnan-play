@@ -555,6 +555,152 @@ export const SLIDERS: SliderSpec[] = [
     },
     text: (v) => `${Math.round(v)}`,
   },
+  {
+    id: 'roundBase',
+    label: '4级一轮体力',
+    min: 40,
+    max: 400,
+    step: 10,
+    get: (c) => c.economy.producerRoundBase,
+    set: (c, v) => {
+      c.economy.producerRoundBase = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)}`,
+  },
+  {
+    id: 'roundStep',
+    label: '每级多体力',
+    min: 0,
+    max: 80,
+    step: 5,
+    get: (c) => c.economy.producerRoundStep,
+    set: (c, v) => {
+      c.economy.producerRoundStep = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)}`,
+  },
+  {
+    id: 'roundCool',
+    label: '母棋冷却',
+    min: 10,
+    max: 300,
+    step: 10,
+    get: (c) => c.economy.producerRoundCooldownMs / 1000,
+    set: (c, v) => {
+      c.economy.producerRoundCooldownMs = Math.round(v * 1000)
+    },
+    text: (v) => `${Math.round(v)} 秒`,
+  },
+  {
+    id: 'mainChance',
+    label: '主子棋概率',
+    min: 0,
+    max: 100,
+    step: 5,
+    get: (c) => c.economy.producerMainChance * 100,
+    set: (c, v) => {
+      c.economy.producerMainChance = v / 100
+    },
+    text: (v) => `${Math.round(v)}%`,
+  },
+  {
+    id: 'sideLevel',
+    label: '副子棋等级',
+    min: 4,
+    max: 10,
+    step: 1,
+    get: (c) => c.economy.producerSideLevel,
+    set: (c, v) => {
+      c.economy.producerSideLevel = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)} 级`,
+  },
+  {
+    id: 'spawn1',
+    label: '1倍出2级',
+    min: 0,
+    max: 100,
+    step: 5,
+    get: (c) => c.economy.spawn1High * 100,
+    set: (c, v) => {
+      c.economy.spawn1High = v / 100
+    },
+    text: (v) => `${Math.round(v)}%`,
+  },
+  {
+    id: 'plantCool',
+    label: '花盆冷却',
+    min: 1,
+    max: 120,
+    step: 1,
+    get: (c) => c.economy.plantCooldownMs / 60000,
+    set: (c, v) => {
+      c.economy.plantCooldownMs = Math.round(v * 60000)
+    },
+    text: (v) => `${Math.round(v)} 分钟`,
+  },
+  {
+    id: 'plantBurst',
+    label: '花盆一次出',
+    min: 1,
+    max: 12,
+    step: 1,
+    get: (c) => c.economy.plantBurst,
+    set: (c, v) => {
+      c.economy.plantBurst = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)} 个`,
+  },
+  {
+    id: 'consumeTaps',
+    label: '消耗母棋次数',
+    min: 1,
+    max: 12,
+    step: 1,
+    get: (c) => c.economy.consumableTaps,
+    set: (c, v) => {
+      c.economy.consumableTaps = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)} 次`,
+  },
+  {
+    id: 'shopEnergy',
+    label: '每日体力礼包',
+    min: 10,
+    max: 200,
+    step: 10,
+    get: (c) => c.economy.shopDailyEnergy,
+    set: (c, v) => {
+      c.economy.shopDailyEnergy = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)}`,
+  },
+  {
+    id: 'coinMax',
+    label: '满级金币',
+    min: 10,
+    max: 200,
+    step: 5,
+    get: (c) => c.items.lines.find((line) => line.id === 'coin')?.levels.at(-1)?.coins ?? 50,
+    set: (c, v) => {
+      const level = c.items.lines.find((line) => line.id === 'coin')?.levels.at(-1)
+      if (level) level.coins = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)}`,
+  },
+  {
+    id: 'gemMax',
+    label: '满级钻石',
+    min: 5,
+    max: 50,
+    step: 1,
+    get: (c) => c.items.lines.find((line) => line.id === 'gemline')?.levels.at(-1)?.coins ?? 15,
+    set: (c, v) => {
+      const level = c.items.lines.find((line) => line.id === 'gemline')?.levels.at(-1)
+      if (level) level.coins = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)}`,
+  },
 ]
 
 export function sliderValue(spec: SliderSpec, trackX: number, trackW: number, x: number): number {

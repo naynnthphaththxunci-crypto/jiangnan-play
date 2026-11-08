@@ -75,6 +75,7 @@ describe('强制引导', () => {
     const board = frame({ showRush: true })
     const state = createGame(1, cfg)
     state.phase = 'play'
+    state.locks = []
     state.rewards = [makeRewardBox(state, cfg, mulberry32(1), 'blue')]
     state.chestLesson = 1
     expect(guideHole(board, state, cfg)).toBe(board.rewardTray)
@@ -109,7 +110,11 @@ describe('强制引导', () => {
     state.phase = 'opening'
     state.openingStep = stepOf('giftRush')
     const gift = cfg.board.roles.gift
-    state.locks.find((lock) => lock.row === gift.row && lock.col === gift.col)!.giftUntil = 9_000
+    const giftLock = state.locks.find((lock) => lock.row === gift.row && lock.col === gift.col)
+    if (giftLock) {
+      giftLock.cover = 'gift'
+      giftLock.giftUntil = 9_000
+    }
     const rush = frame({ showRush: true })
     expect(guideHole(rush, state, cfg)).toBe(rush.rushBtn)
     expect(contains(rush.rushBtn, rush.rushBtn.x + rush.rushBtn.w / 2, rush.rushBtn.y + rush.rushBtn.h / 2)).toBe(true)
@@ -120,6 +125,7 @@ describe('强制引导', () => {
     const cfg = defaultConfig()
     const normal = createGame(1, cfg)
     normal.phase = 'play'
+    normal.locks = []
     normal.rewards = [makeProduct(normal, 'food', 2), makeRewardBox(normal, cfg, mulberry32(1), 'blue')]
     normal.chestLesson = 1
     resolveGuides(normal, cfg)
@@ -131,6 +137,7 @@ describe('强制引导', () => {
 
     const few = createGame(2, cfg)
     few.phase = 'play'
+    few.locks = []
     fill(few, 1)
     few.rewards = [makeRewardBox(few, cfg, mulberry32(2), 'blue')]
     few.chestLesson = 1
@@ -154,6 +161,7 @@ describe('强制引导', () => {
     expect(stuck?.chestLesson).toBe(3)
     const mid = createGame(4, cfg)
     mid.phase = 'play'
+    mid.locks = []
     mid.rewards = [makeRewardBox(mid, cfg, mulberry32(4), 'blue')]
     mid.chestLesson = 1
     const resumed = hydrate(serialize(mid, cfg), defaultConfig())
@@ -164,9 +172,15 @@ describe('强制引导', () => {
 
   it('新母棋引导：正常、只剩一格、棋盘满、刷新', () => {
     const cfg = defaultConfig()
-    const spot = cfg.board.roles.producer
     const normal = createGame(1, cfg)
+    const spot = cfg.board.roles.producer
     normal.phase = 'play'
+    normal.locks = []
+    const starter = normal.board[spot.row]?.[spot.col]
+    if (starter?.kind === 'producer') {
+      starter.level = 4
+      starter.charges = 200
+    }
     normal.producerLesson = 'food'
     const before = normal.energy
     expect(tapProducer(normal, spot, cfg, () => 0.9, 10).ok).toBe(true)
@@ -175,7 +189,13 @@ describe('强制引导', () => {
 
     const few = createGame(2, cfg)
     few.phase = 'play'
+    few.locks = []
     fill(few, 1)
+    const fewProducer = few.board[cfg.board.roles.producer.row]?.[cfg.board.roles.producer.col]
+    if (fewProducer?.kind === 'producer') {
+      fewProducer.level = 4
+      fewProducer.charges = 200
+    }
     few.producerLesson = 'food'
     expect(guideSpot(few, cfg)).toBe('producer')
     expect(tapProducer(few, spot, cfg, () => 0.9, 10).ok).toBe(true)
@@ -190,6 +210,7 @@ describe('强制引导', () => {
 
     const queued = createGame(5, cfg)
     queued.phase = 'play'
+    queued.locks = []
     fill(queued, 1)
     queued.producerLesson = 'bamboo'
     queued.rewards = [makeProducer(queued, 'bamboo', cfg, 3)]
@@ -206,6 +227,7 @@ describe('强制引导', () => {
 
     const saved = createGame(4, cfg)
     saved.phase = 'play'
+    saved.locks = []
     saved.producerLesson = 'food'
     const resumed = hydrate(serialize(saved, cfg), defaultConfig())
     expect(resumed?.producerLesson).toBe('food')
@@ -277,6 +299,8 @@ describe('强制引导', () => {
     const state = createGame(1, cfg)
     state.phase = 'opening'
     state.openingStep = stepOf('giftRush')
+    const planted = state.locks.find((lock) => lock.row === gift.row && lock.col === gift.col)
+    if (planted) planted.cover = 'gift'
     pokeGift(state, gift, cfg, 1_000)
     const lock = state.locks.find((entry) => entry.row === gift.row && entry.col === gift.col)!
     lock.giftUntil = 1_000 + cfg.economy.giftCooldownMs
@@ -306,6 +330,7 @@ describe('强制引导', () => {
 
     const stored = createGame(6, cfg)
     stored.phase = 'play'
+    stored.locks = []
     stored.level = 5
     stored.storageOpen = true
     stored.storageLesson = 2
@@ -317,6 +342,7 @@ describe('强制引导', () => {
 
     const tight = createGame(7, cfg)
     tight.phase = 'play'
+    tight.locks = []
     tight.level = 5
     tight.storageOpen = true
     tight.storageLesson = 3

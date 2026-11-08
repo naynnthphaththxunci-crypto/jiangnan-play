@@ -34,6 +34,8 @@ describe('订单', () => {
     const { state, cfg, rng } = boot()
     state.locks = []
     state.phase = 'play'
+    const food = state.board.flat().find((item) => item?.kind === 'producer' && item.producerId === 'food')
+    if (food?.kind === 'producer') food.level = 4
     state.orders = [
       {
         id: 'mix',
@@ -66,6 +68,8 @@ describe('订单', () => {
     const { state, cfg, rng } = boot()
     state.phase = 'play'
     state.hasProducer.food = true
+    const food = state.board.flat().find((item) => item?.kind === 'producer' && item.producerId === 'food')
+    if (food?.kind === 'producer') food.level = 4
     state.orders = [
       {
         id: 'big',
@@ -103,6 +107,8 @@ describe('订单', () => {
     state.rewards = []
     state.pending = state.pending.filter((item) => !(item.kind === 'producer' && item.producerId !== 'food'))
     state.unlocked.food = 0
+    const starter = state.board.flat().find((item) => item?.kind === 'producer' && item.producerId === 'food')
+    if (starter?.kind === 'producer') starter.level = 4
     for (let i = 0; i < 24; i++) {
       const order = generateOrder(state, cfg, mulberry32(i + 3))
       if (!order) throw new Error('order')
@@ -119,6 +125,8 @@ describe('订单', () => {
     }
     state.level = 4
     state.unlocked.food = 4
+    const food = state.board.flat().find((item) => item?.kind === 'producer' && item.producerId === 'food')
+    if (food?.kind === 'producer') food.level = 4
     cfg.orders.twoSlotChance = 0
     cfg.orders.bigChance = 0
     const higher = generateOrder(state, cfg, () => 0.99)
@@ -134,6 +142,8 @@ describe('订单', () => {
     const { state, cfg } = boot()
     state.phase = 'play'
     state.level = 5
+    const starter = state.board.flat().find((item) => item?.kind === 'producer' && item.producerId === 'food')
+    if (starter?.kind === 'producer') starter.level = 4
     cfg.economy.chestOrderChance = 0
     state.orders = []
     const seen = new Set<string>()
@@ -167,6 +177,7 @@ describe('订单', () => {
     state.phase = 'opening'
     const deliver = cfg.copy.tutorial.findIndex((step) => step.id === 'deliver')
     state.openingStep = deliver
+    state.locks = state.locks.filter((lock) => !(lock.row === 4 && lock.col === 4))
     state.board[4][4] = makeProduct(state, 'food', 3)
     const result = completeOrder(state, 'tutorial', cfg, rng, 20)
     expect(result.ok).toBe(true)

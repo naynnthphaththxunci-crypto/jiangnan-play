@@ -5,37 +5,144 @@
   "startEnergy": 100,
   "startCoins": 0,
   "xpPerTask": 15,
-  "levelTaskThresholds": [2, 4, 6, 8, 10, 11, 12],
+  "levelTaskThresholds": [
+    2,
+    4,
+    6,
+    8,
+    10,
+    11,
+    12
+  ],
   "levelRewards": [
     {
       "level": 2,
       "rewards": [
-        { "id": "blue", "name": "蓝宝箱" },
-        { "id": "purple", "name": "紫礼盒" },
-        { "id": "bag", "name": "购物袋" }
+        {
+          "id": "chest",
+          "name": "体力宝箱"
+        },
+        {
+          "id": "food",
+          "name": "4级猫粮母棋",
+          "producerLevel": 4
+        },
+        {
+          "id": "pack",
+          "name": "新手大礼包",
+          "gems": 100
+        }
       ]
     },
-    { "level": 3, "rewards": [{ "id": "toy", "name": "玩具" }] },
-    { "level": 4, "rewards": [{ "id": "blue", "name": "蓝宝箱" }] },
-    { "level": 5, "rewards": [{ "id": "blue", "name": "蓝宝箱" }] },
-    { "level": 6, "rewards": [{ "id": "blue", "name": "蓝宝箱" }] },
-    { "level": 7, "rewards": [{ "id": "gem", "name": "钻石" }] },
-    { "level": 8, "rewards": [{ "id": "bev", "name": "饮料" }] }
+    {
+      "level": 3,
+      "rewards": [
+        {
+          "id": "piggy",
+          "name": "存钱罐",
+          "producerLevel": 1
+        },
+        {
+          "id": "bev",
+          "name": "1级饮料母棋",
+          "producerLevel": 1
+        }
+      ]
+    },
+    {
+      "level": 4,
+      "rewards": [
+        {
+          "id": "bev",
+          "name": "4级饮料母棋",
+          "producerLevel": 4
+        },
+        {
+          "id": "chest",
+          "name": "体力宝箱"
+        },
+        {
+          "id": "basket",
+          "name": "小篮子",
+          "producerLevel": 1
+        },
+        {
+          "id": "energy",
+          "name": "50体力",
+          "energy": 50
+        }
+      ]
+    },
+    {
+      "level": 5,
+      "rewards": [
+        {
+          "id": "chest",
+          "name": "体力宝箱"
+        }
+      ]
+    },
+    {
+      "level": 6,
+      "rewards": [
+        {
+          "id": "chest",
+          "name": "体力宝箱"
+        }
+      ]
+    },
+    {
+      "level": 7,
+      "rewards": [
+        {
+          "id": "gem",
+          "name": "钻石"
+        }
+      ]
+    },
+    {
+      "level": 8,
+      "rewards": [
+        {
+          "id": "toy",
+          "name": "玩具母棋",
+          "producerLevel": 4
+        }
+      ]
+    }
   ],
   "freeRefill": 100,
   "adEnergy": 15,
   "adDailyMax": 5,
   "chestWeights": [
-    { "energy": 5, "weight": 40 },
-    { "energy": 10, "weight": 30 },
-    { "energy": 20, "weight": 20 },
-    { "energy": 40, "weight": 10 }
+    {
+      "energy": 5,
+      "weight": 40
+    },
+    {
+      "energy": 10,
+      "weight": 30
+    },
+    {
+      "energy": 20,
+      "weight": 20
+    },
+    {
+      "energy": 40,
+      "weight": 10
+    }
   ],
   "newbieChestFixed": true,
   "newbieChestCount": 2,
-  "newbieChest": [20, 10, 10, 5, 5],
+  "newbieChest": [
+    20,
+    10,
+    10,
+    5,
+    5
+  ],
   "producerCharges": 1,
-  "producerCooldownMs": 45000,
+  "producerCooldownMs": 120000,
   "producerL2Chance": 0.2,
   "orderRewardScale": 1,
   "buildPriceScale": 1,
@@ -50,23 +157,53 @@
   "chestRewardTimes": 3.5,
   "chestBonusItems": 6,
   "chestOrderChance": 0.08,
-  "smileGoal": 12,
+  "smileGoal": 6,
   "smilePrizeMin": 7,
   "smilePrizeMax": 12,
-  "smileUiAfterMs": 180000,
+  "smileUiAfterMs": 999999999,
   "idleHintMs": 5000,
   "lockPulse": 0.28,
-  "sellPrices": [1, 1, 2, 3, 5, 8],
+  "sellPrices": [
+    1,
+    1,
+    2,
+    3,
+    5,
+    8
+  ],
   "giftCooldownMs": 30000,
   "purpleBoxCount": 5,
   "bagBoxCount": 3,
-  "blueBoxPotions": [20, 10, 10],
+  "blueBoxPotions": [
+    20,
+    10,
+    10
+  ],
   "storageCapacity": 8,
-  "producerMaxLevel": 11,
-  "producerSpawnLevel": 6,
+  "producerMaxLevel": 10,
+  "producerSpawnLevel": 4,
   "producerGraceMs": 1200000,
-  "producerChargesByLevel": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
-  "energyGemPrices": [0, 10, 20, 40, 80],
+  "producerChargesByLevel": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+  ],
+  "energyGemPrices": [
+    0,
+    10,
+    20,
+    40,
+    80
+  ],
   "energyGemAmount": 100,
   "lateProducerChance": 0.15,
   "storageUnlockLevel": 5,
@@ -85,5 +222,25 @@
   "newChainWeight": 3,
   "mixLineChance": 0.8,
   "boxCoin": 8,
-  "boxGem": 1
+  "boxGem": 1,
+  "producerRoundBase": 200,
+  "producerRoundStep": 40,
+  "producerRoundCooldownMs": 120000,
+  "producerOutputLevel": 4,
+  "producerSideLevel": 5,
+  "producerMainChance": 0.7,
+  "plantOutputLevel": 6,
+  "plantBurst": 8,
+  "plantCooldownMs": 1800000,
+  "consumableTaps": 6,
+  "basketLowChance": 0.7,
+  "netFishCount": 6,
+  "netMaxLevel": 5,
+  "firstProducerLevel": 4,
+  "shopDailyEnergy": 50,
+  "shopPackGems": 10,
+  "shopPackEnergy": 50,
+  "smileUnlockLevel": 4,
+  "spawn1High": 0.3,
+  "spawn2Mid": 0.8
 }

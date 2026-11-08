@@ -22,13 +22,18 @@ function boot() {
   const cfg = defaultConfig()
   cfg.economy.producerL2Chance = 0
   const state = createGame(1_700_000_000_000, cfg)
+  state.locks = []
   return { cfg, state }
 }
 
 function producerAt(state: GameState) {
   const found = findProducer(state, 'food')
   if (!found) throw new Error('no food')
-  if (found.item.kind === 'producer') found.item.level = 6
+  if (found.item.kind === 'producer') {
+    found.item.level = 6
+    found.item.charges = 400
+    found.item.cooldownUntil = 0
+  }
   return found
 }
 
@@ -113,10 +118,11 @@ describe('体力', () => {
     }
     expect(tapProducer(state, spot, cfg, () => 0, 0).ok).toBe(true)
     expect(spot.item.kind === 'producer' && spot.item.charges).toBe(0)
-    expect(spot.item.kind === 'producer' && spot.item.cooldownUntil).toBe(45_000)
+    expect(spot.item.kind === 'producer' && spot.item.cooldownUntil).toBe(cfg.economy.producerRoundCooldownMs)
     expect(tapProducer(state, spot, cfg, () => 0, 10).reason).toBe('cooldown')
     expect(state.energy).toBe(99)
-    const again = tapProducer(state, spot, cfg, () => 0, 45_000)
+    state.energyTs = cfg.economy.producerRoundCooldownMs
+    const again = tapProducer(state, spot, cfg, () => 0, cfg.economy.producerRoundCooldownMs)
     expect(again.ok).toBe(true)
     expect(state.energy).toBe(98)
   })
@@ -130,17 +136,17 @@ describe('体力', () => {
     })
     tapProducer(state, spot, cfg, () => 0.99, 0)
     const first = state.board.flat().find((cell) => cell?.kind === 'product')
-    expect(first && first.kind === 'product' && first.level).toBe(2)
+    expect(first && first.kind === 'product' && first.level).toBe(1)
     if (first) {
       const pos = producerAt(state)
       // remove the product by drinking nothing; clear products
       eachCell(state.board, (item, row, col) => {
         if (item?.kind === 'product') state.board[row][col] = null
       })
-      tapProducer(state, pos, cfg, () => 0.2, 1)
+      tapProducer(state, pos, cfg, () => 0.05, 1)
     }
     const second = state.board.flat().find((cell) => cell?.kind === 'product')
-    expect(second && second.kind === 'product' && second.level).toBe(1)
+    expect(second && second.kind === 'product' && second.level).toBe(2)
   })
 
   it('第一次用完免费回一百，之后广告加十五且可超过上限', () => {

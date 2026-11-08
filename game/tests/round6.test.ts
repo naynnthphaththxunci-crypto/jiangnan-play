@@ -41,25 +41,27 @@ describe('第六轮', () => {
   it('开局只开母棋周围 7 格，旁边合成会把全遮揭成半开', () => {
     const cfg = defaultConfig()
     const state = createGame(1, cfg)
-    expect(openCellCount(state)).toBe(7)
+    expect(openCellCount(state)).toBe(2)
     const food = findProducer(state, 'food')
-    expect(food?.item.kind === 'producer' && food.item.level).toBe(6)
-    expect(findProducer(state, 'tea')).toBeNull()
-    expect(findProducer(state, 'bamboo')).toBeNull()
+    expect(food?.item.kind === 'producer' && food.item.level).toBe(1)
+    expect(findProducer(state, 'bev')).toBeNull()
     const full = state.locks.filter((lock) => lock.veil === 'full').length
     const half = state.locks.filter((lock) => lock.veil === 'half' && lock.cover !== 'gift').length
     expect(full).toBeGreaterThan(half)
-    expect(half).toBeLessThanOrEqual(4)
-    expect(lockAt(state, 2, 3)?.veil).toBe('full')
-    dropItem(state, { row: 3, col: 2 }, { row: 3, col: 3 }, cfg)
-    expect(lockAt(state, 2, 3)?.veil).toBe('half')
-    expect(lockAt(state, 2, 3)).toBeTruthy()
+    expect(half).toBe(1)
+    expect(lockAt(state, 4, 0)?.veil).toBe('full')
+    dropItem(state, { row: 3, col: 1 }, { row: 4, col: 1 }, cfg)
+  dropItem(state, { row: 4, col: 1 }, { row: 4, col: 2 }, cfg)
+  dropItem(state, { row: 4, col: 2 }, { row: 4, col: 3 }, cfg)
+    expect(lockAt(state, 4, 0)?.veil).toBe('half')
   })
 
   it('前期只有蒸笼的 A/B 订单，升到 3 级才有竹编篓', () => {
     const cfg = defaultConfig()
     const state = createGame(1, cfg)
     state.phase = 'play'
+    const food = state.board.flat().find((item) => item?.kind === 'producer' && item.producerId === 'food')
+    if (food?.kind === 'producer') food.level = 4
     for (let i = 0; i < 12; i++) {
       const order = generateOrder(state, cfg, mulberry32(i + 9))
       expect(order).toBeTruthy()
@@ -75,14 +77,23 @@ describe('第六轮', () => {
     const events = reconcileLevel(state, cfg, mulberry32(1))
     expect(events.some((event) => event.type === 'levelup' && event.level === 3)).toBe(true)
     const queued = [state.levelModal, ...state.levelQueue].flatMap((modal) => modal?.rewards ?? [])
-    expect(queued.some((reward) => reward.id === 'toy')).toBe(true)
+    expect(queued.some((reward) => reward.id === 'bev')).toBe(true)
   })
 
   it('礼物要点一下才冷却，加速可以花钻石或免费', () => {
     const cfg = defaultConfig()
     const state = createGame(1, cfg)
     state.phase = 'play'
-    const gift = cfg.board.roles.gift
+    const gift = { row: 5, col: 4 }
+    state.locks = state.locks.filter((lock) => lock.row !== gift.row || lock.col !== gift.col)
+    state.board[gift.row][gift.col] = null
+    state.locks.push({
+      row: gift.row,
+      col: gift.col,
+      cover: 'gift',
+      veil: 'half',
+      buried: { kind: 'product', line: 'food', level: 1 },
+    })
     expect(lockAt(state, gift.row, gift.col)?.giftUntil).toBeUndefined()
     expect(pokeGift(state, gift, cfg, 1_000).ok).toBe(true)
     expect(lockAt(state, gift.row, gift.col)?.giftUntil).toBe(1_000 + cfg.economy.giftCooldownMs)
@@ -99,7 +110,7 @@ describe('第六轮', () => {
     const state = createGame(1, cfg)
     state.phase = 'play'
     state.orders = [{ id: 'need', customerId: 'xiaotao', big: false, slots: [{ line: 'food', level: 3, filled: false }] }]
-    state.smiles = 16
+    state.smiles = cfg.economy.smileGoal + 4
     const opened = openSmilePrize(state, cfg, mulberry32(2))
     expect(opened.ok).toBe(true)
     expect(state.smiles).toBe(0)
@@ -135,7 +146,7 @@ describe('第六轮', () => {
   it('从剧情玩到 8 级，前 10 分钟能开出十几格，订单都做得了', () => {
     const report = playThrough()
     expect(report.level).toBeGreaterThanOrEqual(8)
-    expect(report.opensAt0).toBe(7)
+    expect(report.opensAt0).toBe(2)
     expect(report.opensAt10).toBeGreaterThan(report.opensAt0)
     expect(report.badOrders).toBe(0)
     expect(report.levels.some((entry) => entry.level === 5)).toBe(true)
@@ -150,10 +161,9 @@ function playThrough() {
   const marks = new Map<number, number>([[0, openCellCount(state)]])
   while (state.phase === 'story') tryAdvanceStory(state, cfg, true)
   enterKitchen(state, cfg)
-  dropItem(state, { row: 3, col: 2 }, { row: 3, col: 3 }, cfg)
-  const merged = findLevel(state, 'food', 2)
-  const unlock = cfg.board.roles.unlock
-  if (merged) dropItem(state, merged, unlock, cfg)
+  dropItem(state, { row: 3, col: 1 }, { row: 4, col: 1 }, cfg)
+  dropItem(state, { row: 4, col: 1 }, { row: 4, col: 2 }, cfg)
+  dropItem(state, { row: 4, col: 2 }, { row: 4, col: 3 }, cfg)
   const producer = findProducer(state, 'food')
   if (producer) {
     for (let i = 0; i < 4; i++) tapProducer(state, producer, cfg, () => 0.9, 2_000 + i)
@@ -188,8 +198,8 @@ function playThrough() {
     else if (produceOne(state, cfg, now)) acted = true
     else if (sellOne(state, cfg)) acted = true
     else {
-      now += cfg.economy.energyRegenMs
-      state.playedMs += cfg.economy.energyRegenMs
+      now += cfg.economy.producerRoundCooldownMs
+      state.playedMs += 5000
       syncEnergy(state, now, cfg)
     }
     if (acted) {

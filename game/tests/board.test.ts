@@ -27,36 +27,41 @@ describe('锁格与笑脸', () => {
     expect(COLS).toBe(7)
     expect(state.board).toHaveLength(9)
     expect(state.board[0]).toHaveLength(7)
-    expect(cfg.board.open).toHaveLength(7)
-    expect(state.locks.length).toBe(63 - 7)
+    expect(cfg.board.open).toHaveLength(2)
+    expect(state.locks.length).toBe(63 - 2)
+    expect(state.locks.filter((lock) => lock.veil === 'half')).toHaveLength(1)
   })
 
   it('只有把同级同种拖到埋着的物品上才解锁，旁边合成不行', () => {
     const { state, cfg } = boot()
-    const unlock = { row: 3, col: 4 }
-    expect(lockAt(state, unlock.row, unlock.col)?.buried).toMatchObject({ line: 'food', level: 2 })
+    const unlock = { row: 4, col: 2 }
+    expect(lockAt(state, unlock.row, unlock.col)?.buried).toMatchObject({ kind: 'producer', id: 'food', level: 2 })
+    expect(lockAt(state, unlock.row, unlock.col)?.veil).toBe('half')
     state.phase = 'opening'
     state.openingStep = 1
-    dropItem(state, { row: 3, col: 2 }, { row: 3, col: 3 }, cfg)
-    expect(lockAt(state, unlock.row, unlock.col)).toBeTruthy()
-    expect(lockAt(state, 3, 1)?.veil).toBe('half')
-    const merged = state.board[3][3]
-    expect(merged?.kind === 'product' && merged.level).toBe(2)
-    const wrong = dropItem(state, { row: 3, col: 3 }, { row: 0, col: 0 }, cfg)
+    dropItem(state, { row: 3, col: 1 }, { row: 4, col: 1 }, cfg)
+    expect(lockAt(state, unlock.row, unlock.col)?.veil).toBe('half')
+    const merged = state.board[4][1]
+    expect(merged?.kind === 'producer' && merged.level).toBe(2)
+    const wrong = dropItem(state, { row: 4, col: 1 }, { row: 0, col: 0 }, cfg)
     expect(wrong.reason).toBe('lock')
-    expect(lockAt(state, 0, 0)).toBeTruthy()
-    const opened = dropItem(state, { row: 3, col: 3 }, unlock, cfg)
+    expect(lockAt(state, 0, 0)?.veil).toBe('full')
+    state.openingStep = 2
+    const opened = dropItem(state, { row: 4, col: 1 }, unlock, cfg)
     expect(opened.ok).toBe(true)
     expect(opened.events.some((event) => event.type === 'unlock')).toBe(true)
     expect(lockAt(state, unlock.row, unlock.col)).toBeUndefined()
-    const result = state.board[3][4]
-    expect(result?.kind === 'product' && result.level).toBe(3)
+    const result = state.board[4][2]
+    expect(result?.kind === 'producer' && result.level).toBe(3)
     expect(state.openingStep).toBe(3)
   })
 
   it('礼物点解锁就揭开，不要求等待', () => {
     const { state } = boot()
     const gift = { row: 5, col: 4 }
+    state.locks = state.locks.filter((lock) => lock.row !== gift.row || lock.col !== gift.col)
+    state.board[gift.row][gift.col] = null
+    state.locks.push({ row: gift.row, col: gift.col, cover: 'gift', veil: 'half', buried: { kind: 'product', line: 'food', level: 1 } })
     expect(lockAt(state, gift.row, gift.col)?.cover).toBe('gift')
     expect(unlockGift(state, gift).ok).toBe(true)
     expect(lockAt(state, gift.row, gift.col)).toBeUndefined()
@@ -71,19 +76,19 @@ describe('锁格与笑脸', () => {
         id: 'need',
         customerId: 'xiaotao',
         big: false,
-        slots: [{ line: 'tea', level: 4, filled: false }],
+        slots: [{ line: 'food', level: 4, filled: false }],
       },
     ]
-    state.smiles = 11
+    state.smiles = cfg.economy.smileGoal - 1
     expect(openSmilePrize(state, cfg, rng).ok).toBe(false)
-    state.smiles = 12
+    state.smiles = cfg.economy.smileGoal
     const opened = openSmilePrize(state, cfg, rng)
     expect(opened.ok).toBe(true)
     expect(state.smiles).toBe(0)
     const names = state.smileModal?.names ?? []
     expect(names.length).toBe(cfg.economy.smilePrizeCount)
     const placed = [...state.board.flat(), ...state.pending, ...state.rewards].filter(
-      (item) => item?.kind === 'product' && item.line === 'tea' && item.level >= 2 && item.level <= 3,
+      (item) => item?.kind === 'product' && item.line === 'food' && item.level >= 2 && item.level <= 3,
     )
     expect(placed.length).toBe(names.length)
   })

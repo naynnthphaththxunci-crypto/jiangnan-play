@@ -85,6 +85,11 @@ import {
   takeReward,
   tapConsumable,
   tapProducer,
+  collectBoardProduct,
+  dropItem,
+  cycleSpawnMult,
+  claimShopDaily,
+  claimShopPack,
   tutorialAllowsInspect,
   tutorialDropOk,
   undoSale,
@@ -234,6 +239,9 @@ export function startGame(platform: Platform): void {
       help: state.showHelp && !tuner && modal == null,
       showEnter: atStep(state, cfg, 'enter'),
       showInfo: false,
+      showShop: state.level >= 3,
+      shop: state.shopOpen,
+      detail: !!state.detailLine,
     })
   }
 
@@ -574,6 +582,38 @@ export function startGame(platform: Platform): void {
       modal = null
       return
     }
+    if (hit.kind === 'mult') {
+      const next = cycleSpawnMult(state)
+      toast(`产出 ${next} 倍`)
+      mark()
+      return
+    }
+    if (hit.kind === 'shop') {
+      state.shopOpen = true
+      mark()
+      return
+    }
+    if (hit.kind === 'shopClose') {
+      state.shopOpen = false
+      if (state.guide === 'smile') state.guide = 'none'
+      mark()
+      return
+    }
+    if (hit.kind === 'shopDaily') {
+      present(claimShopDaily(state, cfg, platform.now()))
+      mark()
+      return
+    }
+    if (hit.kind === 'shopPack') {
+      present(claimShopPack(state, cfg))
+      mark()
+      return
+    }
+    if (hit.kind === 'detailClose') {
+      state.detailLine = null
+      mark()
+      return
+    }
     if (hit.kind === 'tune' || hit.kind === 'tunerClose') {
       tuner = hit.kind === 'tune'
       sfx.ui()
@@ -705,9 +745,15 @@ export function startGame(platform: Platform): void {
       }
       state.armed = null
       state.chainPop = null
+      const already = selected?.row === hit.row && selected?.col === hit.col
+      selected = { row: hit.row, col: hit.col }
+      if (!already) return
       if (item.kind === 'producer') {
-        selected = { row: hit.row, col: hit.col }
         present(tapProducer(state, hit, cfg, rng, now))
+      } else if (item.kind === 'product' && cfg.items.lines.some((line) => line.id === item.line && line.collect)) {
+        const result = collectBoardProduct(state, hit, cfg)
+        if (result.ok) selected = null
+        present(result)
       } else if (item.kind === 'rewardBox') present(openRewardBox(state, hit, cfg, rng))
       else if (item.kind === 'chest') {
         const seen = new Set(occupied(state).map((cell) => cell.item.uid))
@@ -743,12 +789,14 @@ export function startGame(platform: Platform): void {
     if (!step || step.type === '对话') return false
     if (step.id === 'enter') return hit.kind !== 'enter'
     if (step.id === 'merge') {
-      return !(hit.kind === 'cell' && ((hit.row === 3 && hit.col === 2) || (hit.row === 3 && hit.col === 3)))
+      const a = cfg.board.roles.mergeA
+      const b = cfg.board.roles.mergeB
+      return !(hit.kind === 'cell' && ((hit.row === a.row && hit.col === a.col) || (hit.row === b.row && hit.col === b.col)))
     }
     if (step.id === 'unlock') {
       if (hit.kind !== 'cell') return true
       const item = state.board[hit.row]?.[hit.col]
-      const ready = item?.kind === 'product' && item.line === 'food' && item.level === 2
+      const ready = item?.kind === 'producer' || (item?.kind === 'product' && item.line === 'food')
       return !(ready || (hit.row === cfg.board.roles.unlock.row && hit.col === cfg.board.roles.unlock.col))
     }
     if (step.id === 'producerL2' || step.id === 'producerL3') {
@@ -1127,6 +1175,12 @@ export function startGame(platform: Platform): void {
     },
     select(row: number, col: number) {
       selected = { row, col }
+    },
+    drop(from: Pos, to: Pos) {
+      return dropItem(state, from, to, cfg)
+    },
+    produce(row: number, col: number) {
+      return tapProducer(state, { row, col }, cfg, Math.random, platform.now())
     },
     get cfg() {
       return cfg

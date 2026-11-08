@@ -90,11 +90,11 @@ describe('第三轮教学、订单和布局', () => {
     expect(advanceDialogue(state, cfg)).toBe(false)
     expect(tutorialAllowsInspect(state)).toBe(false)
     const step = state.openingStep
-    const wrong = guardedDrop(state, { row: 3, col: 2 }, { row: 3, col: 1 }, cfg)
+    const wrong = guardedDrop(state, { row: 3, col: 1 }, { row: 0, col: 0 }, cfg)
     expect(wrong.ok).toBe(false)
     expect(wrong.events).toEqual([])
     expect(state.openingStep).toBe(step)
-    expect(state.board[3]?.[2]).toBeTruthy()
+    expect(state.board[3]?.[1]?.kind).toBe('producer')
   })
 
   it('玩家能看到的文字里没有面包', () => {
@@ -111,6 +111,7 @@ describe('第三轮教学、订单和布局', () => {
     if (!order) throw new Error('missing order')
     const button = { x: 10, y: 80, w: 40, h: 24 }
     expect(orderCardAction(state, order, 12, 20, button)).toBe('none')
+    state.locks = state.locks.filter((lock) => !(lock.row === 4 && lock.col === 4))
     state.board[4][4] = makeProduct(state, 'food', 3)
     expect(orderSatisfied(state, order)).toBe(true)
     expect(orderCardAction(state, order, 12, 20, button)).toBe('none')
@@ -205,11 +206,12 @@ describe('第三轮教学、订单和布局', () => {
     state.board[0][1] = null
     state.board[3][2] = null
     state.board[3][3] = null
-    state.board.forEach((row, r) => {
+    state.board.forEach((row) => {
       row.forEach((item, c) => {
-        if (item?.kind === 'producer' && !(r === 4 && c === 3)) state.board[r][c] = null
+        if (item?.kind === 'producer') row[c] = null
       })
     })
+    state.board[3][1] = makeProducer(state, 'food', cfg, 4)
     expect(pickHint(state, 0)?.type).toBe('produce')
     void cfg
   })
@@ -243,14 +245,15 @@ describe('第三轮教学、订单和布局', () => {
 
   it('已见过的等级显示名字，没见过的显示问号', () => {
     const { state, cfg } = boot()
+    state.seen.food = [1]
     const chain = lineChain(cfg, state, 'food', 3)
-    expect(chain.find((slot) => slot.level === 1)?.label).toBe('一撮猫草麦胚')
+    expect(chain.find((slot) => slot.level === 1)?.label).toBe('饱满麦粒')
     expect(chain.find((slot) => slot.level === 2)?.label).toBe('?')
     expect(chain.find((slot) => slot.level === 3)?.current).toBe(true)
     expect(chain.find((slot) => slot.level === 3)?.label).toBe('?')
     state.seen.food = [1, 3]
     const seen = lineChain(cfg, state, 'food', 3)
-    expect(seen.find((slot) => slot.level === 3)?.label).toBe('瓦碟小鱼干')
+    expect(seen.find((slot) => slot.level === 3)?.label).toBe('混合粗粮团')
     expect(seen.find((slot) => slot.level === 4)?.label).toBe('?')
   })
 })

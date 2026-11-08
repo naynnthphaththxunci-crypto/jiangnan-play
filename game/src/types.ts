@@ -17,6 +17,8 @@ export interface LineDef {
   name: string
   color: string
   levels: LevelDef[]
+  /** 点一下收进账户，不进订单。 */
+  collect?: 'coin' | 'gem'
 }
 
 export interface PotionDef {
@@ -36,6 +38,9 @@ export interface ProducerDef {
   name: string
   line: string
   grant: string
+  /** normal 花体力；netSource 出渔网；plant 不花体力；consumable 点完消失。 */
+  kind?: 'normal' | 'netSource' | 'plant' | 'consumable'
+  side?: string
 }
 
 export interface ChoiceDef {
@@ -162,6 +167,26 @@ export interface Economy {
   boxCoin: number
   boxGem: number
   giftCooldownMs: number
+  producerRoundBase: number
+  producerRoundStep: number
+  producerRoundCooldownMs: number
+  producerOutputLevel: number
+  producerSideLevel: number
+  producerMainChance: number
+  plantOutputLevel: number
+  plantBurst: number
+  plantCooldownMs: number
+  consumableTaps: number
+  basketLowChance: number
+  netFishCount: number
+  netMaxLevel: number
+  firstProducerLevel: number
+  shopDailyEnergy: number
+  shopPackGems: number
+  shopPackEnergy: number
+  smileUnlockLevel: number
+  spawn1High: number
+  spawn2Mid: number
   purpleBoxCount: number
   bagBoxCount: number
   blueBoxPotions: number[]
@@ -276,8 +301,11 @@ export interface CellLock {
   cover: 'sand' | 'web' | 'gift'
   veil?: 'full' | 'half'
   giftUntil?: number
+  /** 变成半遮掩时立刻发放，并露出下面的物品。 */
+  prize?: { energy?: number; coins?: number; gems?: number; chest?: boolean }
   buried:
     | { kind: 'product'; line: string; level: number }
+    | { kind: 'producer'; id: string; level: number }
     | { kind: 'coin'; amount: number; line?: string; level?: number }
     | { kind: 'gem'; tier: number; line?: string; level?: number }
     | { kind: 'potion'; tier: number; line?: string; level?: number }
@@ -313,8 +341,11 @@ export interface Order {
 }
 
 export interface LevelRewardEntry {
-  id: 'blue' | 'purple' | 'bag' | 'food' | 'toy' | 'plant' | 'boat' | 'bed' | 'bev' | 'chest' | 'gem'
+  id: string
   name: string
+  producerLevel?: number
+  energy?: number
+  gems?: number
 }
 
 export interface LevelModal {
@@ -391,6 +422,14 @@ export interface GameState {
   levelQueue: LevelModal[]
   smileModal: { names: string[] } | null
   orderBias: string | null
+  spawnMult: 1 | 2 | 4
+  shopOpen: boolean
+  shopClaimDate: string | null
+  shopPackClaimed: boolean
+  detailLine: string | null
+  meatGuided: boolean
+  bevGuided: boolean
+  mintGuided: boolean
   idCounter: number
   orderCounter: number
   stats: {

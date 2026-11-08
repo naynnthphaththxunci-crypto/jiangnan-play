@@ -69,6 +69,10 @@ export interface Frame {
   pendingBtn: Rect
   houseBtn: Rect
   tuneBtn: Rect
+  multBtn: Rect
+  shopBtn: Rect
+  shop: boolean
+  detail: boolean
   dailyBtn: Rect
   sheet: Rect
   sheetBtn: Rect
@@ -137,6 +141,9 @@ export interface LayoutInput {
   help: boolean
   showEnter: boolean
   showInfo: boolean
+  showShop?: boolean
+  shop?: boolean
+  detail?: boolean
 }
 
 const Z: Rect = { x: 0, y: 0, w: 0, h: 0 }
@@ -253,6 +260,12 @@ export type Hit =
   | { kind: 'reward' }
   | { kind: 'house' }
   | { kind: 'tune' }
+  | { kind: 'mult' }
+  | { kind: 'shop' }
+  | { kind: 'shopDaily' }
+  | { kind: 'shopPack' }
+  | { kind: 'shopClose' }
+  | { kind: 'detailClose' }
   | { kind: 'daily' }
   | { kind: 'sheet' }
   | { kind: 'back' }
@@ -431,6 +444,8 @@ export function layout(input: LayoutInput): Frame {
 
   const tuneS = Math.max(22, Math.round(26 * unit))
   const tuneBtn: Rect = { x: w - tuneS - 6, y: top + 4, w: tuneS, h: tuneS }
+  const multBtn: Rect = boardMode ? { x: tuneBtn.x - tuneS - 6, y: top + 4, w: tuneS, h: tuneS } : Z
+  const shopBtn: Rect = boardMode && input.showShop ? { x: multBtn.x - tuneS - 6, y: top + 4, w: tuneS, h: tuneS } : Z
   const skipW = Math.round(56 * unit)
   const skip: Rect = input.showSkip
     ? { x: tuneBtn.x - 8 - skipW, y: top + 6, w: skipW, h: Math.round(30 * unit) }
@@ -569,6 +584,10 @@ export function layout(input: LayoutInput): Frame {
     pendingBtn,
     houseBtn,
     tuneBtn,
+    multBtn,
+    shopBtn,
+    shop: !!input.shop,
+    detail: !!input.detail,
     dailyBtn,
     sheet,
     sheetBtn,
@@ -613,6 +632,24 @@ export function layout(input: LayoutInput): Frame {
   }
 }
 
+export function shopRects(frame: Frame): { card: Rect; daily: Rect; pack: Rect; close: Rect } {
+  const w = Math.min(frame.w - 32, 320)
+  const h = 230
+  const card = { x: (frame.w - w) / 2, y: frame.h * 0.24, w, h }
+  return {
+    card,
+    daily: { x: card.x + 16, y: card.y + 64, w: card.w - 32, h: 48 },
+    pack: { x: card.x + 16, y: card.y + 124, w: card.w - 32, h: 48 },
+    close: { x: card.x + card.w - 36, y: card.y + 10, w: 26, h: 26 },
+  }
+}
+
+export function detailCard(frame: Frame): Rect {
+  const w = Math.min(frame.w - 28, 340)
+  const h = Math.min(frame.h * 0.62, 460)
+  return { x: (frame.w - w) / 2, y: frame.h * 0.16, w, h }
+}
+
 export function hitTest(frame: Frame, x: number, y: number): Hit | null {
   if (frame.showTuner) {
     if (contains(frame.tunerClose, x, y)) return { kind: 'tunerClose' }
@@ -641,7 +678,21 @@ export function hitTest(frame: Frame, x: number, y: number): Hit | null {
     return { kind: 'swallow' }
   }
   if (contains(frame.skip, x, y)) return { kind: 'skip' }
+  if (frame.shop) {
+    const shop = shopRects(frame)
+    if (contains(shop.daily, x, y)) return { kind: 'shopDaily' }
+    if (contains(shop.pack, x, y)) return { kind: 'shopPack' }
+    if (contains(shop.close, x, y) || !contains(shop.card, x, y)) return { kind: 'shopClose' }
+    return { kind: 'swallow' }
+  }
+  if (frame.detail) {
+    const card = detailCard(frame)
+    if (!contains(card, x, y)) return { kind: 'detailClose' }
+    return { kind: 'swallow' }
+  }
   if (contains(frame.tuneBtn, x, y)) return { kind: 'tune' }
+  if (contains(frame.multBtn, x, y)) return { kind: 'mult' }
+  if (contains(frame.shopBtn, x, y)) return { kind: 'shop' }
   if (frame.mode === 'story') {
     if (contains(frame.hotspot, x, y)) return { kind: 'hotspot' }
     return { kind: 'swallow' }

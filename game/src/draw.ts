@@ -3,7 +3,7 @@ import orderLayout from './data/orderLayout.json'
 import { formatDuration, formatMs, orderItemLabel } from './format'
 import { easeInOut, easeOutBack, easeOutCubic, popScale, type Flyer, type Fx } from './fx'
 import { hintHand, storageLessonHand, tutorialHand } from './coach'
-import { cellRect, chainCardRect, chainCloseRect, chainPopRect, decorPopupRects, guestFaceBox, guideHole, levelClaimRect, smileDismissRect, talkRect, trackRatio, type Frame, type Rect } from './layout'
+import { cellRect, chainCardRect, chainCloseRect, chainPopRect, decorPopupRects, detailCard, guestFaceBox, guideHole, levelClaimRect, shopRects, smileDismissRect, talkRect, trackRatio, type Frame, type Rect } from './layout'
 import {
   allTasks,
   atStep,
@@ -112,6 +112,9 @@ export function render(model: RenderModel): void {
   if (frame.showModal && model.modal) drawEnergyModal(model)
   if (model.chain) drawChain(model)
   if (frame.showTuner) drawTuner(model)
+  drawHudTools(model)
+  if (frame.shop) drawShop(model)
+  if (frame.detail) drawDetail(model)
   drawToasts(model)
 }
 
@@ -227,38 +230,31 @@ function drawItem(
   const piece = item.kind === 'product' || item.kind === 'producer' ? item : null
   const sprite = piece ? itemSprite(piece.line, piece.level) : null
   if (sprite && piece) {
-    const pad = box.w * 0.08
-    ctx.drawImage(sprite, box.x + pad, box.y + pad * 0.4, box.w - pad * 2, box.h * 0.72)
-    text(ctx, piece.kind === 'product' && piece.tag === 'bag' ? '购物袋' : productName(cfg, piece.line, piece.level), cx, box.y + box.h * 0.9, Math.max(9, box.w * 0.13), PAL.ink)
+    const pad = box.w * 0.12
+    ctx.drawImage(sprite, box.x + pad, box.y + pad, box.w - pad * 2, box.h - pad * 2)
+    const badge = Math.max(12, box.w * 0.28)
+    roundRect(ctx, box.x + box.w - badge - 2, box.y + 2, badge, badge * 0.72, 4)
+    ctx.fillStyle = 'rgba(42,33,24,0.82)'
+    ctx.fill()
+    text(ctx, String(piece.level), box.x + box.w - badge / 2 - 2, box.y + badge * 0.36 + 2, badge * 0.5, '#fff6e4')
   } else if (item.kind === 'product') {
     const r = box.w * (0.16 + item.level * 0.045)
     ctx.fillStyle = lineColor(cfg, item.line)
-    drawLevelShape(ctx, item.level, cx, cy, r)
-    drawNum(ctx, String(item.level), cx, cy, r * 0.92)
-    text(ctx, item.tag === 'bag' ? '购物袋' : productName(cfg, item.line, item.level), cx, box.y + box.h * 0.84, Math.max(10, box.w * 0.15), PAL.ink)
+    drawLevelShape(ctx, item.level, cx, cy + box.h * 0.08, r)
+    drawNum(ctx, String(item.level), cx, cy + box.h * 0.08, r * 0.92)
   } else if (item.kind === 'producer') {
-    const inset = box.w * 0.1
-    const body = { x: box.x + inset, y: box.y + box.h * 0.08, w: box.w - inset * 2, h: box.h * 0.7 }
+    const inset = box.w * 0.12
+    const body = { x: box.x + inset, y: box.y + inset, w: box.w - inset * 2, h: box.h - inset * 2 }
     roundRect(ctx, body.x, body.y, body.w, body.h, 8)
-    ctx.fillStyle = PAL.white
+    ctx.fillStyle = '#d9d3cc'
     ctx.fill()
     ctx.lineWidth = 3
     ctx.strokeStyle = lineColor(cfg, item.line)
     ctx.stroke()
-    roundRect(ctx, body.x + 4, body.y + 4, body.w - 8, body.h - 8, 6)
-    ctx.lineWidth = 1.25
-    ctx.stroke()
-    drawNum(ctx, String(item.level), cx, body.y + body.h * 0.42, Math.max(16, box.w * 0.28))
-    text(ctx, producerName(cfg, item.producerId), cx, body.y + body.h * 0.78, Math.max(10, box.w * 0.14), PAL.ink)
-    const cooling = !unlimited && item.charges <= 0 && item.cooldownUntil > now
-    text(
-      ctx,
-      cooling ? formatMs(item.cooldownUntil - now) : unlimited ? '不限' : `×${item.charges}`,
-      cx,
-      box.y + box.h * 0.84,
-      Math.max(10, box.w * 0.15),
-      cooling ? PAL.danger : PAL.soft,
-    )
+    drawNum(ctx, String(item.level), cx, cy + box.h * 0.05, Math.max(16, box.w * 0.32))
+    if (!unlimited && item.charges <= 0 && item.cooldownUntil > now) {
+      text(ctx, formatMs(item.cooldownUntil - now), cx, box.y + box.h * 0.82, Math.max(9, box.w * 0.14), PAL.danger)
+    }
   } else if (item.kind === 'potion') {
     const energy = cfg.items.potions.find((p) => p.tier === item.tier)?.energy ?? 0
     const r = box.w * (0.18 + item.tier * 0.035)
@@ -637,6 +633,76 @@ function paintStandIn(ctx: CanvasRenderingContext2D, name: string, color: string
   text(ctx, name, cx, bodyTop + 12, 10, PAL.ink)
 }
 
+function drawHudTools(model: RenderModel): void {
+  const { ctx, frame, state } = model
+  if (frame.multBtn.w > 0) {
+    roundRect(ctx, frame.multBtn.x, frame.multBtn.y, frame.multBtn.w, frame.multBtn.h, 6)
+    ctx.fillStyle = '#3a342e'
+    ctx.fill()
+    text(ctx, `×${state.spawnMult ?? 1}`, frame.multBtn.x + frame.multBtn.w / 2, frame.multBtn.y + frame.multBtn.h / 2, 12, '#fff6e4')
+  }
+  if (frame.shopBtn.w > 0) {
+    roundRect(ctx, frame.shopBtn.x, frame.shopBtn.y, frame.shopBtn.w, frame.shopBtn.h, 6)
+    ctx.fillStyle = '#8a6a4a'
+    ctx.fill()
+    text(ctx, '店', frame.shopBtn.x + frame.shopBtn.w / 2, frame.shopBtn.y + frame.shopBtn.h / 2, 13, '#fff6e4')
+  }
+}
+
+function drawShop(model: RenderModel): void {
+  const { ctx, frame } = model
+  const shop = shopRects(frame)
+  ctx.fillStyle = 'rgba(28,22,16,0.45)'
+  ctx.fillRect(0, 0, frame.w, frame.h)
+  roundRect(ctx, shop.card.x, shop.card.y, shop.card.w, shop.card.h, 14)
+  ctx.fillStyle = '#d9d3cc'
+  ctx.fill()
+  text(ctx, '商城', shop.card.x + 18, shop.card.y + 28, 18, '#2a2118', 'left')
+  text(ctx, '×', shop.close.x + shop.close.w / 2, shop.close.y + shop.close.h / 2, 16, '#2a2118')
+  for (const [rect, title, sub] of [
+    [shop.daily, '每日免费', '50 体力'],
+    [shop.pack, '新手大礼包', '10 钻石 · 50 体力'],
+  ] as const) {
+    roundRect(ctx, rect.x, rect.y, rect.w, rect.h, 8)
+    ctx.fillStyle = '#eee8e0'
+    ctx.fill()
+    ctx.strokeStyle = '#8a7b6a'
+    ctx.stroke()
+    text(ctx, title, rect.x + 12, rect.y + 16, 14, '#2a2118', 'left')
+    text(ctx, sub, rect.x + 12, rect.y + 34, 12, '#6f6254', 'left')
+  }
+}
+
+function drawDetail(model: RenderModel): void {
+  const { ctx, frame, cfg, state } = model
+  const card = detailCard(frame)
+  const lineId = state.detailLine
+  const line = cfg.items.lines.find((entry) => entry.id === lineId)
+  ctx.fillStyle = 'rgba(28,22,16,0.45)'
+  ctx.fillRect(0, 0, frame.w, frame.h)
+  roundRect(ctx, card.x, card.y, card.w, card.h, 14)
+  ctx.fillStyle = '#fff8ec'
+  ctx.fill()
+  text(ctx, '哇！新的饮料机！', card.x + card.w / 2, card.y + 28, 18, '#9c2f2f')
+  text(ctx, '看看里面有什么吧', card.x + card.w / 2, card.y + 52, 13, '#6f6254')
+  const levels = line?.levels ?? []
+  levels.forEach((level, index) => {
+    const y = card.y + 78 + index * 28
+    if (y > card.y + card.h - 24) return
+    text(ctx, `${level.level}  ${level.name}`, card.x + 18, y, 14, '#2a2118', 'left')
+  })
+  text(ctx, '点外面关掉', card.x + card.w / 2, card.y + card.h - 18, 12, '#6f6254')
+}
+
+function buriedPreview(lock: { buried: GameState['locks'][number]['buried'] }): Item | null {
+  const buried = lock.buried
+  if (buried.kind === 'product') return { uid: 'buried', kind: 'product', line: buried.line, level: buried.level }
+  if (buried.kind === 'producer') return { uid: 'buried', kind: 'producer', producerId: buried.id, line: buried.id, level: buried.level, charges: 0, cooldownUntil: 0 }
+  if (buried.kind === 'potion') return { uid: 'buried', kind: 'potion', tier: buried.tier }
+  if (buried.kind === 'gem') return { uid: 'buried', kind: 'gem', tier: buried.tier }
+  return null
+}
+
 function drawHint(model: RenderModel): void {
   if (model.frame.hint.h <= 0 || !model.hintText) return
   const { ctx, frame } = model
@@ -693,6 +759,25 @@ function drawBoard(model: RenderModel): void {
         const covered = lock.veil === 'full' && lock.cover !== 'gift'
         if (!covered && lock.buried.kind === 'product') {
           drawItem(ctx, cfg, { uid: 'buried', kind: 'product', line: lock.buried.line, level: lock.buried.level }, box, 1, 0.45, realNow)
+        } else if (!covered && lock.buried.kind === 'producer') {
+          const buried = lock.buried
+          drawItem(
+            ctx,
+            cfg,
+            {
+              uid: 'buried',
+              kind: 'producer',
+              producerId: buried.id,
+              line: cfg.producers.find((entry) => entry.id === buried.id)?.line ?? buried.id,
+              level: buried.level,
+              charges: 0,
+              cooldownUntil: 0,
+            },
+            box,
+            1,
+            0.55,
+            realNow,
+          )
         } else if (!covered && lock.buried.kind === 'potion') {
           drawItem(ctx, cfg, { uid: 'buried', kind: 'potion', tier: lock.buried.tier }, box, 1, 0.45, realNow)
         } else if (!covered && lock.buried.kind === 'gem') {
@@ -720,6 +805,12 @@ function drawBoard(model: RenderModel): void {
                 : '可开'
             : '半开'
         text(ctx, lockLabel, box.x + box.w / 2, box.y + box.h * 0.72, Math.max(9, box.w * 0.16), covered ? '#6a4e32' : PAL.ink)
+        if (model.selected && model.selected.row === row && model.selected.col === col) {
+          ctx.lineWidth = 3
+          ctx.strokeStyle = '#3d6ea8'
+          roundRect(ctx, box.x + 1, box.y + 1, box.w - 2, box.h - 2, 6)
+          ctx.stroke()
+        }
         if (glow.has(key)) {
           const amp = Math.max(0, Math.min(1, cfg.economy.lockPulse || 0))
           const wave = 0.5 + 0.5 * Math.sin(realNow / 540)
@@ -820,19 +911,27 @@ function drawInfo(model: RenderModel): void {
     return
   }
   const item = selected ? state.board[selected.row]?.[selected.col] : null
-  const gift = selected ? state.locks.find((entry) => entry.row === selected.row && entry.col === selected.col && entry.cover === 'gift') : undefined
-  if (!item && !gift) {
-    text(ctx, INFO_EMPTY, bar.x + 12, bar.y + bar.h / 2, 13, PAL.soft, 'left')
+  const lock = selected ? state.locks.find((entry) => entry.row === selected.row && entry.col === selected.col) : undefined
+  const gift = lock?.cover === 'gift' ? lock : undefined
+  if (!item && !lock) {
+    text(ctx, INFO_EMPTY, bar.x + 12, bar.y + bar.h / 2, 14, PAL.soft, 'left')
     return
   }
   if (!item && gift) {
     const cooling = gift.giftUntil != null && gift.giftUntil > model.realNow
-    text(ctx, '礼物', bar.x + 12, bar.y + bar.h * 0.34, 13, PAL.ink, 'left')
-    text(ctx, cooling ? '冷却中' : '点一下开始冷却', bar.x + 12, bar.y + bar.h * 0.7, 12, PAL.soft, 'left')
+    text(ctx, '礼物', bar.x + 12, bar.y + bar.h * 0.38, 16, PAL.ink, 'left')
+    text(ctx, cooling ? '冷却中' : '点一下开始冷却', bar.x + 12, bar.y + bar.h * 0.72, 12, PAL.soft, 'left')
+  } else if (!item && lock && lock.veil !== 'full') {
+    const buried = buriedPreview(lock)
+    if (buried) {
+      const info = infoCaption(cfg, buried, model.realNow)
+      text(ctx, info.title, bar.x + 12, bar.y + bar.h * 0.38, 16, PAL.ink, 'left')
+      text(ctx, `半遮掩 · ${info.usage}`, bar.x + 12, bar.y + bar.h * 0.72, 12, PAL.soft, 'left')
+    }
   } else if (item) {
-    const info = infoCaption(cfg, item)
-    text(ctx, info.title, bar.x + 12, bar.y + bar.h * 0.34, 13, PAL.ink, 'left')
-    text(ctx, info.usage, bar.x + 12, bar.y + bar.h * 0.7, 12, PAL.soft, 'left')
+    const info = infoCaption(cfg, item, model.realNow)
+    text(ctx, info.title, bar.x + 12, bar.y + bar.h * 0.38, 16, PAL.ink, 'left')
+    text(ctx, info.usage, bar.x + 12, bar.y + bar.h * 0.72, 12, PAL.soft, 'left')
   }
   if (frame.rushBtn.w > 0) {
     const free = atStep(state, cfg, 'giftRush')
