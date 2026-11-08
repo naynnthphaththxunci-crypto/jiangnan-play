@@ -18,7 +18,7 @@ export function clamp(v: number, min: number, max: number): number {
 
 /** 托盘上的简称：单件多留几个字，两件并排时只留末尾两个字加等级，避免挤在一起。 */
 export function orderItemLabel(name: string, level: number, wide: boolean): string {
-  const keep = wide ? 4 : 2
+  const keep = wide ? (name.length === 5 ? 3 : 4) : 2
   const core = name.length > keep ? name.slice(-keep) : name
   return wide ? `${core} ${level}级` : `${core}${level}`
 }

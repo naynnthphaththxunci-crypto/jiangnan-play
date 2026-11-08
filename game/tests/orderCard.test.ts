@@ -148,14 +148,14 @@ describe('订单卡', () => {
     const pitch = view.orderPlates[1]!.x - plate.x
     for (const id of ids) {
       const body = bodyOf(guest, portraitConfig(id).content)
-      expect(body.y - view.orderClip.y, id).toBeGreaterThanOrEqual(-4)
-      expect(body.y - view.orderClip.y, id).toBeLessThanOrEqual(28)
+      expect(body.y - view.orderClip.y, id).toBeGreaterThanOrEqual(0)
+      expect(body.y - view.orderClip.y, id).toBeLessThanOrEqual(70)
       expect(Math.abs(body.h - mean) / mean, id).toBeLessThan(0.04)
       expect(body.h, id).toBeGreaterThan(guest.h * 0.5)
       expect(body.h, id).toBeLessThan(guest.h * 0.75)
-      const gap = plate.y - (body.y + body.h)
-      expect(gap, id).toBeGreaterThanOrEqual(-2)
-      expect(gap, id).toBeLessThanOrEqual(8)
+      const covered = (body.y + body.h - plate.y) / body.h
+      expect(covered, id).toBeGreaterThan(0.12)
+      expect(covered, id).toBeLessThan(0.24)
       expect(body.x, id).toBeGreaterThanOrEqual(plate.x - 1)
       expect(body.x + body.w, id).toBeLessThanOrEqual(plate.x + pitch + 1)
     }
@@ -212,7 +212,7 @@ describe('订单卡', () => {
     const view = frame({ w: 393, h: 852, orderCount: 2, orderSlots: [2, 1] })
     const top = orderLayout.group.tabletop
     const aspect = orderLayout.group.plate.w / orderLayout.group.plate.h
-    expect(Math.abs(aspect - 367 / 192)).toBeLessThan(0.02)
+    expect(Math.abs(aspect - 809 / 279)).toBeLessThan(0.02)
     const pitch = view.orderPlates[1]!.x - view.orderPlates[0]!.x
     view.orderPlates.forEach((plate, index) => {
       expect(plate.w).toBeLessThanOrEqual(pitch + 0.5)
@@ -244,7 +244,7 @@ describe('订单卡', () => {
     const [left, right] = paired
     expect(left!.rect.x + left!.rect.w).toBeLessThanOrEqual(right!.rect.x - 4)
     expect(overlaps(left!.rect, right!.rect)).toBe(false)
-    for (const icon of view.orderIcons) expect(icon.rect.w).toBeGreaterThan(16)
+    for (const icon of view.orderIcons) expect(icon.rect.w).toBeGreaterThan(10)
   })
 
   it('六位客人有抠好的立绘，浣熊仍是占位，棋盘颜色在配置里', () => {

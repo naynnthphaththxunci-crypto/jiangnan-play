@@ -130,6 +130,29 @@ describe('订单', () => {
     expect(big?.slots[0].level).toBe(6)
   })
 
+  it('六位客人轮流下单，同时在场不重复', () => {
+    const { state, cfg } = boot()
+    state.phase = 'play'
+    state.level = 5
+    cfg.economy.chestOrderChance = 0
+    state.orders = []
+    const seen = new Set<string>()
+    const roster = ['boatman', 'embroider', 'fisherman', 'squire', 'scholar', 'teaGuest']
+    for (let turn = 0; turn < 8; turn++) {
+      const ids = state.orders.map((order) => order.customerId)
+      expect(new Set(ids).size, ids.join(',')).toBe(ids.length)
+      for (const id of ids) {
+        expect(roster).toContain(id)
+        seen.add(id)
+      }
+      state.orders.shift()
+      const order = generateOrder(state, cfg, mulberry32(turn + 2))
+      if (!order) throw new Error('order')
+      state.orders.push(order)
+    }
+    for (const id of roster) expect(seen.has(id), id).toBe(true)
+  })
+
   it('跳过开局后直接三张订单，棋盘上仍有蒸笼', () => {
     const { state, cfg, rng } = boot()
     skipOpening(state, cfg, rng)
