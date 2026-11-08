@@ -208,6 +208,36 @@ describe('订单卡', () => {
     near(view.orderRewards[0]!.h, orderLayout.group.reward.h * scale)
   })
 
+  it('木质托盘按比例铺在订单栏里，物品色块落在桌面上', () => {
+    const view = frame({ w: 393, h: 852, orderCount: 2, orderSlots: [2, 1] })
+    const top = orderLayout.group.tabletop
+    const aspect = orderLayout.group.plate.w / orderLayout.group.plate.h
+    expect(Math.abs(aspect - 367 / 192)).toBeLessThan(0.02)
+    const pitch = view.orderPlates[1]!.x - view.orderPlates[0]!.x
+    view.orderPlates.forEach((plate, index) => {
+      expect(plate.w).toBeLessThanOrEqual(pitch + 0.5)
+      const surface = {
+        x: plate.x + top.x * plate.w,
+        y: plate.y + top.y * plate.h,
+        w: top.w * plate.w,
+        h: top.h * plate.h,
+      }
+      const icons = view.orderIcons.filter((entry) => entry.order === index)
+      expect(icons.length).toBeGreaterThan(0)
+      for (const icon of icons) expect(inside(icon.rect, surface)).toBe(true)
+    })
+    for (const name of view.orderNames) {
+      const plate = view.orderPlates[name.order]!
+      const surface = {
+        x: plate.x + top.x * plate.w,
+        y: plate.y + top.y * plate.h,
+        w: top.w * plate.w,
+        h: top.h * plate.h,
+      }
+      expect(inside(name.rect, surface)).toBe(true)
+    }
+  })
+
   it('物品名字在台面内，字号约为屏宽的 2.2% 到 2.5%', () => {
     const view = frame({ orderCount: 2, orderSlots: [2, 1] })
     expect(view.orderNames.length).toBeGreaterThan(0)

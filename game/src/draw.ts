@@ -41,6 +41,7 @@ import {
   tutorialLine,
 } from './logic/sim'
 import { itemSprite } from './itemArt'
+import { orderTrayImage } from './orderTray'
 import { guestPortrait, measurePortrait, portraitReady } from './portraits'
 import { SLIDERS } from './tuner'
 import { COLS, ROWS, type GameConfig, type GameState, type Item, type NormBox } from './types'
@@ -530,12 +531,17 @@ function drawOrders(model: RenderModel): void {
     text(ctx, `${state.smiles}/${goal}`, tray.x + tray.w / 2, tray.y + tray.h * 0.86, Math.max(11, tray.w * 0.16), PAL.ink, 'center', 'middle', 700)
   }
   spots.forEach(({ order, index, dx, plate, pay: payRect }) => {
-    roundRect(ctx, plate.x, plate.y, plate.w, plate.h, 10)
-    ctx.fillStyle = '#fffaf3'
-    ctx.fill()
-    ctx.lineWidth = 1
-    ctx.strokeStyle = '#e4d3bc'
-    ctx.stroke()
+    const tray = orderTrayImage()
+    if (tray && (tray.naturalWidth || 0) > 0) {
+      const aspect = tray.naturalWidth / Math.max(1, tray.naturalHeight)
+      const drawW = plate.w
+      const drawH = drawW / aspect
+      ctx.drawImage(tray, plate.x, plate.y + (plate.h - drawH) / 2, drawW, drawH)
+    } else {
+      roundRect(ctx, plate.x, plate.y, plate.w, plate.h, 8)
+      ctx.fillStyle = '#e4b57a'
+      ctx.fill()
+    }
     order.slots.forEach((slot, slotIndex) => {
       const icon = frame.orderIcons.find((entry) => entry.order === index && entry.slot === slotIndex)
       if (!icon) return

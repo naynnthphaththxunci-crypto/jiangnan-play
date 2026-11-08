@@ -1,5 +1,6 @@
 import loadingBg from './assets/ui/loading_bg.jpg'
 import { itemImageElements } from './itemArt'
+import { orderTrayImage } from './orderTray'
 import { guestImageElements } from './portraits'
 
 function waitImage(img: HTMLImageElement): Promise<void> {
@@ -49,7 +50,8 @@ export async function runBoot(canvas: HTMLCanvasElement): Promise<() => void> {
   window.visualViewport?.addEventListener('resize', onResize)
   paint(0)
 
-  const images = [...itemImageElements(), ...guestImageElements(), loadUrl(loadingBg)]
+  const tray = orderTrayImage()
+  const images = [...itemImageElements(), ...guestImageElements(), ...(tray ? [tray] : []), loadUrl(loadingBg)]
   const total = Math.max(1, images.length)
   let done = 0
   await Promise.all(
