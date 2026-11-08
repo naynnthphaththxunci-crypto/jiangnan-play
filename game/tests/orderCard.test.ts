@@ -226,30 +226,25 @@ describe('订单卡', () => {
       expect(icons.length).toBeGreaterThan(0)
       for (const icon of icons) expect(inside(icon.rect, surface)).toBe(true)
     })
-    for (const name of view.orderNames) {
-      const plate = view.orderPlates[name.order]!
-      const surface = {
-        x: plate.x + top.x * plate.w,
-        y: plate.y + top.y * plate.h,
-        w: top.w * plate.w,
-        h: top.h * plate.h,
-      }
-      expect(inside(name.rect, surface)).toBe(true)
-    }
   })
 
-  it('物品名字在台面内，字号约为屏宽的 2.2% 到 2.5%', () => {
-    const view = frame({ orderCount: 2, orderSlots: [2, 1] })
+  it('托盘上每件物品的名字独立、不重叠，手机上看得清', () => {
+    const view = frame({ w: 393, h: 852, orderCount: 2, orderSlots: [2, 1] })
     expect(view.orderNames.length).toBeGreaterThan(0)
     for (const name of view.orderNames) {
       const plate = view.orderPlates[name.order]!
       const icon = view.orderIcons.find((entry) => entry.order === name.order && entry.slot === name.slot)!.rect
       expect(inside(name.rect, plate)).toBe(true)
       expect(name.rect.y).toBeGreaterThanOrEqual(icon.y + icon.h - 0.5)
-      const ratio = name.rect.h / view.w
-      expect(ratio).toBeGreaterThanOrEqual(0.022)
-      expect(ratio).toBeLessThanOrEqual(0.025)
+      expect(name.rect.h).toBeGreaterThanOrEqual(16)
+      expect(name.rect.h / view.w).toBeGreaterThanOrEqual(0.04)
     }
+    const paired = view.orderNames.filter((entry) => entry.order === 0)
+    expect(paired).toHaveLength(2)
+    const [left, right] = paired
+    expect(left!.rect.x + left!.rect.w).toBeLessThanOrEqual(right!.rect.x - 4)
+    expect(overlaps(left!.rect, right!.rect)).toBe(false)
+    for (const icon of view.orderIcons) expect(icon.rect.w).toBeGreaterThan(16)
   })
 
   it('六位客人有抠好的立绘，浣熊仍是占位，棋盘颜色在配置里', () => {
