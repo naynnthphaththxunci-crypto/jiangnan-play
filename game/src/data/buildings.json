@@ -1,0 +1,104 @@
+{
+  "steps": [
+    {
+      "id": "sign",
+      "name": "挂招牌",
+      "tasks": [
+        {
+          "id": "t1",
+          "name": "挂招牌",
+          "price": 8,
+          "part": "sign",
+          "choices": [
+            { "id": "amber", "name": "暖黄" },
+            { "id": "green", "name": "青碧" },
+            { "id": "lilac", "name": "藕紫" }
+          ]
+        },
+        {
+          "id": "t2",
+          "name": "扶正门板",
+          "price": 8,
+          "part": "door",
+          "choices": [
+            { "id": "amber", "name": "暖黄" },
+            { "id": "green", "name": "青碧" },
+            { "id": "lilac", "name": "藕紫" }
+          ]
+        },
+        {
+          "id": "t3",
+          "name": "糊窗纸",
+          "price": 16,
+          "part": "window",
+          "choices": [
+            { "id": "amber", "name": "暖黄" },
+            { "id": "green", "name": "青碧" },
+            { "id": "lilac", "name": "藕紫" }
+          ]
+        },
+        {
+          "id": "t4",
+          "name": "换门帘",
+          "price": 16,
+          "part": "curtain",
+          "choices": [
+            { "id": "amber", "name": "暖黄" },
+            { "id": "green", "name": "青碧" },
+            { "id": "lilac", "name": "藕紫" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "body",
+      "name": "修主体",
+      "tasks": [
+        { "id": "t5", "name": "换梁柱", "price": 16, "part": "beam" },
+        {
+          "id": "t6",
+          "name": "选铺面装饰",
+          "price": 24,
+          "part": "decor",
+          "choices": [
+            { "id": "amber", "name": "暖黄" },
+            { "id": "green", "name": "青碧" },
+            { "id": "lilac", "name": "藕紫" }
+          ]
+        },
+        { "id": "t7", "name": "铺青砖", "price": 24, "part": "floor" },
+        { "id": "t8", "name": "装门扇", "price": 24, "part": "gate" }
+      ]
+    },
+    {
+      "id": "plaque",
+      "name": "挂匾额",
+      "tasks": [
+        { "id": "t9", "name": "漆门柱", "price": 24, "part": "pillar" },
+        {
+          "id": "t10",
+          "name": "挂宫灯",
+          "price": 32,
+          "part": "lanterns",
+          "choices": [
+            { "id": "amber", "name": "暖黄" },
+            { "id": "green", "name": "青碧" },
+            { "id": "lilac", "name": "藕紫" }
+          ]
+        },
+        {
+          "id": "t11",
+          "name": "摆茶座",
+          "price": 32,
+          "part": "seats",
+          "choices": [
+            { "id": "amber", "name": "暖黄" },
+            { "id": "green", "name": "青碧" },
+            { "id": "lilac", "name": "藕紫" }
+          ]
+        },
+        { "id": "t12", "name": "挂上匾额", "price": 32, "part": "plaque" }
+      ]
+    }
+  ]
+}

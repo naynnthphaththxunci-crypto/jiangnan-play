@@ -1,0 +1,66 @@
+{
+  "maxActive": 3,
+  "twoSlotChance": 0.35,
+  "bigChance": 0.18,
+  "customersByLine": {
+    "food": [
+      "xiaotao",
+      "teaGuest",
+      "boatman",
+      "scholar",
+      "fisherman"
+    ],
+    "bev": [
+      "teaGuest",
+      "scholar"
+    ],
+    "toy": [
+      "embroider",
+      "boatman",
+      "squire"
+    ],
+    "plant": [
+      "embroider",
+      "scholar"
+    ],
+    "boat": [
+      "boatman",
+      "teaGuest",
+      "fisherman"
+    ],
+    "bed": [
+      "squire",
+      "xiaotao"
+    ]
+  },
+  "talk": {
+    "xiaotao": {
+      "normal": "娘，我要吃这个。",
+      "big": "娘做的最好吃了！"
+    },
+    "teaGuest": {
+      "normal": "这味正。",
+      "big": "掌柜的，这桌我做东了。"
+    },
+    "boatman": {
+      "normal": "路上就吃这个。",
+      "big": "满满一桌，够我跑一趟船。"
+    },
+    "scholar": {
+      "normal": "清雅。",
+      "big": "今日有茶有点心，文章也好写。"
+    },
+    "embroider": {
+      "normal": "针线前垫一口。",
+      "big": "这手艺，比绣样还细。"
+    },
+    "squire": {
+      "normal": "送到后院。",
+      "big": "这一桌，员外我包下了。"
+    },
+    "fisherman": {
+      "normal": "肚皮早咕咕叫啦。",
+      "big": "大碗盛满些，吃饱了还要收网。"
+    }
+  }
+}

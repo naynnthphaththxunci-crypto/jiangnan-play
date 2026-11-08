@@ -1,0 +1,9 @@
+{
+  "mat": "#e4f0e2",
+  "cellLight": "#f4faf1",
+  "cellDark": "#c5ddb8",
+  "cellLine": "#9fb89a",
+  "covered": "#e7d3a4",
+  "half": "rgba(186,148,86,0.46)",
+  "ready": "#c9ebc8"
+}

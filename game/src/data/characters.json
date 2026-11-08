@@ -1,0 +1,15 @@
+{
+  "list": [
+    { "id": "ruyue", "name": "温如月", "role": "女掌柜", "当前衣装": "布衣", "portrait": "ruyue" },
+    { "id": "xiaotao", "name": "小桃", "role": "女儿", "portrait": "xiaotao", "face": { "x": 0.3, "y": 0.08, "w": 0.4, "h": 0.32 } },
+    { "id": "zhaowenxuan", "name": "赵文轩", "role": "前夫", "portrait": "zhao" },
+    { "id": "liushi", "name": "柳氏", "role": "外室", "portrait": "liu" },
+    { "id": "teaGuest", "name": "陆老伯", "role": "品茗长者", "portrait": "teaGuest" },
+    { "id": "boatman", "name": "阿桨", "role": "运河船家", "portrait": "boatman" },
+    { "id": "scholar", "name": "柳砚", "role": "赶考书生", "portrait": "scholar" },
+    { "id": "embroider", "name": "晴娘", "role": "巧手绣娘", "portrait": "embroider" },
+    { "id": "squire", "name": "金老爷", "role": "万宝员外", "portrait": "squire" },
+    { "id": "fisherman", "name": "鲍大叔", "role": "水乡渔夫", "portrait": "fisherman" },
+    { "id": "raccoon", "name": "浣熊", "role": "抱宝箱的客人", "face": { "x": 0.3, "y": 0.08, "w": 0.4, "h": 0.32 } }
+  ]
+}

@@ -1,0 +1,95 @@
+{
+  "daughterName": "小桃",
+  "productRaw": "原料。两个相同的拖到一起，合成更高一级。三级起才能交单。",
+  "productOrder": "可以交单，也可以再合成更大的。",
+  "producer": "点击产出{line}的原料，消耗 1 点体力。",
+  "producerCool": "冷却中，倒计时结束才能再点。",
+  "lock": "拖入同级同种的物品，合并后解开这一格。在旁边合成不会揭开。",
+  "gift": "礼物要等冷却。点「解锁」直接打开，灰盒不花钻石。",
+  "potion": "再点一次使用，补 {energy} 点体力。两瓶一样的可以合成。",
+  "chest": "点一下拆出五瓶体力，不消耗体力。",
+  "blue": "蓝宝箱。点开得到体力瓶。",
+  "purple": "紫礼盒。点开得到一些可交单的子棋。",
+  "bag": "购物袋。点开得到一些子棋。",
+  "bagPiece": "购物袋。拖上棋盘后，和相同的棋子合成更大的。",
+    "infoUse": "再点一次使用 · +{amount}",
+    "infoChain": "合并以达到下一个级别。点击收集 {amount}。",
+    "infoMerge": "合成相同棋子进行升级。",
+  "infoProducer": "点击产出{line}。",
+  "infoCoin": "点击收集。",
+  "infoSold": "已被卖出。",
+  "producerExtra": "更高档原料",
+  "storageLesson": [
+    "升到五级了。左下角的暂存区开了，棋子可以先寄放在这里。",
+    "把棋盘上的棋子拖进暂存区。",
+    "再从暂存区拖回棋盘。"
+  ],
+  "tutorial": [
+    {
+      "id": "enter",
+      "type": "操作",
+      "gesture": "tap",
+      "text": "这里就是厨房的操作台了！哇，这里太脏了！我们需要整理一下。"
+    },
+    {
+      "id": "merge",
+      "type": "操作",
+      "gesture": "drag",
+      "text": "将两个棋子合并为一个高一级的棋子。"
+    },
+    {
+      "id": "unlock",
+      "type": "操作",
+      "gesture": "drag",
+      "text": "通过合并来解锁被风沙掩埋的物品。"
+    },
+    {
+      "id": "produce",
+      "type": "操作",
+      "gesture": "tap",
+      "text": "点开砂锅，拿出猫草。"
+    },
+    {
+      "id": "deliver",
+      "type": "操作",
+      "gesture": "tap",
+      "text": "小鱼干好了！端给{daughter}去。"
+    },
+    {
+      "id": "bagMerge",
+      "type": "操作",
+      "gesture": "drag",
+      "text": "再和另一只合成更大的。"
+    },
+    {
+      "id": "giftTalk",
+      "type": "对话",
+      "gesture": "none",
+      "text": "点一下礼物，冷却才开始计时。"
+    },
+    {
+      "id": "giftTap",
+      "type": "操作",
+      "gesture": "tap",
+      "text": "点礼物，开始冷却。"
+    },
+    {
+      "id": "giftRush",
+      "type": "操作",
+      "gesture": "tap",
+      "text": "点下面的加速。这一次免费。"
+    },
+    {
+      "id": "coinTalk",
+      "type": "对话",
+      "gesture": "none",
+      "text": "铜钱够了。"
+    },
+    {
+      "id": "build",
+      "type": "操作",
+      "gesture": "tap",
+      "text": "去右下角建造，修修铺子。"
+    }
+  ]
+}

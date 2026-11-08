@@ -1,0 +1,718 @@
+{
+  "lines": [
+    {
+      "id": "food",
+      "name": "猫粮",
+      "color": "#d4893a",
+      "levels": [
+        {
+          "level": 1,
+          "name": "一撮猫草麦胚",
+          "orderable": false,
+          "coins": 0
+        },
+        {
+          "level": 2,
+          "name": "嫩绿小猫草",
+          "orderable": false,
+          "coins": 0
+        },
+        {
+          "level": 3,
+          "name": "瓦碟小鱼干",
+          "orderable": true,
+          "coins": 8
+        },
+        {
+          "level": 4,
+          "name": "粗陶鱼肉碎",
+          "orderable": true,
+          "coins": 16
+        },
+        {
+          "level": 5,
+          "name": "青瓷猫爪肉饼",
+          "orderable": true,
+          "coins": 32
+        },
+        {
+          "level": 6,
+          "name": "砂锅浓鱼汤",
+          "orderable": true,
+          "coins": 64,
+          "big": true,
+          "producer": true,
+          "cooldownMs": 45000,
+          "drops": [
+            1
+          ]
+        },
+        {
+          "level": 7,
+          "name": "铜雕小火锅",
+          "orderable": true,
+          "coins": 128,
+          "producer": true,
+          "cooldownMs": 60000,
+          "drops": [
+            1,
+            2
+          ]
+        },
+        {
+          "level": 8,
+          "name": "双层朱漆食盒",
+          "orderable": true,
+          "coins": 256,
+          "producer": true,
+          "cooldownMs": 75000,
+          "drops": [
+            2,
+            3
+          ]
+        },
+        {
+          "level": 9,
+          "name": "三层描金馔盒",
+          "orderable": true,
+          "coins": 512,
+          "producer": true,
+          "cooldownMs": 90000,
+          "drops": [
+            2,
+            3,
+            4
+          ]
+        },
+        {
+          "level": 10,
+          "name": "龙凤御膳锦瓮",
+          "orderable": true,
+          "coins": 1024,
+          "producer": true,
+          "cooldownMs": 120000,
+          "drops": [
+            3,
+            4,
+            5
+          ]
+        },
+        {
+          "level": 11,
+          "name": "蓬莱百味宝鼎",
+          "orderable": true,
+          "coins": 2048,
+          "producer": true,
+          "cooldownMs": 30000,
+          "drops": [
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ]
+    },
+    {
+      "id": "toy",
+      "name": "玩具",
+      "color": "#3d7ec4",
+      "levels": [
+        {
+          "level": 1,
+          "name": "一截麻绳头",
+          "orderable": false,
+          "coins": 0
+        },
+        {
+          "level": 2,
+          "name": "缠丝小麻球",
+          "orderable": false,
+          "coins": 0
+        },
+        {
+          "level": 3,
+          "name": "竹篾空心球",
+          "orderable": true,
+          "coins": 8
+        },
+        {
+          "level": 4,
+          "name": "野雉羽逗猫竿",
+          "orderable": true,
+          "coins": 16
+        },
+        {
+          "level": 5,
+          "name": "柳条编织浅筐",
+          "orderable": true,
+          "coins": 32
+        },
+        {
+          "level": 6,
+          "name": "靛蓝布鱼偶",
+          "orderable": true,
+          "coins": 64,
+          "big": true,
+          "producer": true,
+          "cooldownMs": 45000,
+          "drops": [
+            1
+          ]
+        },
+        {
+          "level": 7,
+          "name": "雕漆猫爬架",
+          "orderable": true,
+          "coins": 128,
+          "producer": true,
+          "cooldownMs": 60000,
+          "drops": [
+            1,
+            2
+          ]
+        },
+        {
+          "level": 8,
+          "name": "竹编双层戏篓",
+          "orderable": true,
+          "coins": 256,
+          "producer": true,
+          "cooldownMs": 75000,
+          "drops": [
+            2,
+            3
+          ]
+        },
+        {
+          "level": 9,
+          "name": "机关走线木匣",
+          "orderable": true,
+          "coins": 512,
+          "producer": true,
+          "cooldownMs": 90000,
+          "drops": [
+            2,
+            3,
+            4
+          ]
+        },
+        {
+          "level": 10,
+          "name": "飞檐红木戏猫亭",
+          "orderable": true,
+          "coins": 1024,
+          "producer": true,
+          "cooldownMs": 120000,
+          "drops": [
+            3,
+            4,
+            5
+          ]
+        },
+        {
+          "level": 11,
+          "name": "乾坤万趣百宝阁",
+          "orderable": true,
+          "coins": 2048,
+          "producer": true,
+          "cooldownMs": 30000,
+          "drops": [
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ]
+    },
+    {
+      "id": "plant",
+      "name": "花盆",
+      "color": "#3c9a55",
+      "levels": [
+        {
+          "level": 1,
+          "name": "破瓦陶土片",
+          "orderable": false,
+          "coins": 0
+        },
+        {
+          "level": 2,
+          "name": "陶土泥钵小芽",
+          "orderable": false,
+          "coins": 0
+        },
+        {
+          "level": 3,
+          "name": "青瓷香草小盆",
+          "orderable": true,
+          "coins": 8
+        },
+        {
+          "level": 4,
+          "name": "案头青石菖蒲",
+          "orderable": true,
+          "coins": 16
+        },
+        {
+          "level": 5,
+          "name": "紫砂双色兰花钵",
+          "orderable": true,
+          "coins": 32
+        },
+        {
+          "level": 6,
+          "name": "假山叠石水影盆",
+          "orderable": true,
+          "coins": 64,
+          "big": true,
+          "producer": true,
+          "cooldownMs": 50000,
+          "drops": [
+            1
+          ]
+        },
+        {
+          "level": 7,
+          "name": "迎客微盘古松",
+          "orderable": true,
+          "coins": 128,
+          "producer": true,
+          "cooldownMs": 65000,
+          "drops": [
+            1,
+            2
+          ]
+        },
+        {
+          "level": 8,
+          "name": "白玉缠枝茶梅桩",
+          "orderable": true,
+          "coins": 256,
+          "producer": true,
+          "cooldownMs": 80000,
+          "drops": [
+            2,
+            3
+          ]
+        },
+        {
+          "level": 9,
+          "name": "琼楼山水锦绣景",
+          "orderable": true,
+          "coins": 512,
+          "producer": true,
+          "cooldownMs": 100000,
+          "drops": [
+            2,
+            3,
+            4
+          ]
+        },
+        {
+          "level": 10,
+          "name": "荧光瑶台万寿松",
+          "orderable": true,
+          "coins": 1024,
+          "producer": true,
+          "cooldownMs": 30000,
+          "drops": [
+            3,
+            4,
+            5
+          ]
+        }
+      ]
+    },
+    {
+      "id": "boat",
+      "name": "鱼篓",
+      "color": "#c47a32",
+      "levels": [
+        {
+          "level": 1,
+          "name": "劈篾细竹条",
+          "orderable": false,
+          "coins": 0
+        },
+        {
+          "level": 2,
+          "name": "竹编捕鱼倒须",
+          "orderable": false,
+          "coins": 0
+        },
+        {
+          "level": 3,
+          "name": "粗编腰挎小鱼篓",
+          "orderable": true,
+          "coins": 8
+        },
+        {
+          "level": 4,
+          "name": "熟桐油防水鱼篓",
+          "orderable": true,
+          "coins": 16
+        },
+        {
+          "level": 5,
+          "name": "铜环活鱼大网兜",
+          "orderable": true,
+          "coins": 32
+        },
+        {
+          "level": 6,
+          "name": "带盖双耳深水篓",
+          "orderable": true,
+          "coins": 64,
+          "big": true,
+          "producer": true,
+          "cooldownMs": 40000,
+          "drops": [
+            1
+          ]
+        },
+        {
+          "level": 7,
+          "name": "临水双桨小竹排",
+          "orderable": true,
+          "coins": 128,
+          "producer": true,
+          "cooldownMs": 55000,
+          "drops": [
+            1,
+            2
+          ]
+        },
+        {
+          "level": 8,
+          "name": "水乡摇橹乌篷船",
+          "orderable": true,
+          "coins": 256,
+          "producer": true,
+          "cooldownMs": 70000,
+          "drops": [
+            2,
+            3
+          ]
+        },
+        {
+          "level": 9,
+          "name": "双橹张网捕鱼木船",
+          "orderable": true,
+          "coins": 512,
+          "producer": true,
+          "cooldownMs": 85000,
+          "drops": [
+            2,
+            3,
+            4
+          ]
+        },
+        {
+          "level": 10,
+          "name": "扬帆出水大飞驳",
+          "orderable": true,
+          "coins": 1024,
+          "producer": true,
+          "cooldownMs": 110000,
+          "drops": [
+            3,
+            4,
+            5
+          ]
+        },
+        {
+          "level": 11,
+          "name": "豪华双桅金鳞宝船",
+          "orderable": true,
+          "coins": 2048,
+          "producer": true,
+          "cooldownMs": 25000,
+          "drops": [
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bed",
+      "name": "猫窝",
+      "color": "#c45a7a",
+      "levels": [
+        {
+          "level": 1,
+          "name": "晒干金黄稻草",
+          "orderable": false,
+          "coins": 0
+        },
+        {
+          "level": 2,
+          "name": "粗编蒲草坐垫",
+          "orderable": false,
+          "coins": 0
+        },
+        {
+          "level": 3,
+          "name": "蓝染碎布软窝",
+          "orderable": true,
+          "coins": 8
+        },
+        {
+          "level": 4,
+          "name": "低沿竹编椭圆筐",
+          "orderable": true,
+          "coins": 16
+        },
+        {
+          "level": 5,
+          "name": "暖绒杉木小卧榻",
+          "orderable": true,
+          "coins": 32
+        },
+        {
+          "level": 6,
+          "name": "悬空吊绳小竹巢",
+          "orderable": true,
+          "coins": 64,
+          "big": true,
+          "producer": true,
+          "cooldownMs": 45000,
+          "drops": [
+            1
+          ]
+        },
+        {
+          "level": 7,
+          "name": "红木雕花围栏床",
+          "orderable": true,
+          "coins": 128,
+          "producer": true,
+          "cooldownMs": 60000,
+          "drops": [
+            1,
+            2
+          ]
+        },
+        {
+          "level": 8,
+          "name": "微缩木雕拔步床",
+          "orderable": true,
+          "coins": 256,
+          "producer": true,
+          "cooldownMs": 75000,
+          "drops": [
+            2,
+            3
+          ]
+        },
+        {
+          "level": 9,
+          "name": "双层飞檐猫小楼",
+          "orderable": true,
+          "coins": 512,
+          "producer": true,
+          "cooldownMs": 90000,
+          "drops": [
+            2,
+            3,
+            4
+          ]
+        },
+        {
+          "level": 10,
+          "name": "琉璃飞檐避暑行宫",
+          "orderable": true,
+          "coins": 1024,
+          "producer": true,
+          "cooldownMs": 120000,
+          "drops": [
+            3,
+            4,
+            5
+          ]
+        },
+        {
+          "level": 11,
+          "name": "紫禁猫仙天枢殿",
+          "orderable": true,
+          "coins": 2048,
+          "producer": true,
+          "cooldownMs": 30000,
+          "drops": [
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bev",
+      "name": "饮料",
+      "color": "#2a7a68",
+      "levels": [
+        {
+          "level": 1,
+          "name": "一勺清洌山泉",
+          "orderable": false,
+          "coins": 0
+        },
+        {
+          "level": 2,
+          "name": "粗陶蓄水钵",
+          "orderable": false,
+          "coins": 0
+        },
+        {
+          "level": 3,
+          "name": "铜吊子滚沸水",
+          "orderable": true,
+          "coins": 8
+        },
+        {
+          "level": 4,
+          "name": "碎瓷粗碗凉茶",
+          "orderable": true,
+          "coins": 16
+        },
+        {
+          "level": 5,
+          "name": "青翠竹筒鲜果汁",
+          "orderable": true,
+          "coins": 32
+        },
+        {
+          "level": 6,
+          "name": "冷泡绿茶玻璃瓶",
+          "orderable": true,
+          "coins": 64,
+          "big": true,
+          "producer": true,
+          "cooldownMs": 40000,
+          "drops": [
+            1
+          ]
+        },
+        {
+          "level": 7,
+          "name": "陶罐冰镇酸梅汤",
+          "orderable": true,
+          "coins": 128,
+          "producer": true,
+          "cooldownMs": 55000,
+          "drops": [
+            1,
+            2
+          ]
+        },
+        {
+          "level": 8,
+          "name": "宜兴紫砂大红袍",
+          "orderable": true,
+          "coins": 256,
+          "producer": true,
+          "cooldownMs": 70000,
+          "drops": [
+            2,
+            3
+          ]
+        },
+        {
+          "level": 9,
+          "name": "荷叶碗雪梨羹",
+          "orderable": true,
+          "coins": 512,
+          "producer": true,
+          "cooldownMs": 85000,
+          "drops": [
+            2,
+            3,
+            4
+          ]
+        },
+        {
+          "level": 10,
+          "name": "醉仙玉石桃花酿",
+          "orderable": true,
+          "coins": 1024,
+          "producer": true,
+          "cooldownMs": 110000,
+          "drops": [
+            3,
+            4,
+            5
+          ]
+        },
+        {
+          "level": 11,
+          "name": "瑶池百花神仙露",
+          "orderable": true,
+          "coins": 2048,
+          "producer": true,
+          "cooldownMs": 25000,
+          "drops": [
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ]
+    }
+  ],
+  "potions": [
+    {
+      "tier": 1,
+      "name": "五点体力",
+      "energy": 5
+    },
+    {
+      "tier": 2,
+      "name": "十点体力",
+      "energy": 10
+    },
+    {
+      "tier": 3,
+      "name": "二十点体力",
+      "energy": 20
+    },
+    {
+      "tier": 4,
+      "name": "四十点体力",
+      "energy": 40
+    },
+    {
+      "tier": 5,
+      "name": "一百点体力",
+      "energy": 100
+    }
+  ],
+  "gems": [
+    {
+      "tier": 1,
+      "name": "一颗宝石",
+      "amount": 1
+    },
+    {
+      "tier": 2,
+      "name": "三颗宝石",
+      "amount": 3
+    },
+    {
+      "tier": 3,
+      "name": "一把宝石",
+      "amount": 8
+    },
+    {
+      "tier": 4,
+      "name": "一堆宝石",
+      "amount": 20
+    }
+  ],
+  "chestName": "体力宝箱"
+}

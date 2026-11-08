@@ -1,0 +1,6 @@
+node_modules
+dist
+dist-wx
+.DS_Store
+*.log
+.vite

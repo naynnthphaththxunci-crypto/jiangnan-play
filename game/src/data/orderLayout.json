@@ -1,0 +1,19 @@
+{
+  "ordersPerScreen": 3,
+  "peekRatio": 0.18,
+  "boardMargin": 0.01,
+  "yBasis": "height",
+  "rewardFont": 0.03,
+  "orderArea": { "x": 0, "y": 0.07, "w": 1, "h": 0.22 },
+  "rewardEntry": { "x": 0.012, "y": 0.078, "w": 0.122, "h": 0.18 },
+  "group": {
+    "w": 100,
+    "h": 168,
+    "portrait": { "x": -22, "y": -10, "w": 156, "h": 156 },
+    "complete": { "x": 16, "y": 86, "w": 48, "h": 22 },
+    "plate": { "x": 0, "y": 114, "w": 100, "h": 50 },
+    "reward": { "x": 80, "y": 62, "w": 32, "h": 48 },
+    "icon": { "w": 34, "h": 34 }
+  },
+  "itemName": { "h": 0.0235 }
+}

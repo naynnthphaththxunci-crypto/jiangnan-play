@@ -1,0 +1,40 @@
+{
+  "list": [
+    {
+      "id": "food",
+      "name": "猫粮",
+      "line": "food",
+      "grant": "start"
+    },
+    {
+      "id": "toy",
+      "name": "玩具",
+      "line": "toy",
+      "grant": "level:3"
+    },
+    {
+      "id": "plant",
+      "name": "花盆",
+      "line": "plant",
+      "grant": "level:4"
+    },
+    {
+      "id": "boat",
+      "name": "鱼篓",
+      "line": "boat",
+      "grant": "level:5"
+    },
+    {
+      "id": "bed",
+      "name": "猫窝",
+      "line": "bed",
+      "grant": "level:6"
+    },
+    {
+      "id": "bev",
+      "name": "饮料",
+      "line": "bev",
+      "grant": "level:8"
+    }
+  ]
+}
