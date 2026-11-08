@@ -709,15 +709,57 @@ function noteProducerLevel(state: GameState, _cfg: GameConfig, id: string, level
   if (id === 'bev' && level >= 4 && !state.bevGuided) {
     state.bevGuided = true
     state.detailLine = 'bev'
-    state.notice = { text: '哇！新的饮料机！看看里面有什么吧！' }
   }
   if (id === 'bev' && level >= 5 && !state.mintGuided) {
     state.mintGuided = true
     state.mintStep = 'talk'
     state.orderBias = 'mint'
     pushGuestOrder(state, 'mint', 2)
+    if (!state.detailLine) state.notice = { text: '5 级饮料能出猫薄荷了。这单要猫薄荷，跟着做。' }
+  }
+}
+
+export type Overlay = 'level' | 'smile' | 'shop' | 'detail' | 'talk' | 'mint'
+
+/** 同一时间只算最前面的一个弹窗。升级优先，然后商城、详情卡、对话，最后才是强制教学。 */
+export function activeOverlay(state: GameState): Overlay | null {
+  if (state.levelModal) return 'level'
+  if (state.smileModal) return 'smile'
+  if (state.shopOpen) return 'shop'
+  if (state.detailLine) return 'detail'
+  if (state.notice || state.guide === 'buildTalk' || state.guide === 'backTalk') return 'talk'
+  if (state.mintStep === 'select' || state.mintStep === 'produce' || state.mintStep === 'merge' || state.mintStep === 'deliver') return 'mint'
+  return null
+}
+
+export function dismissDetail(state: GameState): void {
+  state.detailLine = null
+  if (state.mintStep === 'talk' && !state.notice) {
     state.notice = { text: '5 级饮料能出猫薄荷了。这单要猫薄荷，跟着做。' }
   }
+}
+
+export function dismissNotice(state: GameState): void {
+  const starting = state.mintStep === 'talk'
+  state.notice = null
+  if (!starting) return
+  if (findEmpty(state).length < 2) {
+    state.mintStep = 'wait'
+    state.notice = { text: '棋盘满了。先腾出两个空格，再跟着做猫薄荷。' }
+    return
+  }
+  state.mintStep = 'select'
+}
+
+export function pumpMint(state: GameState): void {
+  if (state.mintStep !== 'wait' || activeOverlay(state)) return
+  if (findEmpty(state).length < 2) return
+  const mints = occupied(state).filter((cell) => cell.item.kind === 'product' && cell.item.line === 'mint')
+  const pair = mints.some((cell, index) =>
+    mints.slice(index + 1).some((other) => other.item.kind === 'product' && cell.item.kind === 'product' && other.item.level === cell.item.level),
+  )
+  const ready = state.orders.some((order) => order.slots.some((slot) => slot.line === 'mint') && orderSatisfied(state, order))
+  state.mintStep = ready ? 'deliver' : pair ? 'merge' : 'select'
 }
 
 function pushGuestOrder(state: GameState, line: string, level: number): void {
@@ -738,7 +780,8 @@ export function tapProducer(state: GameState, pos: Pos, cfg: GameConfig, rng: Rn
   if (!item || item.kind !== 'producer') return { ok: false, reason: 'not-producer', events: [] }
   const name = producerName(cfg, item.producerId)
   const spot = nearestEmpty(state, pos.row, pos.col)
-  if (!spot) {
+  const teaching = state.mintStep === 'produce' && item.producerId === 'bev'
+  if (!spot && !teaching) {
     resolveGuides(state)
     return { ok: false, reason: 'full', events: [{ type: 'toast', text: '没有空格了' }] }
   }
@@ -778,7 +821,12 @@ export function tapProducer(state: GameState, pos: Pos, cfg: GameConfig, rng: Rn
     item.charges = Math.max(0, item.charges - 1)
   }
   const made = spawnFromProducer(state, cfg, item, rng, mult)
-  state.board[spot.row][spot.col] = made
+  if (spot) state.board[spot.row][spot.col] = made
+  else {
+    queueReward(state, made)
+    state.mintStep = 'wait'
+    state.notice = { text: '棋盘满了，猫薄荷先放在奖励栏。腾出空格后再继续。' }
+  }
   if (made.kind === 'product') noteUnlock(state, made.line, made.level)
   if (made.kind === 'producer') state.hasProducer[made.producerId] = true
   state.stats.producerTaps += 1
@@ -788,7 +836,7 @@ export function tapProducer(state: GameState, pos: Pos, cfg: GameConfig, rng: Rn
     else state.board[pos.row][pos.col] = null
   }
   if (atStep(state, cfg, 'produce')) advanceTutorial(state, cfg)
-  if (state.mintStep === 'produce' && item.producerId === 'bev') {
+  if (spot && state.mintStep === 'produce' && item.producerId === 'bev') {
     const mints = occupied(state).filter((cell) => cell.item.kind === 'product' && cell.item.line === 'mint')
     const pair = mints.find((cell, index) =>
       mints.slice(index + 1).some((other) => other.item.kind === 'product' && cell.item.kind === 'product' && other.item.level === cell.item.level),
@@ -800,7 +848,7 @@ export function tapProducer(state: GameState, pos: Pos, cfg: GameConfig, rng: Rn
   }
   return {
     ok: true,
-    events: [{ type: 'spawn', row: spot.row, col: spot.col, fromRow: pos.row, fromCol: pos.col }],
+    events: [{ type: 'spawn', row: spot?.row ?? -1, col: spot?.col ?? -1, fromRow: pos.row, fromCol: pos.col }],
   }
 }
 
@@ -1131,7 +1179,7 @@ export function dropItem(state: GameState, from: Pos, to: Pos, cfg?: GameConfig)
       }
     }
     if (other.kind === 'producer' && item.kind === 'producer' && cfg) {
-      const level = Math.min(lineCap(cfg, other.line), other.level + 1)
+      const level = Math.min(producerCap(cfg, other.producerId), other.level + 1)
       state.board[to.row][to.col] = makeProducer(state, other.producerId, cfg, level)
       state.board[from.row][from.col] = null
       noteProducerLevel(state, cfg, other.producerId, level)

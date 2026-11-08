@@ -16,6 +16,7 @@ import {
   gemName,
   glowingLocks,
   INFO_EMPTY,
+  activeOverlay,
   inProducerGrace,
   infoCaption,
   lineChain,
@@ -104,17 +105,21 @@ export function render(model: RenderModel): void {
     }
   }
   if (frame.showHelp) drawHelp(model)
-  if (model.state.levelModal) drawLevelModal(model)
-  if (model.state.smileModal) drawSmileModal(model)
-  drawGuide(model)
+  const overlay = activeOverlay(model.state)
+  if (overlay === 'level') drawLevelModal(model)
+  else if (overlay === 'smile') drawSmileModal(model)
+  else if (overlay === 'shop') drawShop(model)
+  else if (overlay === 'detail') drawDetail(model)
+  else if (overlay === 'talk') {
+    if (model.state.notice) drawNotice(model)
+    else drawGuide(model)
+  } else if (overlay === 'mint') drawMintGuide(model)
+  else drawGuide(model)
   drawBuildStory(model)
-  drawNotice(model)
   if (frame.showModal && model.modal) drawEnergyModal(model)
   if (model.chain) drawChain(model)
   if (frame.showTuner) drawTuner(model)
   drawHudTools(model)
-  if (frame.shop) drawShop(model)
-  if (frame.detail) drawDetail(model)
   drawToasts(model)
 }
 
@@ -1722,10 +1727,6 @@ function drawMintGuide(model: RenderModel): void {
 
 function drawGuide(model: RenderModel): void {
   const { ctx, frame, state, cfg, realNow } = model
-  if (state.mintStep === 'select' || state.mintStep === 'produce' || state.mintStep === 'merge' || state.mintStep === 'deliver') {
-    drawMintGuide(model)
-    return
-  }
   const forced = guideHole(frame, state, cfg)
   const guide = state.guide
   if (!forced && (!guide || guide === 'none')) return

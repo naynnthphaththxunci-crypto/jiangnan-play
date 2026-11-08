@@ -425,7 +425,7 @@ export interface GameState {
   smileModal: { names: string[] } | null
   orderBias: string | null
   spawnMult: 1 | 2 | 4 | 8
-  mintStep: 'off' | 'talk' | 'select' | 'produce' | 'merge' | 'deliver'
+  mintStep: 'off' | 'talk' | 'wait' | 'select' | 'produce' | 'merge' | 'deliver'
   shopOpen: boolean
   shopClaimDate: string | null
   shopPackClaimed: boolean

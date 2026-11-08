@@ -2,16 +2,23 @@ import { describe, expect, it } from 'vitest'
 import { defaultConfig } from '../src/config'
 import { orderItemLabel } from '../src/format'
 import {
+  activeOverlay,
   claimLevelModal,
   claimShopDaily,
   claimShopPack,
   collectBoardProduct,
   createGame,
+  dismissDetail,
+  dismissNotice,
   dropItem,
   enabledMults,
+  guardedDrop,
+  hydrate,
   lockAt,
+  makeProducer,
   makeProduct,
   reconcileLevel,
+  serialize,
   spawnTier,
   tapProducer,
 } from '../src/logic/sim'
@@ -73,9 +80,86 @@ describe('第十轮开局和前期', () => {
     expect(state.mintStep).toBe('talk')
     expect(state.orders.some((order) => order.slots.some((slot) => slot.line === 'mint'))).toBe(true)
     expect(state.detailLine).toBe('bev')
+    expect(state.notice).toBeNull()
+    expect(activeOverlay(state)).toBe('detail')
+    dismissDetail(state)
+    expect(activeOverlay(state)).toBe('talk')
+    dismissNotice(state)
+    expect(state.mintStep).toBe('select')
     state.mintStep = 'produce'
     state.board[2][2] = state.board[0][1]
     expect(tapProducer(state, { row: 2, col: 2 }, cfg, () => 0.99, 10).ok).toBe(true)
     expect(state.board.flat().some((item) => item?.kind === 'product' && item.line === 'mint' && item.level === 1)).toBe(true)
+  })
+
+  it('弹窗同一时间只露一个：详情先于教学，升级先于对话，商城先于教学', () => {
+    const cfg = defaultConfig()
+    const state = createGame(1, cfg)
+    state.detailLine = 'bev'
+    state.mintStep = 'select'
+    state.notice = { text: '后出的提示' }
+    expect(activeOverlay(state)).toBe('detail')
+    state.detailLine = null
+    expect(activeOverlay(state)).toBe('talk')
+    state.notice = null
+    state.shopOpen = true
+    expect(activeOverlay(state)).toBe('shop')
+    state.shopOpen = false
+    state.levelModal = { level: 2, rewards: [] }
+    state.guide = 'buildTalk'
+    expect(activeOverlay(state)).toBe('level')
+  })
+
+  it('棋盘不够两个空格时不进入猫薄荷强制教学', () => {
+    const cfg = defaultConfig()
+    const state = createGame(1, cfg)
+    state.phase = 'play'
+    state.mintStep = 'talk'
+    dismissNotice(state)
+    expect(state.mintStep).toBe('wait')
+    expect(activeOverlay(state)).toBe('talk')
+    dismissNotice(state)
+    expect(state.mintStep).toBe('wait')
+    expect(activeOverlay(state)).toBeNull()
+  })
+
+  it('调试放上的和奖励发的饮料母棋都能拖拽合成', () => {
+    const cfg = defaultConfig()
+    const state = createGame(1, cfg)
+    state.phase = 'play'
+    state.locks = []
+    state.board = state.board.map((row) => row.map(() => null))
+    state.board[0][0] = makeProducer(state, 'bev', cfg, 4)
+    state.board[0][1] = makeProducer(state, 'bev', cfg, 4)
+    const saved = hydrate(serialize(state, cfg), defaultConfig())
+    expect(saved).toBeTruthy()
+    expect(guardedDrop(saved!, { row: 0, col: 0 }, { row: 0, col: 1 }, cfg).ok).toBe(true)
+    const merged = saved!.board[0][1]
+    expect(merged?.kind === 'producer' && merged.producerId === 'bev' && merged.level).toBe(5)
+
+    const granted = createGame(2, cfg)
+    granted.phase = 'play'
+    granted.locks = []
+    granted.xp = cfg.economy.levelTaskThresholds[2] * cfg.economy.xpPerTask
+    reconcileLevel(granted, cfg, () => 0)
+    while (granted.levelModal) claimLevelModal(granted, cfg, () => 0)
+    const level1 = [...granted.rewards, ...granted.board.flat()].find(
+      (item) => item?.kind === 'producer' && item.producerId === 'bev' && item.level === 1,
+    )
+    const level4 = [...granted.rewards, ...granted.board.flat()].find(
+      (item) => item?.kind === 'producer' && item.producerId === 'bev' && item.level === 4,
+    )
+    expect(level1?.kind).toBe('producer')
+    expect(level4?.kind).toBe('producer')
+    granted.board = granted.board.map((row) => row.map(() => null))
+    granted.rewards = []
+    if (level1?.kind === 'producer') granted.board[1][0] = level1
+    granted.board[1][1] = makeProducer(granted, 'bev', cfg, 1)
+    expect(guardedDrop(granted, { row: 1, col: 0 }, { row: 1, col: 1 }, cfg).ok).toBe(true)
+    expect(granted.board[1][1]?.kind === 'producer' && granted.board[1][1].level).toBe(2)
+    granted.board[2][0] = level4?.kind === 'producer' ? level4 : makeProducer(granted, 'bev', cfg, 4)
+    granted.board[2][1] = makeProducer(granted, 'bev', cfg, 4)
+    expect(guardedDrop(granted, { row: 2, col: 0 }, { row: 2, col: 1 }, cfg).ok).toBe(true)
+    expect(granted.board[2][1]?.kind === 'producer' && granted.board[2][1].level).toBe(5)
   })
 })

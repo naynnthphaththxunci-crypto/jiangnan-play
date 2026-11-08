@@ -41,6 +41,11 @@ import {
   canClaimDaily,
   canMerge,
   lineCap,
+  producerCap,
+  activeOverlay,
+  dismissDetail,
+  dismissNotice,
+  pumpMint,
   canSell,
   claimDailyChest,
   claimLevelModal,
@@ -240,8 +245,8 @@ export function startGame(platform: Platform): void {
       showEnter: atStep(state, cfg, 'enter'),
       showInfo: false,
       showShop: state.level >= 3,
-      shop: state.shopOpen,
-      detail: !!state.detailLine,
+      shop: activeOverlay(state) === 'shop',
+      detail: activeOverlay(state) === 'detail',
     })
   }
 
@@ -405,7 +410,7 @@ export function startGame(platform: Platform): void {
       return
     }
     const other = state.board[cell.row][cell.col]
-    const cap = item.kind === 'product' || item.kind === 'producer' ? lineCap(cfg, item.line) : 11
+    const cap = item.kind === 'producer' ? producerCap(cfg, item.producerId) : item.kind === 'product' ? lineCap(cfg, item.line) : 11
     fx.hover = { kind: 'cell', row: cell.row, col: cell.col, merge: !!other && canMerge(item, other, cap) }
   }
 
@@ -610,7 +615,7 @@ export function startGame(platform: Platform): void {
       return
     }
     if (hit.kind === 'detailClose') {
-      state.detailLine = null
+      dismissDetail(state)
       mark()
       return
     }
@@ -786,8 +791,7 @@ export function startGame(platform: Platform): void {
   }
 
   function tutorialBlocks(hit: Hit): boolean {
-    if (state.mintStep && state.mintStep !== 'off') {
-      if (state.mintStep === 'talk') return true
+    if (activeOverlay(state) === 'mint' && state.mintStep && state.mintStep !== 'off' && state.mintStep !== 'talk' && state.mintStep !== 'wait') {
       if (state.mintStep === 'select' || state.mintStep === 'produce') {
         if (hit.kind !== 'cell') return true
         const item = state.board[hit.row]?.[hit.col]
@@ -849,25 +853,32 @@ export function startGame(platform: Platform): void {
       mark()
       return
     }
-    if (state.levelModal) {
+    const overlay = activeOverlay(state)
+    if (overlay === 'level') {
       if (contains(levelClaimRect(frame), x, y)) present(claimLevelModal(state, cfg, rng))
       return
     }
-    if (state.smileModal) {
+    if (overlay === 'smile') {
       if (contains(smileDismissRect(frame), x, y)) state.smileModal = null
       return
     }
-    if (state.notice || state.guide === 'buildTalk' || state.guide === 'backTalk') {
-      if (contains(talkRect(frame).ok, x, y)) {
-        if (state.notice) {
-          state.notice = null
-          if (state.mintStep === 'talk') state.mintStep = 'select'
-        } else advanceGuide(state, cfg)
+    if (overlay === 'detail') {
+      const hit = hitTest(frame, x, y)
+      if (hit?.kind === 'detailClose') {
+        dismissDetail(state)
         mark()
       }
       return
     }
-    if (state.smiles >= cfg.economy.smileGoal && contains(frame.smileSlot, x, y)) {
+    if (overlay === 'talk') {
+      if (contains(talkRect(frame).ok, x, y)) {
+        if (state.notice) dismissNotice(state)
+        else advanceGuide(state, cfg)
+        mark()
+      }
+      return
+    }
+    if (!overlay && state.smiles >= cfg.economy.smileGoal && contains(frame.smileSlot, x, y)) {
       present(openSmilePrize(state, cfg, rng))
       return
     }
@@ -878,7 +889,7 @@ export function startGame(platform: Platform): void {
     const step = currentTutorial(cfg, state)
     let hit = hitTest(frame, x, y) ?? { kind: 'swallow' as const }
     const hole = guideHole(frame, state, cfg)
-    if (hole && hit.kind !== 'tune' && !(state.phase === 'opening' && hit.kind === 'skip') && !contains(hole, x, y)) return
+    if (!overlay && hole && hit.kind !== 'tune' && !(state.phase === 'opening' && hit.kind === 'skip') && !contains(hole, x, y)) return
     if (state.phase === 'story') {
       if (hit.kind === 'skip') {
         skipStory(state)
@@ -1089,6 +1100,7 @@ export function startGame(platform: Platform): void {
     resolveGuides(state, cfg)
     if (guideSpot(state, cfg) === 'reward') orderScroll = 0
     refreshGuide(state, cfg, view)
+    pumpMint(state)
     if (atStep(state, cfg, 'giftRush')) {
       const gift = cfg.board.roles.gift
       selected = { row: gift.row, col: gift.col }
