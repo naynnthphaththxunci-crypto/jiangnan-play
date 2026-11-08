@@ -125,7 +125,7 @@ describe('第三轮教学、订单和布局', () => {
     const wide = frame({ orderCount: 4, orderSlots: [1, 1, 1, 1] })
     expect(wide.orders[0]?.x).toBeGreaterThan(40)
     expect(wide.orderMaxScroll).toBeGreaterThan(0)
-    expect(wide.orderIcons[0]?.rect.w).toBeGreaterThan(16)
+    expect(wide.orderIcons[0]?.rect.w).toBeGreaterThan(10)
   })
 
   it('状态切换不改变棋盘和说明栏', () => {

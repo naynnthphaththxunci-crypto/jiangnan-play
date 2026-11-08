@@ -10,6 +10,6 @@
     { "id": "embroider", "name": "晴娘", "role": "巧手绣娘", "portrait": "embroider" },
     { "id": "squire", "name": "金老爷", "role": "万宝员外", "portrait": "squire" },
     { "id": "fisherman", "name": "鲍大叔", "role": "水乡渔夫", "portrait": "fisherman" },
-    { "id": "raccoon", "name": "浣熊", "role": "抱宝箱的客人", "face": { "x": 0.3, "y": 0.08, "w": 0.4, "h": 0.32 } }
+    { "id": "raccoon", "name": "浣熊", "role": "抱宝箱的客人", "face": { "x": 0.28, "y": 0.1, "w": 0.34, "h": 0.22 } }
   ]
 }

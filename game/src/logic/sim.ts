@@ -1012,6 +1012,17 @@ function maxOrderLevel(state: GameState, line: string): number {
   return 3
 }
 
+const GUEST_ROTATION = ['boatman', 'embroider', 'fisherman', 'squire', 'scholar', 'teaGuest']
+
+function nextGuest(state: GameState): string {
+  const busy = new Set(state.orders.map((order) => order.customerId))
+  for (let step = 0; step < GUEST_ROTATION.length; step++) {
+    const id = GUEST_ROTATION[(state.orderCounter + step) % GUEST_ROTATION.length]
+    if (id && !busy.has(id)) return id
+  }
+  return GUEST_ROTATION[state.orderCounter % GUEST_ROTATION.length] ?? 'teaGuest'
+}
+
 function pickWeightedLine(state: GameState, cfg: GameConfig, rng: Rng, lines: string[]): string {
   const used = new Set(state.orders.flatMap((order) => order.slots.map((slot) => slot.line)))
   const weights = lines.map((line) => {
@@ -1030,7 +1041,6 @@ function pickWeightedLine(state: GameState, cfg: GameConfig, rng: Rng, lines: st
 }
 
 function generateEarlyOrder(state: GameState, cfg: GameConfig, rng: Rng, lines: string[]): Order | null {
-  const fallback = lines[0] ?? 'food'
   const pickLine = () => pickWeightedLine(state, cfg, rng, lines)
   const slots: Order['slots'] = []
   const aChance = cfg.economy.earlyOrderAChance ?? 0.45
@@ -1047,9 +1057,7 @@ function generateEarlyOrder(state: GameState, cfg: GameConfig, rng: Rng, lines: 
     slots.push({ line: second, level: min + Math.floor(rng() * span), filled: false })
   }
   if (!slots.every((slot) => orderCraftable(state, cfg, slot.line, slot.level))) return null
-  const line = slots[0]?.line ?? fallback
-  const customers = cfg.orders.customersByLine[line] ?? ['teaGuest']
-  const customerId = customers[Math.floor(rng() * customers.length)] ?? 'teaGuest'
+  const customerId = nextGuest(state)
   state.orderCounter += 1
   return { id: `o${state.orderCounter}`, customerId, slots, big: false, chest: false }
 }
@@ -1086,8 +1094,7 @@ export function generateOrder(state: GameState, cfg: GameConfig, rng: Rng): Orde
       slots.push({ line: line2, level: 3 + Math.floor(rng() * span2), filled: false })
     }
   }
-  const customers = cfg.orders.customersByLine[line] ?? ['teaGuest']
-  const customerId = customers[Math.floor(rng() * customers.length)] ?? 'teaGuest'
+  const customerId = nextGuest(state)
   const chest = state.phase === 'play' && rng() < cfg.economy.chestOrderChance
   state.orderCounter += 1
   const order: Order = {

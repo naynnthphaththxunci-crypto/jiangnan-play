@@ -1,6 +1,6 @@
 import { hostessCostume } from './config'
 import orderLayout from './data/orderLayout.json'
-import { formatDuration, formatMs } from './format'
+import { formatDuration, formatMs, orderItemLabel } from './format'
 import { easeInOut, easeOutBack, easeOutCubic, popScale, type Flyer, type Fx } from './fx'
 import { hintHand, storageLessonHand, tutorialHand } from './coach'
 import { cellRect, chainCardRect, chainCloseRect, chainPopRect, decorPopupRects, guestFaceBox, guideHole, levelClaimRect, smileDismissRect, talkRect, trackRatio, type Frame, type Rect } from './layout'
@@ -41,6 +41,7 @@ import {
   tutorialLine,
 } from './logic/sim'
 import { itemSprite } from './itemArt'
+import { orderTrayImage } from './orderTray'
 import { guestPortrait, measurePortrait, portraitReady } from './portraits'
 import { SLIDERS } from './tuner'
 import { COLS, ROWS, type GameConfig, type GameState, type Item, type NormBox } from './types'
@@ -530,12 +531,17 @@ function drawOrders(model: RenderModel): void {
     text(ctx, `${state.smiles}/${goal}`, tray.x + tray.w / 2, tray.y + tray.h * 0.86, Math.max(11, tray.w * 0.16), PAL.ink, 'center', 'middle', 700)
   }
   spots.forEach(({ order, index, dx, plate, pay: payRect }) => {
-    roundRect(ctx, plate.x, plate.y, plate.w, plate.h, 10)
-    ctx.fillStyle = '#fffaf3'
-    ctx.fill()
-    ctx.lineWidth = 1
-    ctx.strokeStyle = '#e4d3bc'
-    ctx.stroke()
+    const tray = orderTrayImage()
+    if (tray && (tray.naturalWidth || 0) > 0) {
+      const aspect = tray.naturalWidth / Math.max(1, tray.naturalHeight)
+      const drawW = plate.w
+      const drawH = drawW / aspect
+      ctx.drawImage(tray, plate.x, plate.y + (plate.h - drawH) / 2, drawW, drawH)
+    } else {
+      roundRect(ctx, plate.x, plate.y, plate.w, plate.h, 8)
+      ctx.fillStyle = '#e4b57a'
+      ctx.fill()
+    }
     order.slots.forEach((slot, slotIndex) => {
       const icon = frame.orderIcons.find((entry) => entry.order === index && entry.slot === slotIndex)
       if (!icon) return
@@ -577,12 +583,16 @@ function drawOrders(model: RenderModel): void {
       const name = frame.orderNames.find((entry) => entry.order === index && entry.slot === slotIndex)
       if (!name) return
       const box = { ...name.rect, x: name.rect.x + dx }
-      ctx.save()
-      ctx.beginPath()
-      ctx.rect(box.x, box.y, box.w, box.h)
-      ctx.clip()
-      text(ctx, `${productName(cfg, slot.line, slot.level)} ${slot.level}级`, box.x + box.w / 2, box.y + box.h / 2, box.h * 0.86, PAL.ink, 'center', 'middle', 700)
-      ctx.restore()
+      const label = orderItemLabel(productName(cfg, slot.line, slot.level), slot.level, order.slots.length === 1)
+      roundRect(ctx, box.x, box.y, box.w, box.h, 4)
+      ctx.fillStyle = '#fff8ec'
+      ctx.fill()
+      ctx.lineWidth = 1
+      ctx.strokeStyle = '#6a4328'
+      ctx.stroke()
+      const fit = (box.w - 6) / Math.max(1, label.length)
+      const font = Math.max(11, Math.min(box.h - 4, frame.w * 0.034, fit))
+      text(ctx, label, box.x + box.w / 2, box.y + box.h / 2, font, '#2a160c', 'center', 'middle', 700)
     })
     if (orderSatisfied(state, order)) {
       const btn = frame.completes[index]

@@ -121,6 +121,17 @@ export function guestPortrait(key: string | undefined): GuestImage | null {
   return img
 }
 
+export function guestImageElements(): HTMLImageElement[] {
+  const Ctor = (globalThis as { HTMLImageElement?: typeof HTMLImageElement }).HTMLImageElement
+  if (!Ctor) return []
+  const out: HTMLImageElement[] = []
+  for (const key of Object.keys(PORTRAITS)) {
+    const img = guestPortrait(key)
+    if (img instanceof Ctor) out.push(img)
+  }
+  return out
+}
+
 export function portraitReady(img: GuestImage | null): boolean {
   if (!img) return false
   if (img.complete === false) return false

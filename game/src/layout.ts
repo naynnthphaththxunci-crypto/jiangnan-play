@@ -21,6 +21,8 @@ const ORDER_LAYOUT = orderLayoutJson as {
     complete: DesignBox
     plate: DesignBox
     reward: DesignBox
+    /** 托盘图里桌面（六格）相对整张图的位置，物品摆在这里。 */
+    tabletop: PctBox
     icon: { w: number; h: number }
   }
   itemName: { h: number }
@@ -378,26 +380,36 @@ export function layout(input: LayoutInput): Frame {
     orderCharms.push(reward)
     completes.push(placed(group.complete, i, scroll))
     const slots = Math.max(1, input.orderSlots[i] ?? 1)
-    const nameH = spec.itemName.h * w
-    const padX = Math.max(3, plate.w * 0.04)
-    const padY = Math.max(2, plate.h * 0.05)
-    const gap = Math.max(4, plate.w * 0.04)
-    const maxIconW = (plate.w - padX * 2 - gap * (slots - 1)) / slots
-    const maxIconH = plate.h - padY * 2 - nameH - 2
-    const iconSize = Math.max(8, Math.min(group.icon.w * scale, group.icon.h * scale, maxIconW, maxIconH))
+    const top = group.tabletop
+    const surface = {
+      x: plate.x + top.x * plate.w,
+      y: plate.y + top.y * plate.h,
+      w: top.w * plate.w,
+      h: top.h * plate.h,
+    }
+    const nameH = Math.max(16, w * 0.042)
+    const nameGutter = Math.max(6, plate.w * 0.06)
+    const namePad = 4
+    const nameW = (plate.w - namePad * 2 - nameGutter * Math.max(0, slots - 1)) / slots
+    const nameY = plate.y + plate.h - nameH - 3
+    const iconRoomTop = surface.y
+    const iconRoomH = Math.max(8, nameY - 3 - iconRoomTop)
+    const colW = surface.w / slots
+    const iconSize = Math.max(8, Math.min(group.icon.w * scale, group.icon.h * scale, colW - 6, iconRoomH, surface.h - 2))
+    const iconY = iconRoomTop + Math.max(0, (Math.min(surface.h, iconRoomH) - iconSize) / 2)
     for (let slot = 0; slot < slots; slot++) {
-      const x = slots === 1
-        ? plate.x + (plate.w - iconSize) / 2
-        : plate.x + padX + slot * (iconSize + gap + Math.max(0, (maxIconW - iconSize)))
-      const icon = { x, y: plate.y + padY, w: iconSize, h: iconSize }
+      const colX = surface.x + slot * colW
+      const icon = { x: colX + (colW - iconSize) / 2, y: iconY, w: iconSize, h: iconSize }
       orderIcons.push({ order: i, slot, rect: icon })
-      const nameW = Math.max(8, Math.min(plate.w - 4, slots === 1 ? plate.w - 6 : maxIconW + gap * 0.5))
-      let nameX = icon.x + icon.w / 2 - nameW / 2
-      nameX = Math.max(plate.x + 1, Math.min(nameX, plate.x + plate.w - nameW - 1))
       orderNames.push({
         order: i,
         slot,
-        rect: { x: nameX, y: icon.y + icon.h + 2, w: nameW, h: nameH },
+        rect: {
+          x: plate.x + namePad + slot * (nameW + nameGutter),
+          y: nameY,
+          w: nameW,
+          h: nameH,
+        },
       })
     }
   }
