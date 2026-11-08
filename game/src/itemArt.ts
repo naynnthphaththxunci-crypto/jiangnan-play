@@ -12,6 +12,12 @@ for (const [path, url] of Object.entries(raw)) {
   sprites.set(`${match[1]}:${match[2]}`, img)
 }
 
+export function itemImageElements(): HTMLImageElement[] {
+  const Ctor = (globalThis as { HTMLImageElement?: typeof HTMLImageElement }).HTMLImageElement
+  if (!Ctor) return []
+  return [...sprites.values()].filter((img): img is HTMLImageElement => img instanceof Ctor)
+}
+
 export function itemSprite(line: string, level: number): (CanvasImageSource & { complete?: boolean; naturalWidth?: number }) | null {
   const img = sprites.get(`${line}:${level}`)
   if (!img) return null

@@ -137,27 +137,36 @@ describe('订单卡', () => {
     }
   })
 
-  it('立绘等比缩放且头顶贴近订单区上沿', () => {
-    const view = frame({ w: 393, h: 852, orderCount: 1, orderSlots: [1] })
+  it('客人只露上半身，大小一致，各自待在自己那一栏', () => {
+    const ids = ['teaGuest', 'scholar', 'embroider', 'boatman', 'squire', 'fisherman']
+    const view = frame({ w: 393, h: 852, orderCount: 3, orderSlots: [1, 1, 1] })
     const guest = view.orderGuests[0]!
+    const plate = view.orderPlates[0]!
     expect(Math.abs(guest.w - guest.h)).toBeLessThanOrEqual(0.5)
-    for (const id of ['teaGuest', 'scholar', 'embroider']) {
+    const heights = ids.map((id) => bodyOf(guest, portraitConfig(id).content).h)
+    const mean = heights.reduce((sum, value) => sum + value, 0) / heights.length
+    const pitch = view.orderPlates[1]!.x - plate.x
+    for (const id of ids) {
       const body = bodyOf(guest, portraitConfig(id).content)
-      expect(body.y - view.orderClip.y, id).toBeGreaterThanOrEqual(-12)
-      expect(body.y - view.orderClip.y, id).toBeLessThanOrEqual(8)
-      expect(body.h, id).toBeGreaterThan(guest.h * 0.8)
+      expect(body.y - view.orderClip.y, id).toBeGreaterThanOrEqual(-4)
+      expect(body.y - view.orderClip.y, id).toBeLessThanOrEqual(28)
+      expect(Math.abs(body.h - mean) / mean, id).toBeLessThan(0.04)
+      expect(body.h, id).toBeGreaterThan(guest.h * 0.5)
+      expect(body.h, id).toBeLessThan(guest.h * 0.75)
+      const gap = plate.y - (body.y + body.h)
+      expect(gap, id).toBeGreaterThanOrEqual(-2)
+      expect(gap, id).toBeLessThanOrEqual(8)
+      expect(body.x, id).toBeGreaterThanOrEqual(plate.x - 1)
+      expect(body.x + body.w, id).toBeLessThanOrEqual(plate.x + pitch + 1)
     }
-  })
-
-  it('立绘按排版框整张画出，身子底边被台面盖住', () => {
-    const view = frame({ orderCount: 3, orderSlots: [1, 1, 1] })
-    const guest = view.orderGuests[1]!
-    const plate = view.orderPlates[1]!
-    expect(Math.abs(guest.w - guest.h)).toBeLessThanOrEqual(0.5)
-    for (const id of ['teaGuest', 'scholar', 'embroider']) {
-      const body = bodyOf(guest, portraitConfig(id).content)
-      expect(body.y + body.h, id).toBeGreaterThan(plate.y)
-      expect(body.y + body.h, id).toBeLessThanOrEqual(plate.y + plate.h + view.w * 0.02)
+    for (let i = 0; i < view.orderGuests.length - 1; i++) {
+      for (const left of ids) {
+        for (const right of ids) {
+          const a = bodyOf(view.orderGuests[i]!, portraitConfig(left).content)
+          const b = bodyOf(view.orderGuests[i + 1]!, portraitConfig(right).content)
+          expect(a.x + a.w, `${left}->${right}`).toBeLessThanOrEqual(b.x + 1)
+        }
+      }
     }
   })
 
