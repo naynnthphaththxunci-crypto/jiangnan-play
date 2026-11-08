@@ -4,6 +4,7 @@ import {
   completeOrder,
   createGame,
   dropItem,
+  lockAt,
   makeProducer,
   makeProduct,
   mulberry32,
@@ -114,25 +115,27 @@ describe('Allen 11-06 母棋、剧情和暂存', () => {
     expect(state.storageLesson).toBe(4)
   })
 
-  it('教学去掉合母棋两步，开局 3 级蒸笼点一下就能产出', () => {
-    const { state, cfg } = boot()
-    expect(cfg.copy.tutorial.some((step) => step.id === 'producerL2' || step.id === 'producerL3')).toBe(false)
+  it('开局教学只带玩家把猫粮母棋合成到 4 级', () => {
+    const cfg = defaultConfig()
+    const state = createGame(1, cfg)
+    expect(cfg.copy.tutorial.map((step) => step.id)).toEqual(['merge', 'mergeC', 'mergeD'])
     state.phase = 'opening'
-    state.locks = []
-    const produce = cfg.copy.tutorial.findIndex((step) => step.id === 'produce')
-    state.openingStep = produce
-    const ready = { row: 3, col: 1 }
-    const readyItem = state.board[ready.row]?.[ready.col]
-    if (readyItem?.kind === 'producer') readyItem.level = 4
-    expect(state.board[ready.row]?.[ready.col]?.kind).toBe('producer')
-    const products = state.board.flat().filter((item) => item?.kind === 'product').length
-    expect(tapProducer(state, ready, cfg, () => 0, 11).ok).toBe(true)
-    expect(state.openingStep).toBe(produce + 1)
-    expect(state.board.flat().filter((item) => item?.kind === 'product').length).toBe(products + 1)
+    state.openingStep = 0
+    expect(dropItem(state, { row: 3, col: 1 }, { row: 4, col: 1 }, cfg).ok).toBe(true)
+    expect(state.openingStep).toBe(1)
+    expect(dropItem(state, { row: 4, col: 1 }, { row: 4, col: 2 }, cfg).ok).toBe(true)
+    expect(lockAt(state, 3, 3)?.veil).toBe('half')
+    expect(lockAt(state, 5, 3)?.veil).toBe('half')
+    expect(lockAt(state, 4, 4)?.veil).toBe('half')
+    expect(state.openingStep).toBe(2)
+    expect(dropItem(state, { row: 4, col: 2 }, { row: 4, col: 3 }, cfg).ok).toBe(true)
+    expect(state.phase).toBe('play')
+    expect(state.board[4][3]?.kind === 'producer' && state.board[4][3].level).toBe(4)
   })
 
-  it('建造教学指向右下角', () => {
+  it('开局不再弹出进厨房', () => {
     const cfg = defaultConfig()
-    expect(cfg.copy.tutorial.find((step) => step.id === 'build')?.text).toBe('去右下角建造，修修铺子。')
+    expect(cfg.copy.tutorial.some((step) => step.id === 'enter' || step.id === 'build')).toBe(false)
+    expect(cfg.copy.tutorial[0]?.text).toContain('猫粮母棋')
   })
 })

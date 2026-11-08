@@ -579,16 +579,22 @@ function drawOrders(model: RenderModel): void {
       const name = frame.orderNames.find((entry) => entry.order === index && entry.slot === slotIndex)
       if (!name) return
       const box = { ...name.rect, x: name.rect.x + dx }
-      const label = orderItemLabel(productName(cfg, slot.line, slot.level), slot.level, order.slots.length === 1)
+      const fullName = productName(cfg, slot.line, slot.level)
+      const label = orderItemLabel(fullName, slot.level, order.slots.length === 1)
       roundRect(ctx, box.x, box.y, box.w, box.h, 4)
       ctx.fillStyle = '#fff8ec'
       ctx.fill()
       ctx.lineWidth = 1
       ctx.strokeStyle = '#6a4328'
       ctx.stroke()
-      const fit = (box.w - 6) / Math.max(1, label.length)
-      const font = Math.max(11, Math.min(box.h - 4, frame.w * 0.034, fit))
-      text(ctx, label, box.x + box.w / 2, box.y + box.h / 2, font, '#2a160c', 'center', 'middle', 700)
+      const one = (box.w - 8) / Math.max(1, label.length)
+      if (one >= 11) {
+        text(ctx, label, box.x + box.w / 2, box.y + box.h / 2, Math.min(15, one), '#2a160c', 'center', 'middle', 700)
+      } else {
+        const nameSize = Math.max(10, Math.min(13, (box.w - 6) / Math.max(1, fullName.length)))
+        text(ctx, fullName, box.x + box.w / 2, box.y + box.h * 0.34, nameSize, '#2a160c', 'center', 'middle', 700)
+        text(ctx, `${slot.level}级`, box.x + box.w / 2, box.y + box.h * 0.72, Math.max(10, nameSize), '#6f6254', 'center', 'middle', 700)
+      }
     })
     if (orderSatisfied(state, order)) {
       const btn = frame.completes[index]
@@ -786,25 +792,19 @@ function drawBoard(model: RenderModel): void {
           text(ctx, String(lock.buried.amount), box.x + box.w / 2, box.y + box.h * 0.4, Math.max(12, box.w * 0.22), PAL.coin)
         }
         ctx.fillStyle = covered
-          ? theme.covered
+          ? '#c4ae86'
           : lock.cover === 'web'
             ? 'rgba(90,90,90,0.45)'
             : lock.cover === 'gift'
               ? 'rgba(180,140,60,0.45)'
-              : theme.half
+              : 'rgba(255,248,236,0.42)'
         roundRect(ctx, box.x + 3, box.y + 3, box.w - 6, box.h - 6, 6)
         ctx.fill()
         const giftLeft = lock.cover === 'gift' && lock.giftUntil != null ? lock.giftUntil - realNow : 0
-        const lockLabel = covered
-          ? '全遮'
-          : lock.cover === 'gift'
-            ? lock.giftUntil == null
-              ? '礼物'
-              : giftLeft > 0
-                ? formatMs(giftLeft)
-                : '可开'
-            : '半开'
-        text(ctx, lockLabel, box.x + box.w / 2, box.y + box.h * 0.72, Math.max(9, box.w * 0.16), covered ? '#6a4e32' : PAL.ink)
+        if (lock.cover === 'gift') {
+          const lockLabel = lock.giftUntil == null ? '礼物' : giftLeft > 0 ? formatMs(giftLeft) : '可开'
+          text(ctx, lockLabel, box.x + box.w / 2, box.y + box.h * 0.72, Math.max(9, box.w * 0.16), PAL.ink)
+        }
         if (model.selected && model.selected.row === row && model.selected.col === col) {
           ctx.lineWidth = 3
           ctx.strokeStyle = '#3d6ea8'
@@ -1036,14 +1036,23 @@ function tutorialHoles(model: RenderModel): Rect[] {
     spot(cfg.board.roles.mergeA.row, cfg.board.roles.mergeA.col)
     spot(cfg.board.roles.mergeB.row, cfg.board.roles.mergeB.col)
   }
-  if (step?.id === 'unlock') {
+  if (step?.id === 'mergeC' || step?.id === 'unlock') {
     for (let row = 0; row < ROWS; row++) {
       for (let col = 0; col < COLS; col++) {
         const item = state.board[row]?.[col]
-        if (item?.kind === 'product' && item.line === 'food' && item.level === 2) spot(row, col)
+        if (item?.kind === 'producer' && item.producerId === 'food' && item.level === 2) spot(row, col)
       }
     }
     spot(cfg.board.roles.unlock.row, cfg.board.roles.unlock.col)
+  }
+  if (step?.id === 'mergeD' && cfg.board.roles.mergeD) {
+    for (let row = 0; row < ROWS; row++) {
+      for (let col = 0; col < COLS; col++) {
+        const item = state.board[row]?.[col]
+        if (item?.kind === 'producer' && item.producerId === 'food' && item.level === 3) spot(row, col)
+      }
+    }
+    spot(cfg.board.roles.mergeD.row, cfg.board.roles.mergeD.col)
   }
   if (step?.id === 'producerL2' || step?.id === 'producerL3') {
     let level2 = 0
@@ -1677,8 +1686,46 @@ function drawBuildStory(model: RenderModel): void {
   })
 }
 
+function drawMintGuide(model: RenderModel): void {
+  const { ctx, frame, state, realNow } = model
+  const holes: Rect[] = []
+  if (state.mintStep === 'deliver' && frame.completes[0]) holes.push(frame.completes[0])
+  else {
+    for (let row = 0; row < ROWS; row++) {
+      for (let col = 0; col < COLS; col++) {
+        const item = state.board[row]?.[col]
+        const producer = item?.kind === 'producer' && item.producerId === 'bev' && item.level >= 5
+        const piece = item?.kind === 'product' && item.line === 'mint'
+        if ((state.mintStep === 'select' || state.mintStep === 'produce') && producer) holes.push(cellBox(frame, row, col))
+        if (state.mintStep === 'merge' && piece) holes.push(cellBox(frame, row, col))
+      }
+    }
+  }
+  ctx.save()
+  ctx.fillStyle = 'rgba(12,10,8,0.72)'
+  ctx.beginPath()
+  ctx.rect(0, 0, frame.w, frame.h)
+  for (const hole of holes) {
+    ctx.moveTo(hole.x + hole.w, hole.y)
+    ctx.arcTo(hole.x, hole.y, hole.x, hole.y + hole.h, 8)
+    ctx.arcTo(hole.x, hole.y + hole.h, hole.x + hole.w, hole.y + hole.h, 8)
+    ctx.arcTo(hole.x + hole.w, hole.y + hole.h, hole.x + hole.w, hole.y, 8)
+    ctx.arcTo(hole.x + hole.w, hole.y, hole.x + hole.w, hole.y + hole.h, 8)
+  }
+  ctx.fill('evenodd')
+  ctx.restore()
+  const hand = holes[0]
+  if (hand) paintHand(ctx, hand.x + hand.w / 2, hand.y + hand.h / 2 + Math.sin(realNow / 280) * 3)
+  const tip = state.mintStep === 'select' ? '先点一下，选中饮料母棋' : state.mintStep === 'produce' ? '再点一次，产出猫薄荷' : state.mintStep === 'merge' ? '把两份猫薄荷拖到一起' : '交给客人'
+  text(ctx, tip, frame.w / 2, frame.dock.y - 16, 14, PAL.white)
+}
+
 function drawGuide(model: RenderModel): void {
   const { ctx, frame, state, cfg, realNow } = model
+  if (state.mintStep === 'select' || state.mintStep === 'produce' || state.mintStep === 'merge' || state.mintStep === 'deliver') {
+    drawMintGuide(model)
+    return
+  }
   const forced = guideHole(frame, state, cfg)
   const guide = state.guide
   if (!forced && (!guide || guide === 'none')) return
@@ -1766,7 +1813,7 @@ function drawTuner(model: RenderModel): void {
     ctx.arc(row.trackX + row.trackW * ratio, trackY, 7, 0, Math.PI * 2)
     ctx.fillStyle = PAL.ink
     ctx.fill()
-    text(ctx, spec.text(value), row.trackX + row.trackW + 8, trackY, 11, PAL.soft, 'left')
+    text(ctx, spec.text(value), frame.tunerView.x + frame.tunerView.w - 2, trackY, 11, PAL.ink, 'right')
   }
   const scroll = frame.sliders[0] ? frame.tunerView.y - frame.sliders[0].y : 0
   const statsY = frame.tunerView.y + SLIDERS.length * 40 + 8 - scroll

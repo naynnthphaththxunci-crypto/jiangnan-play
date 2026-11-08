@@ -524,8 +524,8 @@ export function layout(input: LayoutInput): Frame {
         index,
         y: tunerView.y + index * rowH - tunerScroll,
         h: rowH,
-        trackX: tunerView.x + 118,
-        trackW: Math.max(40, tunerView.w - 136),
+        trackX: tunerView.x + 96,
+        trackW: Math.max(36, tunerView.w - 96 - 84),
       }))
     : []
   const tunerExport: Rect = input.tuner

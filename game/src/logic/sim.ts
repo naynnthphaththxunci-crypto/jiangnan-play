@@ -393,6 +393,20 @@ export function tutorialDropOk(state: GameState, cfg: GameConfig, from: Pos, to:
     const b = cfg.board.roles.mergeB
     return (samePos(from, a) && samePos(to, b)) || (samePos(from, b) && samePos(to, a))
   }
+  if (step.id === 'mergeC') {
+    const target = cfg.board.roles.unlock
+    if (!samePos(to, target) && !samePos(from, target)) return false
+    const moving = samePos(to, target) ? from : to
+    const item = state.board[moving.row]?.[moving.col]
+    return item?.kind === 'producer' && item.producerId === 'food' && item.level === 2
+  }
+  if (step.id === 'mergeD') {
+    const target = cfg.board.roles.mergeD
+    if (!target || (!samePos(to, target) && !samePos(from, target))) return false
+    const moving = samePos(to, target) ? from : to
+    const item = state.board[moving.row]?.[moving.col]
+    return item?.kind === 'producer' && item.producerId === 'food' && item.level === 3
+  }
   if (step.id === 'unlock') {
     const target = cfg.board.roles.unlock
     if (!samePos(to, target)) return false
@@ -549,6 +563,7 @@ export function createGame(now: number, cfg: GameConfig): GameState {
     smileModal: null,
     orderBias: null,
     spawnMult: 1,
+    mintStep: 'off',
     shopOpen: false,
     shopClaimDate: null,
     shopPackClaimed: false,
@@ -609,6 +624,7 @@ function applyOpening(state: GameState, cfg: GameConfig): void {
     mergeB: { row: 4, col: 1 },
     unlock: { row: 4, col: 2 },
     producer: { row: 3, col: 1 },
+    mergeD: { row: 4, col: 3 },
     gift: { row: 7, col: 6 },
     bagSpot: { row: 4, col: 4 },
   }
@@ -661,26 +677,26 @@ function producerKind(cfg: GameConfig, id: string): 'normal' | 'netSource' | 'pl
   return cfg.producers.find((entry) => entry.id === id)?.kind ?? 'normal'
 }
 
-function rollSpawnLevel(cfg: GameConfig, mult: 1 | 2 | 4, rng: Rng): number {
-  const roll = rng()
-  if (mult === 4) {
-    const cuts = [0.35, 0.55, 0.75, 0.95, 1]
-    const levels = [3, 4, 5, 6, 7]
-    let acc = 0
-    for (let i = 0; i < cuts.length; i++) {
-      acc = cuts[i] ?? 1
-      if (roll < acc) return levels[i] ?? 3
-    }
-    return 3
+export function spawnTier(cfg: GameConfig, mult: number) {
+  return cfg.economy.spawnTable?.find((tier) => tier.mult === mult)
+}
+
+function rollSpawnLevel(cfg: GameConfig, mult: 1 | 2 | 4 | 8, rng: Rng): number {
+  const tier = spawnTier(cfg, mult)
+  const weights = tier?.weights?.filter((entry) => entry.p > 0) ?? []
+  if (!weights.length) return 1
+  const total = weights.reduce((sum, entry) => sum + entry.p, 0) || 1
+  let roll = rng() * total
+  for (const entry of weights) {
+    roll -= entry.p
+    if (roll <= 0) return entry.level
   }
-  if (mult === 2) {
-    const mid = cfg.economy.spawn2Mid ?? 0.8
-    const side = (1 - mid) / 2
-    if (roll < side) return 2
-    if (roll < side + mid) return 3
-    return 4
-  }
-  return roll < (cfg.economy.spawn1High ?? 0.3) ? 2 : 1
+  return weights[weights.length - 1]?.level ?? 1
+}
+
+export function enabledMults(cfg: GameConfig): (1 | 2 | 4 | 8)[] {
+  const list = (cfg.economy.spawnTable ?? []).filter((tier) => tier.enabled).map((tier) => tier.mult)
+  return list.length ? list : [1]
 }
 
 function noteProducerLevel(state: GameState, _cfg: GameConfig, id: string, level: number): void {
@@ -697,6 +713,7 @@ function noteProducerLevel(state: GameState, _cfg: GameConfig, id: string, level
   }
   if (id === 'bev' && level >= 5 && !state.mintGuided) {
     state.mintGuided = true
+    state.mintStep = 'talk'
     state.orderBias = 'mint'
     pushGuestOrder(state, 'mint', 2)
     state.notice = { text: '5 级饮料能出猫薄荷了。这单要猫薄荷，跟着做。' }
@@ -747,7 +764,8 @@ export function tapProducer(state: GameState, pos: Pos, cfg: GameConfig, rng: Rn
   }
   const mult = state.spawnMult ?? 1
   const taught = state.producerLesson === item.producerId
-  const cost = kind === 'consumable' || kind === 'plant' || taught ? 0 : mult
+  const tierCost = spawnTier(cfg, mult)?.cost ?? mult
+  const cost = kind === 'consumable' || kind === 'plant' || taught ? 0 : tierCost
   if (cost > 0 && state.energy < cost) return { ok: false, reason: 'energy', events: [{ type: 'needEnergy' }] }
   if (taught) state.producerLesson = null
   if (cost > 0) {
@@ -770,15 +788,28 @@ export function tapProducer(state: GameState, pos: Pos, cfg: GameConfig, rng: Rn
     else state.board[pos.row][pos.col] = null
   }
   if (atStep(state, cfg, 'produce')) advanceTutorial(state, cfg)
+  if (state.mintStep === 'produce' && item.producerId === 'bev') {
+    const mints = occupied(state).filter((cell) => cell.item.kind === 'product' && cell.item.line === 'mint')
+    const pair = mints.find((cell, index) =>
+      mints.slice(index + 1).some((other) => other.item.kind === 'product' && cell.item.kind === 'product' && other.item.level === cell.item.level),
+    )
+    const ready = state.orders.some(
+      (order) => order.slots.some((slot) => slot.line === 'mint') && orderSatisfied(state, order),
+    )
+    state.mintStep = ready ? 'deliver' : pair ? 'merge' : 'produce'
+  }
   return {
     ok: true,
     events: [{ type: 'spawn', row: spot.row, col: spot.col, fromRow: pos.row, fromCol: pos.col }],
   }
 }
 
-function spawnFromProducer(state: GameState, cfg: GameConfig, item: ProducerItem, rng: Rng, mult: 1 | 2 | 4): Item {
+function spawnFromProducer(state: GameState, cfg: GameConfig, item: ProducerItem, rng: Rng, mult: 1 | 2 | 4 | 8): Item {
   const def = cfg.producers.find((entry) => entry.id === item.producerId)
   const kind = def?.kind ?? 'normal'
+  if (state.mintStep === 'produce' && item.producerId === 'bev') {
+    return makeProduct(state, 'mint', 1)
+  }
   if (item.producerId === 'basket') {
     const level = rng() < (cfg.economy.basketLowChance ?? 0.7) ? 2 : 3
     return makeProduct(state, 'food', level)
@@ -816,8 +847,10 @@ export function collectBoardProduct(state: GameState, pos: Pos, cfg: GameConfig)
   return { ok: true, events: [{ type: 'toast', text: line.collect === 'gem' ? `钻石 +${amount}` : `铜钱 +${amount}` }] }
 }
 
-export function cycleSpawnMult(state: GameState): 1 | 2 | 4 {
-  state.spawnMult = state.spawnMult === 1 ? 2 : state.spawnMult === 2 ? 4 : 1
+export function cycleSpawnMult(state: GameState, cfg: GameConfig): 1 | 2 | 4 | 8 {
+  const list = enabledMults(cfg)
+  const index = list.indexOf(state.spawnMult)
+  state.spawnMult = list[(index + 1) % list.length] ?? 1
   return state.spawnMult
 }
 
@@ -993,7 +1026,7 @@ export function dropItem(state: GameState, from: Pos, to: Pos, cfg?: GameConfig)
       state.board[to.row][to.col] = makeProducer(state, item.producerId, cfg, level)
       state.locks = state.locks.filter((entry) => entry.row !== to.row || entry.col !== to.col)
       noteProducerLevel(state, cfg, item.producerId, level)
-      if (atStep(state, cfg, 'unlock')) advanceTutorial(state, cfg)
+      if (atStep(state, cfg, 'unlock') || atStep(state, cfg, 'mergeC') || atStep(state, cfg, 'mergeD')) advanceTutorial(state, cfg)
       revealAround(state, to.row, to.col, cfg)
       return {
         ok: true,
@@ -1066,6 +1099,10 @@ export function dropItem(state: GameState, from: Pos, to: Pos, cfg?: GameConfig)
       state.board[from.row][from.col] = null
       noteUnlock(state, other.line, level)
       if (cfg && (atStep(state, cfg, 'merge') || atStep(state, cfg, 'bagMerge'))) advanceTutorial(state, cfg)
+      if (state.mintStep === 'merge' && other.line === 'mint') {
+        const ready = state.orders.some((order) => order.slots.some((slot) => slot.line === 'mint') && orderSatisfied(state, order))
+        state.mintStep = ready ? 'deliver' : 'produce'
+      }
       revealAround(state, to.row, to.col, cfg)
       revealAround(state, from.row, from.col, cfg)
       return {
@@ -1098,6 +1135,7 @@ export function dropItem(state: GameState, from: Pos, to: Pos, cfg?: GameConfig)
       state.board[to.row][to.col] = makeProducer(state, other.producerId, cfg, level)
       state.board[from.row][from.col] = null
       noteProducerLevel(state, cfg, other.producerId, level)
+      if (other.producerId === 'food' && atStep(state, cfg, 'merge') && level === 2) advanceTutorial(state, cfg)
       if (other.producerId === 'food' && atStep(state, cfg, 'producerL2') && level === 2) advanceTutorial(state, cfg)
       if (other.producerId === 'food' && atStep(state, cfg, 'producerL3') && level >= 3) advanceTutorial(state, cfg)
       revealAround(state, to.row, to.col, cfg)
@@ -1445,6 +1483,7 @@ export function completeOrder(
   if (state.phase === 'play') fillOrders(state, cfg, rng)
   arrangeOrders(state, now)
   if (order.chest) grantMaterials(state, cfg, rng, cfg.economy.chestBonusItems)
+  if (state.mintStep === 'deliver' && order.slots.some((slot) => slot.line === 'mint')) state.mintStep = 'off'
   if (order.scripted && atStep(state, cfg, 'deliver')) {
     advanceTutorial(state, cfg)
     state.bagPhase = 'place'
@@ -2445,6 +2484,7 @@ export function hydrate(raw: string, cfg: GameConfig): GameState | null {
     state.smileModal ??= null
     state.smiles ??= 0
     state.spawnMult ??= 1
+    state.mintStep ??= 'off'
     state.shopOpen ??= false
     state.shopClaimDate ??= null
     state.shopPackClaimed ??= false

@@ -619,6 +619,10 @@
       "row": 3,
       "col": 4
     },
+    "mergeD": {
+      "row": 4,
+      "col": 3
+    },
     "producer": {
       "row": 4,
       "col": 3

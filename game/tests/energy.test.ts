@@ -66,7 +66,7 @@ describe('体力', () => {
     expect(state.energyTs).toBe(5_000)
     expect(state.stats.producerTaps).toBe(1)
     const item = state.board.flat().find((cell) => cell?.kind === 'product')
-    expect(item && item.kind === 'product' && item.level).toBe(1)
+    expect(item && item.kind === 'product' && item.level).toBe(2)
     expect(syncEnergy(state, 5_000 + 119_999, cfg)).toBe(0)
     expect(state.energy).toBe(99)
     expect(syncEnergy(state, 5_000 + 120_000, cfg)).toBe(1)
@@ -136,7 +136,7 @@ describe('体力', () => {
     })
     tapProducer(state, spot, cfg, () => 0.99, 0)
     const first = state.board.flat().find((cell) => cell?.kind === 'product')
-    expect(first && first.kind === 'product' && first.level).toBe(1)
+    expect(first && first.kind === 'product' && first.level).toBe(2)
     if (first) {
       const pos = producerAt(state)
       // remove the product by drinking nothing; clear products
@@ -146,7 +146,7 @@ describe('体力', () => {
       tapProducer(state, pos, cfg, () => 0.05, 1)
     }
     const second = state.board.flat().find((cell) => cell?.kind === 'product')
-    expect(second && second.kind === 'product' && second.level).toBe(2)
+    expect(second && second.kind === 'product' && second.level).toBe(1)
   })
 
   it('第一次用完免费回一百，之后广告加十五且可超过上限', () => {

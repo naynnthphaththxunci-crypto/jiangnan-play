@@ -73,7 +73,7 @@ describe('第三轮教学、订单和布局', () => {
     for (let i = 0; i < storyLength(cfg); i++) advanceStory(state, cfg)
     expect(state.phase).toBe('opening')
     expect(state.storySeen).toBe(true)
-    expect(currentTutorial(cfg, state)?.id).toBe('enter')
+    expect(currentTutorial(cfg, state)?.id).toBe('merge')
     const skipped = createGame(1_700_000_000_000, cfg)
     skipStory(skipped)
     expect(skipped.phase).toBe('opening')
@@ -82,11 +82,8 @@ describe('第三轮教学、订单和布局', () => {
 
   it('对话步点任意处能过，操作步点错不过也不给说明', () => {
     const { state, cfg } = boot()
-    const talk = cfg.copy.tutorial.findIndex((step) => step.id === 'giftTalk')
-    state.openingStep = talk
-    expect(advanceDialogue(state, cfg)).toBe(true)
-    expect(cfg.copy.tutorial[state.openingStep]?.id).toBe('giftTap')
     state.openingStep = cfg.copy.tutorial.findIndex((step) => step.id === 'merge')
+    expect(advanceDialogue(state, cfg)).toBe(false)
     expect(advanceDialogue(state, cfg)).toBe(false)
     expect(tutorialAllowsInspect(state)).toBe(false)
     const step = state.openingStep
@@ -101,8 +98,7 @@ describe('第三轮教学、订单和布局', () => {
     const banned = '面' + '包'
     const cfg = defaultConfig()
     expect(JSON.stringify(cfg).includes(banned)).toBe(false)
-    const deliver = cfg.copy.tutorial.find((step) => step.id === 'deliver')
-    expect(deliver?.text.replace('{daughter}', cfg.copy.daughterName)).toBe('小鱼干好了！端给小桃去。')
+    expect(cfg.copy.tutorial[0]?.text).toContain('猫粮母棋')
   })
 
   it('点订单空白处不交单，只有完成按钮能交', () => {

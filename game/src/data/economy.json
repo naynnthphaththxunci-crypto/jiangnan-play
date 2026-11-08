@@ -242,5 +242,87 @@
   "shopPackEnergy": 50,
   "smileUnlockLevel": 4,
   "spawn1High": 0.3,
-  "spawn2Mid": 0.8
+  "spawn2Mid": 0.8,
+  "spawnTable": [
+    {
+      "mult": 1,
+      "cost": 1,
+      "enabled": true,
+      "weights": [
+        {
+          "level": 1,
+          "p": 0.7
+        },
+        {
+          "level": 2,
+          "p": 0.3
+        }
+      ]
+    },
+    {
+      "mult": 2,
+      "cost": 2,
+      "enabled": true,
+      "weights": [
+        {
+          "level": 2,
+          "p": 0.1
+        },
+        {
+          "level": 3,
+          "p": 0.8
+        },
+        {
+          "level": 4,
+          "p": 0.1
+        }
+      ]
+    },
+    {
+      "mult": 4,
+      "cost": 4,
+      "enabled": true,
+      "weights": [
+        {
+          "level": 3,
+          "p": 0.35
+        },
+        {
+          "level": 4,
+          "p": 0.2
+        },
+        {
+          "level": 5,
+          "p": 0.2
+        },
+        {
+          "level": 6,
+          "p": 0.2
+        },
+        {
+          "level": 7,
+          "p": 0.05
+        }
+      ]
+    },
+    {
+      "mult": 8,
+      "cost": 8,
+      "enabled": false,
+      "weights": [
+        {
+          "level": 5,
+          "p": 0.5
+        },
+        {
+          "level": 6,
+          "p": 0.3
+        },
+        {
+          "level": 7,
+          "p": 0.2
+        }
+      ]
+    }
+  ]
 }

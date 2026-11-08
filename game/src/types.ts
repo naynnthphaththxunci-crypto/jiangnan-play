@@ -187,6 +187,7 @@ export interface Economy {
   smileUnlockLevel: number
   spawn1High: number
   spawn2Mid: number
+  spawnTable: { mult: 1 | 2 | 4 | 8; cost: number; enabled: boolean; weights: { level: number; p: number }[] }[]
   purpleBoxCount: number
   bagBoxCount: number
   blueBoxPotions: number[]
@@ -318,6 +319,7 @@ export interface BoardFile {
     mergeA: Pos
     mergeB: Pos
     unlock: Pos
+    mergeD: Pos
     producer: Pos
     gift: Pos
     bagSpot: Pos
@@ -422,7 +424,8 @@ export interface GameState {
   levelQueue: LevelModal[]
   smileModal: { names: string[] } | null
   orderBias: string | null
-  spawnMult: 1 | 2 | 4
+  spawnMult: 1 | 2 | 4 | 8
+  mintStep: 'off' | 'talk' | 'select' | 'produce' | 'merge' | 'deliver'
   shopOpen: boolean
   shopClaimDate: string | null
   shopPackClaimed: boolean

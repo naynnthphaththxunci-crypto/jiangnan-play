@@ -35,7 +35,7 @@ describe('第八轮猫猫合成', () => {
     const now = 5_000
     const first = tapProducer(state, spot, cfg, () => 0.9, now)
     expect(first.ok).toBe(true)
-    const spawned = state.board.flat().find((item) => item?.kind === 'product' && item.line === 'food' && item.level === 1)
+    const spawned = state.board.flat().find((item) => item?.kind === 'product' && item.line === 'food' && item.level === 2)
     expect(spawned).toBeTruthy()
     const producer = state.board[spot.row]?.[spot.col]
     expect(producer?.kind === 'producer' && producer.cooldownUntil).toBe(0)

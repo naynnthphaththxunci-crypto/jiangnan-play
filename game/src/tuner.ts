@@ -1,3 +1,4 @@
+import economySeed from './data/economy.json'
 import type { GameConfig } from './types'
 
 export interface SliderSpec {
@@ -86,68 +87,7 @@ export const SLIDERS: SliderSpec[] = [
     },
     text: (v) => `${Math.round(v)}`,
   },
-  {
-    id: 'l2',
-    label: '出二级',
-    min: 0,
-    max: 80,
-    step: 1,
-    get: (c) => c.economy.producerL2Chance * 100,
-    set: (c, v) => {
-      c.economy.producerL2Chance = v / 100
-    },
-    text: (v) => `${Math.round(v)}%`,
-  },
-  {
-    id: 'charges',
-    label: '3级一轮',
-    min: 1,
-    max: 300,
-    step: 1,
-    get: (c) => c.economy.producerChargesByLevel[3] ?? c.economy.producerCharges,
-    set: (c, v) => {
-      c.economy.producerChargesByLevel[3] = Math.round(v)
-      c.economy.producerCharges = Math.round(v)
-    },
-    text: (v) => `${Math.round(v)} 次`,
-  },
-  ...[4, 5, 6, 7, 8].map((level) => ({
-    id: `charges${level}`,
-    label: `${level}级一轮`,
-    min: 1,
-    max: 300,
-    step: 1,
-    get: (c: GameConfig) => c.economy.producerChargesByLevel[level] ?? 0,
-    set: (c: GameConfig, v: number) => {
-      c.economy.producerChargesByLevel[level] = Math.round(v)
-    },
-    text: (v: number) => `${Math.round(v)} 次`,
-  })),
-  {
-    id: 'grace',
-    label: '开局不冷却',
-    min: 0,
-    max: 60,
-    step: 1,
-    get: (c) => c.economy.producerGraceMs / 60000,
-    set: (c, v) => {
-      c.economy.producerGraceMs = Math.round(v * 60000)
-    },
-    text: (v) => `${Math.round(v)} 分钟`,
-  },
-  {
-    id: 'cool',
-    label: '母棋冷却',
-    min: 0,
-    max: 600,
-    step: 5,
-    get: (c) => c.economy.producerCooldownMs / 1000,
-    set: (c, v) => {
-      c.economy.producerCooldownMs = Math.round(v * 1000)
-    },
-    text: (v) => `${Math.round(v)} 秒`,
-  },
-  {
+    {
     id: 'reward',
     label: '订单报酬',
     min: 0.2,
@@ -439,7 +379,7 @@ export const SLIDERS: SliderSpec[] = [
     min: 0,
     max: 600,
     step: 10,
-    get: (c) => c.economy.smileUiAfterMs / 1000,
+    get: (c) => Math.min(600, c.economy.smileUiAfterMs / 1000),
     set: (c, v) => {
       c.economy.smileUiAfterMs = Math.round(v * 1000)
     },
@@ -616,18 +556,6 @@ export const SLIDERS: SliderSpec[] = [
     text: (v) => `${Math.round(v)} 级`,
   },
   {
-    id: 'spawn1',
-    label: '1倍出2级',
-    min: 0,
-    max: 100,
-    step: 5,
-    get: (c) => c.economy.spawn1High * 100,
-    set: (c, v) => {
-      c.economy.spawn1High = v / 100
-    },
-    text: (v) => `${Math.round(v)}%`,
-  },
-  {
     id: 'plantCool',
     label: '花盆冷却',
     min: 1,
@@ -701,6 +629,51 @@ export const SLIDERS: SliderSpec[] = [
     },
     text: (v) => `${Math.round(v)}`,
   },
+
+  ...([1, 2, 4, 8] as const).flatMap((mult) => {
+    const tier = (c: GameConfig) => c.economy.spawnTable.find((entry) => entry.mult === mult)
+    const cost: SliderSpec = {
+      id: `multCost${mult}`,
+      label: `${mult}倍体力`,
+      min: 1,
+      max: 20,
+      step: 1,
+      get: (c) => tier(c)?.cost ?? mult,
+      set: (c, v) => {
+        const row = tier(c)
+        if (row) row.cost = Math.round(v)
+      },
+      text: (v) => `${Math.round(v)}`,
+    }
+    const seeded = economySeed.spawnTable.find((entry) => entry.mult === mult)?.weights ?? []
+    const weights = seeded.map((entry, index) => ({
+      id: `mult${mult}p${index}`,
+      label: `${mult}倍出${entry.level}级`,
+      min: 0,
+      max: 100,
+      step: 1,
+      get: (c: GameConfig) => Math.round((tier(c)?.weights[index]?.p ?? 0) * 100),
+      set: (c: GameConfig, v: number) => {
+        const row = tier(c)?.weights[index]
+        if (row) row.p = v / 100
+      },
+      text: (v: number) => `${Math.round(v)}%`,
+    }))
+    const gate: SliderSpec | null = mult === 8 ? {
+      id: 'mult8on',
+      label: '8倍开关',
+      min: 0,
+      max: 1,
+      step: 1,
+      get: (c) => (tier(c)?.enabled ? 1 : 0),
+      set: (c, v) => {
+        const row = tier(c)
+        if (row) row.enabled = v >= 1
+      },
+      text: (v) => (v >= 1 ? '开' : '关'),
+    } : null
+    return gate ? [gate, cost, ...weights] : [cost, ...weights]
+  }),
 ]
 
 export function sliderValue(spec: SliderSpec, trackX: number, trackW: number, x: number): number {

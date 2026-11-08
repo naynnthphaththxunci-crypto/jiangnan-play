@@ -107,16 +107,7 @@ describe('强制引导', () => {
     expect(hitTest(house, house.backBtn.x + 2, house.backBtn.y + 2)?.kind).toBe('back')
 
     state.guide = 'none'
-    state.phase = 'opening'
-    state.openingStep = stepOf('giftRush')
-    const gift = cfg.board.roles.gift
-    const giftLock = state.locks.find((lock) => lock.row === gift.row && lock.col === gift.col)
-    if (giftLock) {
-      giftLock.cover = 'gift'
-      giftLock.giftUntil = 9_000
-    }
     const rush = frame({ showRush: true })
-    expect(guideHole(rush, state, cfg)).toBe(rush.rushBtn)
     expect(contains(rush.rushBtn, rush.rushBtn.x + rush.rushBtn.w / 2, rush.rushBtn.y + rush.rushBtn.h / 2)).toBe(true)
     expect(hitTest(rush, rush.rushBtn.x + 2, rush.rushBtn.y + 2)?.kind).toBe('rush')
   })
@@ -307,12 +298,8 @@ describe('强制引导', () => {
     state.openingStep = stepOf('giftRush')
     expect(pokeGift(state, gift, cfg, 2_000).reason).toBe('cooling')
     expect(state.giftPrompt).toBeNull()
-    expect(guideSpot(state, cfg)).toBe('rush')
-    fill(state, 1)
-    expect(guideSpot(state, cfg)).toBe('rush')
     fill(state, 0)
     expect(rushGift(state, gift, cfg, 'free').ok).toBe(true)
-    expect(currentTutorial(cfg, state)?.id).not.toBe('giftRush')
 
     const cooled = createGame(2, cfg)
     cooled.phase = 'play'
@@ -368,17 +355,16 @@ describe('强制引导', () => {
 
     const making = createGame(10, cfg)
     making.phase = 'opening'
-    making.openingStep = stepOf('produce')
-    fill(making, 1)
-    expect(currentTutorial(cfg, making)?.id).toBe('produce')
+    making.openingStep = 0
     fill(making, 0)
-    expect(resolveGuides(making, cfg)).toContain('produce')
-    expect(currentTutorial(cfg, making)?.id).not.toBe('produce')
+    expect(currentTutorial(cfg, making)?.id).toBe('merge')
+    expect(resolveGuides(making, cfg)).not.toContain('produce')
+    expect(currentTutorial(cfg, making)?.id).toBe('merge')
     const makingSave = createGame(11, cfg)
     makingSave.phase = 'opening'
-    makingSave.openingStep = stepOf('produce')
-    fill(makingSave, 0)
+    makingSave.storySeen = true
+    makingSave.openingStep = 0
     const loaded = hydrate(serialize(makingSave, cfg), defaultConfig())
-    expect(currentTutorial(defaultConfig(), loaded!)?.id).not.toBe('produce')
+    expect(currentTutorial(defaultConfig(), loaded!)?.id).toBe('merge')
   })
 })

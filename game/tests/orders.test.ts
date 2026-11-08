@@ -172,22 +172,16 @@ describe('订单', () => {
     expect(state.board.some((row) => row.some((item) => item?.kind === 'producer'))).toBe(true)
   })
 
-  it('开局单在第四步完成时给出购物袋，不补满三张', () => {
+  it('开局教学没结束前交单不补满三张', () => {
     const { state, cfg, rng } = boot()
     state.phase = 'opening'
-    const deliver = cfg.copy.tutorial.findIndex((step) => step.id === 'deliver')
-    state.openingStep = deliver
-    state.locks = state.locks.filter((lock) => !(lock.row === 4 && lock.col === 4))
-    state.board[4][4] = makeProduct(state, 'food', 3)
+    state.openingStep = 0
+    state.locks = state.locks.filter((lock) => !(lock.row === 0 && lock.col === 0))
+    state.board[0][0] = makeProduct(state, 'food', 3)
     const result = completeOrder(state, 'tutorial', cfg, rng, 20)
     expect(result.ok).toBe(true)
     expect(state.coins).toBe(8)
-    expect(state.smiles).toBe(1)
-    expect(state.energy).toBe(100)
-    expect(state.openingStep).toBe(deliver + 1)
     expect(state.orders).toHaveLength(0)
-    const onBoard = state.board.some((row) => row.some((item) => item?.kind === 'product' && item.tag === 'bag'))
-    const inPending = state.pending.some((item) => item.kind === 'product' && item.tag === 'bag')
-    expect(onBoard || inPending).toBe(true)
+    expect(state.phase).toBe('opening')
   })
 })

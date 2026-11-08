@@ -583,7 +583,7 @@ export function startGame(platform: Platform): void {
       return
     }
     if (hit.kind === 'mult') {
-      const next = cycleSpawnMult(state)
+      const next = cycleSpawnMult(state, cfg)
       toast(`产出 ${next} 倍`)
       mark()
       return
@@ -747,7 +747,10 @@ export function startGame(platform: Platform): void {
       state.chainPop = null
       const already = selected?.row === hit.row && selected?.col === hit.col
       selected = { row: hit.row, col: hit.col }
-      if (!already) return
+      if (!already) {
+        if (state.mintStep === 'select' && item.kind === 'producer' && item.producerId === 'bev') state.mintStep = 'produce'
+        return
+      }
       if (item.kind === 'producer') {
         present(tapProducer(state, hit, cfg, rng, now))
       } else if (item.kind === 'product' && cfg.items.lines.some((line) => line.id === item.line && line.collect)) {
@@ -783,52 +786,42 @@ export function startGame(platform: Platform): void {
   }
 
   function tutorialBlocks(hit: Hit): boolean {
+    if (state.mintStep && state.mintStep !== 'off') {
+      if (state.mintStep === 'talk') return true
+      if (state.mintStep === 'select' || state.mintStep === 'produce') {
+        if (hit.kind !== 'cell') return true
+        const item = state.board[hit.row]?.[hit.col]
+        return !(item?.kind === 'producer' && item.producerId === 'bev' && item.level >= 5)
+      }
+      if (state.mintStep === 'merge') {
+        if (hit.kind !== 'cell') return true
+        const item = state.board[hit.row]?.[hit.col]
+        return !(item?.kind === 'product' && item.line === 'mint')
+      }
+      if (state.mintStep === 'deliver') return hit.kind !== 'complete'
+    }
     if (state.phase !== 'opening') return false
     if (hit.kind === 'skip') return false
     const step = currentTutorial(cfg, state)
-    if (!step || step.type === '对话') return false
-    if (step.id === 'enter') return hit.kind !== 'enter'
+    if (!step || step.type !== '对话') return false
+    const onCell = (row: number, col: number) => hit.kind === 'cell' && hit.row === row && hit.col === col
     if (step.id === 'merge') {
       const a = cfg.board.roles.mergeA
       const b = cfg.board.roles.mergeB
-      return !(hit.kind === 'cell' && ((hit.row === a.row && hit.col === a.col) || (hit.row === b.row && hit.col === b.col)))
+      return !(onCell(a.row, a.col) || onCell(b.row, b.col))
     }
-    if (step.id === 'unlock') {
+    if (step.id === 'mergeC' || step.id === 'unlock') {
       if (hit.kind !== 'cell') return true
       const item = state.board[hit.row]?.[hit.col]
-      const ready = item?.kind === 'producer' || (item?.kind === 'product' && item.line === 'food')
-      return !(ready || (hit.row === cfg.board.roles.unlock.row && hit.col === cfg.board.roles.unlock.col))
+      const target = cfg.board.roles.unlock
+      return !(item?.kind === 'producer' || onCell(target.row, target.col))
     }
-    if (step.id === 'producerL2' || step.id === 'producerL3') {
+    if (step.id === 'mergeD') {
       if (hit.kind !== 'cell') return true
       const item = state.board[hit.row]?.[hit.col]
-      if (item?.kind !== 'producer' || item.producerId !== 'food') return true
-      if (step.id === 'producerL2') return item.level !== 1
-      return item.level !== 1 && item.level !== 2
+      const target = cfg.board.roles.mergeD
+      return !(item?.kind === 'producer' || (target && onCell(target.row, target.col)))
     }
-    if (step.id === 'produce') {
-      if (hit.kind !== 'cell') return true
-      const item = state.board[hit.row]?.[hit.col]
-      return !(item?.kind === 'producer' && item.level >= cfg.economy.producerSpawnLevel)
-    }
-    if (step.id === 'deliver') return hit.kind !== 'complete'
-    if (step.id === 'stashIn') {
-      if (hit.kind === 'pending') return false
-      if (hit.kind !== 'cell') return true
-      const item = state.board[hit.row]?.[hit.col]
-      return !(item && !(item.kind === 'product' && item.tag === 'bag'))
-    }
-    if (step.id === 'stashOut') return hit.kind !== 'pending'
-    if (step.id === 'bagMerge') {
-      if (hit.kind !== 'cell') return true
-      const item = state.board[hit.row]?.[hit.col]
-      return !(item?.kind === 'product' && item.tag === 'bag')
-    }
-    if (step.id === 'giftTap') {
-      return !(hit.kind === 'cell' && hit.row === cfg.board.roles.gift.row && hit.col === cfg.board.roles.gift.col)
-    }
-    if (step.id === 'giftRush') return hit.kind !== 'rush' && hit.kind !== 'adRush'
-    if (step.id === 'build') return hit.kind !== 'house'
     return true
   }
 
@@ -866,8 +859,10 @@ export function startGame(platform: Platform): void {
     }
     if (state.notice || state.guide === 'buildTalk' || state.guide === 'backTalk') {
       if (contains(talkRect(frame).ok, x, y)) {
-        if (state.notice) state.notice = null
-        else advanceGuide(state, cfg)
+        if (state.notice) {
+          state.notice = null
+          if (state.mintStep === 'talk') state.mintStep = 'select'
+        } else advanceGuide(state, cfg)
         mark()
       }
       return
