@@ -88,7 +88,10 @@ describe('订单卡', () => {
       expect(pay.w).toBeLessThan(48)
       expect(pay.h).toBeLessThan(70)
       for (const icon of icons) {
-        expect(inside(icon, plate)).toBe(true)
+        expect(icon.x).toBeGreaterThanOrEqual(plate.x - 1)
+        expect(icon.x + icon.w).toBeLessThanOrEqual(plate.x + plate.w + 1)
+        expect(icon.y + icon.h).toBeGreaterThan(plate.y)
+        expect(icon.y + icon.h).toBeLessThan(plate.y + plate.h)
         expect(overlaps(icon, pay)).toBe(false)
       }
       for (let a = 0; a < icons.length; a++) {
@@ -221,23 +224,23 @@ describe('订单卡', () => {
     near(view.orderRewards[0]!.h, orderLayout.group.reward.h * scale)
   })
 
-  it('木质托盘按比例铺在订单栏里，物品色块落在桌面上', () => {
-    const view = frame({ w: 393, h: 852, orderCount: 2, orderSlots: [2, 1] })
-    const top = orderLayout.group.tabletop
+  it('木质托盘按比例铺在订单栏里，物品站在桌面上且接近一格大', () => {
+    const view = frame({ w: 390, h: 844, orderCount: 2, orderSlots: [2, 1] })
     const aspect = orderLayout.group.plate.w / orderLayout.group.plate.h
     expect(Math.abs(aspect - 294 / 112)).toBeLessThan(0.02)
+    expect(view.orderRewards[0]!.w / view.w).toBeGreaterThan(0.085)
+    expect(view.orderRewards[0]!.w / view.w).toBeLessThan(0.1)
     const pitch = view.orderPlates[1]!.x - view.orderPlates[0]!.x
     view.orderPlates.forEach((plate, index) => {
       expect(plate.w).toBeLessThanOrEqual(pitch + 0.5)
-      const surface = {
-        x: plate.x + top.x * plate.w,
-        y: plate.y + top.y * plate.h,
-        w: top.w * plate.w,
-        h: top.h * plate.h,
-      }
       const icons = view.orderIcons.filter((entry) => entry.order === index)
       expect(icons.length).toBeGreaterThan(0)
-      for (const icon of icons) expect(inside(icon.rect, surface)).toBe(true)
+      for (const icon of icons) {
+        expect(icon.rect.w).toBeGreaterThanOrEqual(40)
+        expect(icon.rect.w).toBeLessThanOrEqual(50)
+        const stand = plate.y + plate.h * 0.48
+        expect(Math.abs(icon.rect.y + icon.rect.h - stand)).toBeLessThan(1)
+      }
     })
   })
 
@@ -260,7 +263,7 @@ describe('订单卡', () => {
     const [left, right] = paired
     expect(left!.rect.x + left!.rect.w).toBeLessThanOrEqual(right!.rect.x - 4)
     expect(overlaps(left!.rect, right!.rect)).toBe(false)
-    for (const icon of view.orderIcons) expect(icon.rect.w).toBeGreaterThan(10)
+    for (const icon of view.orderIcons) expect(icon.rect.w).toBeGreaterThanOrEqual(40)
   })
 
   it('六位客人有抠好的立绘，浣熊仍是占位，棋盘颜色在配置里', () => {

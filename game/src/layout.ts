@@ -405,11 +405,10 @@ export function layout(input: LayoutInput): Frame {
     const namePad = 4
     const nameW = (plate.w - namePad * 2 - nameGutter * Math.max(0, slots - 1)) / slots
     const nameY = plate.y + plate.h + Math.max(2, w * 0.004)
-    const iconRoomTop = surface.y
-    const iconRoomH = Math.max(8, nameY - 3 - iconRoomTop)
     const colW = surface.w / slots
-    const iconSize = Math.max(8, Math.min(group.icon.w * scale, group.icon.h * scale, colW - 6, iconRoomH, surface.h - 2))
-    const iconY = iconRoomTop + Math.max(0, (Math.min(surface.h, iconRoomH) - iconSize) / 2)
+    const iconSize = Math.max(8, Math.min(w * 0.118, colW - 4))
+    const stand = plate.y + plate.h * 0.48
+    const iconY = stand - iconSize
     for (let slot = 0; slot < slots; slot++) {
       const colX = surface.x + slot * colW
       const icon = { x: colX + (colW - iconSize) / 2, y: iconY, w: iconSize, h: iconSize }

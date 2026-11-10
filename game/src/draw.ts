@@ -43,7 +43,7 @@ import {
   taskStep,
   tutorialLine,
 } from './logic/sim'
-import { itemSprite } from './itemArt'
+import { itemSprite, spriteContent } from './itemArt'
 import loadingBgUrl from './assets/ui/loading_bg.jpg'
 import tutorialHandUrl from './assets/ui/tutorial_hand.png'
 import iconBoltUrl from './assets/ui/icon_bolt.png'
@@ -220,6 +220,22 @@ function drawLevelShape(ctx: CanvasRenderingContext2D, level: number, x: number,
   ctx.fill()
 }
 
+function drawFittedSprite(
+  ctx: CanvasRenderingContext2D,
+  sprite: CanvasImageSource & { complete?: boolean; naturalWidth?: number; naturalHeight?: number; src?: string },
+  box: Rect,
+  fill: number,
+): void {
+  const content = spriteContent(sprite)
+  const fit = fill * Math.min(box.w, box.h)
+  const longSide = Math.max(content.w, content.h)
+  const drawW = fit / longSide
+  const drawH = drawW
+  const contentCx = (content.x + content.w / 2) * drawW
+  const contentCy = (content.y + content.h / 2) * drawH
+  ctx.drawImage(sprite, box.x + box.w / 2 - contentCx, box.y + box.h / 2 - contentCy, drawW, drawH)
+}
+
 function drawItem(
   ctx: CanvasRenderingContext2D,
   cfg: GameConfig,
@@ -240,8 +256,7 @@ function drawItem(
   const piece = item.kind === 'product' || item.kind === 'producer' ? item : null
   const sprite = piece ? itemSprite(piece.line, piece.level) : null
   if (sprite && piece) {
-    const pad = box.w * 0.12
-    ctx.drawImage(sprite, box.x + pad, box.y + pad, box.w - pad * 2, box.h - pad * 2)
+    drawFittedSprite(ctx, sprite, box, 0.85)
     const badge = Math.max(12, box.w * 0.28)
     roundRect(ctx, box.x + box.w - badge - 2, box.y + 2, badge, badge * 0.72, 4)
     ctx.fillStyle = 'rgba(42,33,24,0.82)'
@@ -601,7 +616,7 @@ function drawOrders(model: RenderModel): void {
       const iy = icon.rect.y
       const sprite = itemSprite(slot.line, slot.level)
       if (sprite) {
-        ctx.drawImage(sprite, ix, iy, icon.rect.w, icon.rect.h)
+        drawFittedSprite(ctx, sprite, { x: ix, y: iy, w: icon.rect.w, h: icon.rect.h }, 1)
       } else {
         roundRect(ctx, ix, iy, icon.rect.w, icon.rect.h, 6)
         ctx.fillStyle = lineColor(cfg, slot.line)

@@ -34,6 +34,57 @@ const ART_LINE: Record<string, string> = {
   boat: 'boat',
 }
 
+type SpriteImage = CanvasImageSource & { complete?: boolean; naturalWidth?: number; naturalHeight?: number; src?: string }
+
+const contentBoxes = new Map<string, { x: number; y: number; w: number; h: number }>()
+
+/** 按不透明像素的实际边界，而不是 256 画布。测不到时先当内容占画布约八成。 */
+export function spriteContent(img: SpriteImage | null): { x: number; y: number; w: number; h: number } {
+  const fallback = { x: 0.1, y: 0.1, w: 0.8, h: 0.8 }
+  if (!img) return fallback
+  const key = img.src || ''
+  const cached = key ? contentBoxes.get(key) : undefined
+  if (cached) return cached
+  const width = img.naturalWidth || 0
+  const height = img.naturalHeight || 0
+  if (!width || !height || img.complete === false) return fallback
+  const host = globalThis as { document?: Document }
+  if (!host.document) return fallback
+  try {
+    const canvas = host.document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return fallback
+    ctx.drawImage(img as CanvasImageSource, 0, 0)
+    const data = ctx.getImageData(0, 0, width, height).data
+    let minX = width
+    let minY = height
+    let maxX = 0
+    let maxY = 0
+    for (let y = 0; y < height; y += 2) {
+      for (let x = 0; x < width; x += 2) {
+        if ((data[(y * width + x) * 4 + 3] ?? 0) < 24) continue
+        if (x < minX) minX = x
+        if (y < minY) minY = y
+        if (x > maxX) maxX = x
+        if (y > maxY) maxY = y
+      }
+    }
+    if (maxX <= minX || maxY <= minY) return fallback
+    const box = {
+      x: minX / width,
+      y: minY / height,
+      w: (maxX - minX) / width,
+      h: (maxY - minY) / height,
+    }
+    if (key) contentBoxes.set(key, box)
+    return box
+  } catch {
+    return fallback
+  }
+}
+
 function usable(img: (CanvasImageSource & { complete?: boolean; naturalWidth?: number }) | undefined) {
   if (!img) return false
   if (img.complete === false) return false
