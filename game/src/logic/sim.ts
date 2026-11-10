@@ -1711,8 +1711,8 @@ export function infoCaption(cfg: GameConfig, item: Item, now = 0): { title: stri
   }
   if (item.kind === 'producer') {
     const lineName = cfg.items.lines.find((line) => line.id === item.line)?.name ?? producerName(cfg, item.producerId)
-    const cooling = item.charges <= 0 && item.cooldownUntil > now
-    const status = cooling ? `冷却中 ${formatMs(item.cooldownUntil - now)}` : `剩余体力 ${item.charges}`
+    const cooling = producerCooldown(cfg, item, now)
+    const status = cooling ? `冷却中，还剩 ${formatMs(cooling.left)}` : `剩余体力 ${item.charges}`
     return {
       title: producerName(cfg, item.producerId),
       usage: `${cnLevel(item.level)} · ${lineName} · ${status}`,

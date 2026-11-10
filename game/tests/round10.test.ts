@@ -19,6 +19,7 @@ import {
   makeProduct,
   producerCanSpawn,
   producerCooldown,
+  infoCaption,
   reconcileLevel,
   serialize,
   spawnTier,
@@ -179,8 +180,11 @@ describe('第十轮开局和前期', () => {
     food.cooldownUntil = now + 105_000
     expect(producerCanSpawn(cfg, food, now)).toBe(false)
     expect(producerCooldown(cfg, food, now)).toEqual({ left: 105_000, total: cfg.economy.producerRoundCooldownMs })
+    expect(infoCaption(cfg, food, now).usage).toContain('冷却中，还剩 1:45')
+    expect(infoCaption(cfg, food, now + 60_000).usage).toContain('冷却中，还剩 0:45')
     food.level = 3
     expect(producerCooldown(cfg, food, now)).toBeNull()
+    expect(infoCaption(cfg, food, now).usage).not.toContain('冷却中')
     food.level = 4
     const pot = makeProducer(state, 'plant', cfg, 5)
     expect(producerCanSpawn(cfg, pot, now)).toBe(false)
