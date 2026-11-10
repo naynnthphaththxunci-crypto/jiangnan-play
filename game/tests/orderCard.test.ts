@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { defaultConfig } from '../src/config'
 import orderLayout from '../src/data/orderLayout.json'
 import { guestFaceBox, layout, type LayoutInput, type Rect } from '../src/layout'
+import { scrollOrders } from '../src/logic/sim'
 import type { NormBox } from '../src/types'
 import { PORTRAITS, portraitConfig } from '../src/portraits'
 
@@ -195,6 +196,19 @@ describe('订单卡', () => {
     }
     const fourth = view.orderPlates[3]!
     expect(fourth.x).toBeGreaterThanOrEqual(width - 1)
+    expect(view.orderMaxScroll).toBeGreaterThan(0)
+    const scrolled = frame({ w: width, h: height, orderCount: 4, orderSlots: [1, 1, 1, 1], orderScroll: view.orderMaxScroll })
+    const brought = scrolled.orderPlates[3]!
+    const broughtReward = scrolled.orderRewards[3]!
+    expect(brought.x).toBeGreaterThanOrEqual(-1)
+    expect(brought.x + brought.w).toBeLessThanOrEqual(width + 1)
+    expect(broughtReward.x).toBeGreaterThanOrEqual(-1)
+    expect(broughtReward.x + broughtReward.w).toBeLessThanOrEqual(width + 1)
+    expect(Math.abs(scrolled.orderPlates[1]!.x - scrolled.orderPlates[0]!.x - pitch)).toBeLessThanOrEqual(1)
+    const three = frame({ w: width, h: height, orderCount: 3, orderSlots: [1, 1, 1] })
+    expect(three.orderMaxScroll).toBe(0)
+    expect(scrollOrders(0, -pitch, view.orderMaxScroll)).toBeGreaterThan(0)
+    expect(scrollOrders(0, -pitch, view.orderMaxScroll)).toBeLessThanOrEqual(view.orderMaxScroll)
     const gridW = view.board.cell * 7
     const margin = (width - gridW) / 2
     expect(margin).toBeLessThanOrEqual(8)
