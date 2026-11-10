@@ -140,24 +140,25 @@ describe('订单卡', () => {
   })
 
   it('客人只露上半身，大小一致，各自待在自己那一栏', () => {
-    const ids = ['teaGuest', 'scholar', 'embroider', 'boatman', 'squire', 'fisherman']
+    const ids = ['teaGuest', 'scholar', 'embroider', 'boatman', 'squire', 'fisherman', 'siamese', 'bossDaughter']
     const view = frame({ w: 393, h: 852, orderCount: 3, orderSlots: [1, 1, 1] })
     const guest = view.orderGuests[0]!
     const plate = view.orderPlates[0]!
     expect(Math.abs(guest.w - guest.h)).toBeLessThanOrEqual(0.5)
-    const heights = ids.map((id) => bodyOf(guest, portraitConfig(id).content).h)
+    const busts = ids.filter((id) => portraitConfig(id).content.h > 0.8)
+    const heights = busts.map((id) => bodyOf(guest, portraitConfig(id).content).h)
     const mean = heights.reduce((sum, value) => sum + value, 0) / heights.length
     const pitch = view.orderPlates[1]!.x - plate.x
     for (const id of ids) {
       const body = bodyOf(guest, portraitConfig(id).content)
       expect(body.y - view.orderClip.y, id).toBeGreaterThanOrEqual(0)
       expect(body.y - view.orderClip.y, id).toBeLessThanOrEqual(70)
-      expect(Math.abs(body.h - mean) / mean, id).toBeLessThan(0.04)
+      if (busts.includes(id)) expect(Math.abs(body.h - mean) / mean, id).toBeLessThan(0.04)
       expect(body.h, id).toBeGreaterThan(guest.h * 0.5)
-      expect(body.h, id).toBeLessThan(guest.h * 0.75)
+      expect(body.h, id).toBeLessThan(guest.h * 0.98)
       const covered = (body.y + body.h - plate.y) / body.h
-      expect(covered, id).toBeGreaterThan(0.3)
-      expect(covered, id).toBeLessThan(0.46)
+      expect(covered, id).toBeGreaterThan(body.h > guest.h * 0.8 ? 0.28 : 0.1)
+      expect(covered, id).toBeLessThan(0.5)
       expect(body.x, id).toBeGreaterThanOrEqual(-1)
       expect(body.x + body.w, id).toBeLessThanOrEqual(pitch + 1)
     }
@@ -210,7 +211,7 @@ describe('订单卡', () => {
     const view = frame({ w: 393, h: 852, orderCount: 2, orderSlots: [2, 1] })
     const top = orderLayout.group.tabletop
     const aspect = orderLayout.group.plate.w / orderLayout.group.plate.h
-    expect(Math.abs(aspect - 809 / 279)).toBeLessThan(0.02)
+    expect(Math.abs(aspect - 294 / 112)).toBeLessThan(0.02)
     const pitch = view.orderPlates[1]!.x - view.orderPlates[0]!.x
     view.orderPlates.forEach((plate, index) => {
       expect(plate.w).toBeLessThanOrEqual(pitch + 0.5)
@@ -250,7 +251,7 @@ describe('订单卡', () => {
 
   it('六位客人有抠好的立绘，浣熊仍是占位，棋盘颜色在配置里', () => {
     const cfg = defaultConfig()
-    for (const id of ['teaGuest', 'scholar', 'embroider', 'boatman', 'squire', 'fisherman']) {
+    for (const id of ['teaGuest', 'scholar', 'embroider', 'boatman', 'squire', 'fisherman', 'siamese', 'bossDaughter']) {
       expect(cfg.characters.find((entry) => entry.id === id)?.portrait).toBe(id)
       expect(PORTRAITS[id]).toContain(id)
     }

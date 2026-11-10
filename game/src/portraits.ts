@@ -4,6 +4,8 @@ import embroider from './assets/guests/embroider.png'
 import boatman from './assets/guests/boatman.png'
 import squire from './assets/guests/squire.png'
 import fisherman from './assets/guests/fisherman.png'
+import siamese from './assets/guests/siamese.png'
+import bossDaughter from './assets/guests/bossDaughter.png'
 import ruyue from './assets/guests/ruyue.png'
 import xiaotao from './assets/guests/xiaotao.png'
 import zhao from './assets/guests/zhao.png'
@@ -18,6 +20,8 @@ export const PORTRAITS: Record<string, string> = {
   boatman,
   squire,
   fisherman,
+  siamese,
+  bossDaughter,
   ruyue,
   xiaotao,
   zhao,

@@ -43,7 +43,7 @@ import {
 } from './logic/sim'
 import { itemSprite } from './itemArt'
 import loadingBgUrl from './assets/ui/loading_bg.jpg'
-import { orderTrayImage } from './orderTray'
+import { orderRewardImage, orderTrayImage } from './orderTray'
 import { guestPortrait, measurePortrait, portraitReady } from './portraits'
 import { SLIDERS } from './tuner'
 import { COLS, ROWS, type GameConfig, type GameState, type Item, type NormBox } from './types'
@@ -521,7 +521,7 @@ function drawOrders(model: RenderModel): void {
     const portrait = guestPortrait(who?.portrait)
     ctx.save()
     ctx.beginPath()
-    const columnLeft = spot.guest.x + spot.guest.w * 0.46 - columnPitch / 2
+    const columnLeft = spot.guest.x + spot.guest.w * 0.52 - columnPitch / 2
     const tuck = Math.max(1, spot.plate.y + spot.plate.h * 0.55 - spot.guest.y)
     ctx.rect(columnLeft, spot.guest.y, columnPitch, tuck)
     ctx.clip()
@@ -595,9 +595,14 @@ function drawOrders(model: RenderModel): void {
       if (!icon) return
       const ix = icon.rect.x + dx
       const iy = icon.rect.y
-      roundRect(ctx, ix, iy, icon.rect.w, icon.rect.h, 6)
-      ctx.fillStyle = lineColor(cfg, slot.line)
-      ctx.fill()
+      const sprite = itemSprite(slot.line, slot.level)
+      if (sprite) {
+        ctx.drawImage(sprite, ix, iy, icon.rect.w, icon.rect.h)
+      } else {
+        roundRect(ctx, ix, iy, icon.rect.w, icon.rect.h, 6)
+        ctx.fillStyle = lineColor(cfg, slot.line)
+        ctx.fill()
+      }
       if (slotChecked(state, order, slotIndex)) {
         const r = Math.max(4, Math.min(6, icon.rect.h * 0.28))
         ctx.beginPath()
@@ -607,29 +612,20 @@ function drawOrders(model: RenderModel): void {
         text(ctx, '✓', ix + icon.rect.w - r - 1, iy + icon.rect.h - r - 1, r * 1.15, '#2c7a58')
       }
     })
-    roundRect(ctx, payRect.x, payRect.y, payRect.w, payRect.h, 6)
-    ctx.fillStyle = '#f6e2bc'
-    ctx.fill()
-    ctx.lineWidth = Math.max(1, payRect.w * 0.04)
-    ctx.strokeStyle = '#8a5a2b'
-    ctx.stroke()
-    const pay = orderPayout(order, cfg)
-    const rows: { mark: string; value: string; color: string }[] = [
-      { mark: '笑', value: `+${pay.smiles}`, color: '#e0568a' },
-      { mark: '经', value: `+${pay.xp}`, color: '#3d8fd4' },
-      { mark: '钱', value: `+${pay.coins}`, color: '#c47a20' },
-    ]
-    const rewardSize = Math.max(9, Math.min(payRect.h / rows.length * 0.62, frame.w * (orderLayout.rewardFont ?? 0.028)))
-    rows.forEach((row, rowIndex) => {
-      const cy = payRect.y + ((rowIndex + 0.5) * payRect.h) / rows.length
-      const r = Math.max(4, Math.min(rewardSize * 0.46, payRect.h / rows.length * 0.36))
-      ctx.beginPath()
-      ctx.fillStyle = row.color
-      ctx.arc(payRect.x + r + 2, cy, r, 0, Math.PI * 2)
+    const rewardArt = orderRewardImage()
+    if (rewardArt && (rewardArt.naturalWidth || 0) > 0) {
+      ctx.drawImage(rewardArt, payRect.x, payRect.y, payRect.w, payRect.h)
+    } else {
+      roundRect(ctx, payRect.x, payRect.y, payRect.w, payRect.h, 6)
+      ctx.fillStyle = '#f6e2bc'
       ctx.fill()
-      text(ctx, row.mark, payRect.x + r + 2, cy, r * 1.05, PAL.white, 'center', 'middle', 700)
-      text(ctx, row.value, payRect.x + payRect.w - 2, cy, rewardSize, '#4a2c18', 'right', 'middle', 700)
-    })
+      ctx.strokeStyle = '#8a5a2b'
+      ctx.stroke()
+    }
+    const pay = orderPayout(order, cfg)
+    const rewardSize = Math.max(8, Math.min(11, payRect.h * 0.24, frame.w * (orderLayout.rewardFont ?? 0.028)))
+    text(ctx, `+${pay.smiles}`, payRect.x + payRect.w * 0.9, payRect.y + payRect.h * 0.28, rewardSize, '#6a3a22', 'right', 'middle', 700)
+    text(ctx, `+${pay.coins}`, payRect.x + payRect.w * 0.9, payRect.y + payRect.h * 0.54, rewardSize, '#6a3a22', 'right', 'middle', 700)
     order.slots.forEach((slot, slotIndex) => {
       const name = frame.orderNames.find((entry) => entry.order === index && entry.slot === slotIndex)
       if (!name) return
@@ -674,6 +670,8 @@ const SILHOUETTE: Record<string, string> = {
   embroider: '#a85cad',
   squire: '#d4652f',
   fisherman: '#d08a3a',
+  siamese: '#d7c4a2',
+  bossDaughter: '#e07a8a',
   raccoon: '#6e6258',
 }
 

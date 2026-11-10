@@ -20,9 +20,9 @@ export function itemImageElements(): HTMLImageElement[] {
 
 const ART_LINE: Record<string, string> = {
   food: 'food',
-  meat: 'food',
+  meat: 'meat',
   bev: 'bev',
-  mint: 'plant',
+  mint: 'mint',
   toy: 'toy',
   wand: 'toy',
   bed: 'bed',

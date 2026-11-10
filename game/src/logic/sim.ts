@@ -1294,7 +1294,7 @@ function maxOrderLevel(state: GameState, line: string): number {
   return 3
 }
 
-const GUEST_ROTATION = ['boatman', 'embroider', 'fisherman', 'squire', 'scholar', 'teaGuest']
+const GUEST_ROTATION = ['boatman', 'embroider', 'fisherman', 'squire', 'scholar', 'teaGuest', 'siamese', 'bossDaughter']
 
 function nextGuest(state: GameState): string {
   const busy = new Set(state.orders.map((order) => order.customerId))
