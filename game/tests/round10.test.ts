@@ -17,6 +17,7 @@ import {
   lockAt,
   makeProducer,
   makeProduct,
+  producerCanSpawn,
   reconcileLevel,
   serialize,
   spawnTier,
@@ -161,5 +162,32 @@ describe('第十轮开局和前期', () => {
     granted.board[2][1] = makeProducer(granted, 'bev', cfg, 4)
     expect(guardedDrop(granted, { row: 2, col: 0 }, { row: 2, col: 1 }, cfg).ok).toBe(true)
     expect(granted.board[2][1]?.kind === 'producer' && granted.board[2][1].level).toBe(5)
+  })
+
+  it('只有能产出的母棋才算待出子', () => {
+    const cfg = defaultConfig()
+    const state = createGame(1, cfg)
+    const now = 1_000_000
+    const food = makeProducer(state, 'food', cfg, 4)
+    expect(producerCanSpawn(cfg, food, now)).toBe(true)
+    food.level = 3
+    food.charges = 0
+    expect(producerCanSpawn(cfg, food, now)).toBe(false)
+    food.level = 4
+    food.charges = 0
+    food.cooldownUntil = now + 5000
+    expect(producerCanSpawn(cfg, food, now)).toBe(false)
+    const pot = makeProducer(state, 'plant', cfg, 5)
+    expect(producerCanSpawn(cfg, pot, now)).toBe(false)
+    pot.level = 6
+    pot.charges = cfg.economy.plantBurst
+    expect(producerCanSpawn(cfg, pot, now)).toBe(true)
+    pot.charges = 0
+    pot.cooldownUntil = now + 5000
+    expect(producerCanSpawn(cfg, pot, now)).toBe(false)
+    const basket = makeProducer(state, 'basket', cfg, 1)
+    expect(producerCanSpawn(cfg, basket, now)).toBe(true)
+    basket.charges = 0
+    expect(producerCanSpawn(cfg, basket, now)).toBe(false)
   })
 })

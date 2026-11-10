@@ -677,6 +677,14 @@ function producerKind(cfg: GameConfig, id: string): 'normal' | 'netSource' | 'pl
   return cfg.producers.find((entry) => entry.id === id)?.kind ?? 'normal'
 }
 
+export function producerCanSpawn(cfg: GameConfig, item: ProducerItem, now: number): boolean {
+  const kind = producerKind(cfg, item.producerId)
+  if (kind === 'consumable') return item.charges > 0
+  const minLevel = kind === 'plant' ? (cfg.economy.plantOutputLevel ?? 6) : (cfg.economy.producerOutputLevel ?? 4)
+  if (item.level < minLevel || item.charges <= 0 || item.cooldownUntil > now) return false
+  return true
+}
+
 export function spawnTier(cfg: GameConfig, mult: number) {
   return cfg.economy.spawnTable?.find((tier) => tier.mult === mult)
 }

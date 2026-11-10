@@ -30,6 +30,7 @@ import {
   orderSatisfied,
   slotChecked,
   pickHint,
+  producerCanSpawn,
   producerName,
   producerChain,
   producerOfLine,
@@ -889,6 +890,7 @@ function drawBoard(model: RenderModel): void {
         }
       }
       drawItem(ctx, cfg, item, box, scale, 1, realNow, unlimited && item.kind === 'producer')
+      if (item.kind === 'producer' && producerCanSpawn(cfg, item, realNow)) drawSpawnBolt(ctx, box)
       if (checks.has(key)) {
         const r = Math.max(5, box.w * 0.16)
         const cx = box.x + box.w - r - 1
@@ -942,6 +944,31 @@ function tutorialHandImage(): HTMLImageElement | null {
 
 const HAND_TIP = { x: 8 / 284, y: 14 / 310 }
 const HAND_ASPECT = 284 / 310
+
+function drawSpawnBolt(ctx: CanvasRenderingContext2D, box: Rect): void {
+  const size = Math.max(12, box.w * 0.25)
+  const x = box.x + Math.max(1, box.w * 0.04)
+  const y = box.y + Math.max(1, box.h * 0.04)
+  ctx.save()
+  ctx.beginPath()
+  ctx.fillStyle = '#fffaf3'
+  ctx.arc(x + size * 0.48, y + size * 0.5, size * 0.58, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.beginPath()
+  ctx.moveTo(x + size * 0.56, y + size * 0.02)
+  ctx.lineTo(x + size * 0.18, y + size * 0.54)
+  ctx.lineTo(x + size * 0.44, y + size * 0.54)
+  ctx.lineTo(x + size * 0.3, y + size * 0.98)
+  ctx.lineTo(x + size * 0.9, y + size * 0.4)
+  ctx.lineTo(x + size * 0.58, y + size * 0.4)
+  ctx.closePath()
+  ctx.fillStyle = '#8ee04a'
+  ctx.fill()
+  ctx.lineWidth = Math.max(1, size * 0.08)
+  ctx.strokeStyle = '#3d8a22'
+  ctx.stroke()
+  ctx.restore()
+}
 
 function paintHand(ctx: CanvasRenderingContext2D, x: number, y: number, cell = 0): void {
   const h = Math.max(44, cell || 54)
