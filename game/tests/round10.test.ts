@@ -18,6 +18,7 @@ import {
   makeProducer,
   makeProduct,
   producerCanSpawn,
+  producerCooldown,
   reconcileLevel,
   serialize,
   spawnTier,
@@ -175,16 +176,22 @@ describe('第十轮开局和前期', () => {
     expect(producerCanSpawn(cfg, food, now)).toBe(false)
     food.level = 4
     food.charges = 0
-    food.cooldownUntil = now + 5000
+    food.cooldownUntil = now + 105_000
     expect(producerCanSpawn(cfg, food, now)).toBe(false)
+    expect(producerCooldown(cfg, food, now)).toEqual({ left: 105_000, total: cfg.economy.producerRoundCooldownMs })
+    food.level = 3
+    expect(producerCooldown(cfg, food, now)).toBeNull()
+    food.level = 4
     const pot = makeProducer(state, 'plant', cfg, 5)
     expect(producerCanSpawn(cfg, pot, now)).toBe(false)
     pot.level = 6
     pot.charges = cfg.economy.plantBurst
     expect(producerCanSpawn(cfg, pot, now)).toBe(true)
     pot.charges = 0
-    pot.cooldownUntil = now + 5000
+    pot.cooldownUntil = now + 90_000
     expect(producerCanSpawn(cfg, pot, now)).toBe(false)
+    expect(producerCooldown(cfg, pot, now)?.left).toBe(90_000)
+    expect(producerCooldown(cfg, pot, now)?.total).toBe(cfg.economy.plantCooldownMs)
     const basket = makeProducer(state, 'basket', cfg, 1)
     expect(producerCanSpawn(cfg, basket, now)).toBe(true)
     basket.charges = 0

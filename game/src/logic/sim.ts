@@ -685,6 +685,16 @@ export function producerCanSpawn(cfg: GameConfig, item: ProducerItem, now: numbe
   return true
 }
 
+export function producerCooldown(cfg: GameConfig, item: ProducerItem, now: number): { left: number; total: number } | null {
+  const kind = producerKind(cfg, item.producerId)
+  if (kind === 'consumable') return null
+  const minLevel = kind === 'plant' ? (cfg.economy.plantOutputLevel ?? 6) : (cfg.economy.producerOutputLevel ?? 4)
+  if (item.level < minLevel || item.charges > 0 || item.cooldownUntil <= now) return null
+  const total = kind === 'plant' ? (cfg.economy.plantCooldownMs ?? 1_800_000) : (cfg.economy.producerRoundCooldownMs ?? 120_000)
+  const left = item.cooldownUntil - now
+  return { left, total: Math.max(left, total) }
+}
+
 export function spawnTier(cfg: GameConfig, mult: number) {
   return cfg.economy.spawnTable?.find((tier) => tier.mult === mult)
 }

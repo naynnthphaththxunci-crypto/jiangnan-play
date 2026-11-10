@@ -31,6 +31,7 @@ import {
   slotChecked,
   pickHint,
   producerCanSpawn,
+  producerCooldown,
   producerName,
   producerChain,
   producerOfLine,
@@ -890,7 +891,11 @@ function drawBoard(model: RenderModel): void {
         }
       }
       drawItem(ctx, cfg, item, box, scale, 1, realNow, unlimited && item.kind === 'producer')
-      if (item.kind === 'producer' && producerCanSpawn(cfg, item, realNow)) drawSpawnBolt(ctx, box, realNow)
+      if (item.kind === 'producer') {
+        const cooling = producerCooldown(cfg, item, realNow)
+        if (producerCanSpawn(cfg, item, realNow)) drawSpawnBolt(ctx, box, realNow)
+        else if (cooling) drawSpawnClock(ctx, box, cooling.left, cooling.total)
+      }
       if (checks.has(key)) {
         const r = Math.max(5, box.w * 0.16)
         const cx = box.x + box.w - r - 1
@@ -964,11 +969,48 @@ function drawSpark(ctx: CanvasRenderingContext2D, x: number, y: number, r: numbe
   ctx.restore()
 }
 
-function drawSpawnBolt(ctx: CanvasRenderingContext2D, box: Rect, now: number): void {
+function spawnMarkBox(box: Rect): { x: number; y: number; size: number } {
   const size = Math.max(14, box.w * 0.3)
+  return { size, x: box.x + box.w - size * 0.78, y: box.y + box.h - size * 0.82 }
+}
+
+function drawSpawnClock(ctx: CanvasRenderingContext2D, box: Rect, left: number, total: number): void {
+  const { x, y, size } = spawnMarkBox(box)
+  const cx = x + size * 0.5
+  const cy = y + size * 0.5
+  const r = size * 0.42
+  const ratio = Math.max(0, Math.min(1, left / Math.max(1, total)))
+  ctx.save()
+  ctx.beginPath()
+  ctx.fillStyle = '#fffaf3'
+  ctx.arc(cx, cy, r + size * 0.06, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.beginPath()
+  ctx.strokeStyle = '#e4d3bc'
+  ctx.lineWidth = Math.max(2, size * 0.14)
+  ctx.arc(cx, cy, r, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.beginPath()
+  ctx.strokeStyle = '#e08a14'
+  ctx.lineCap = 'round'
+  ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * ratio)
+  ctx.stroke()
+  const label = formatMs(left)
+  const font = Math.max(8, box.w * 0.15)
+  const labelW = Math.max(font * label.length * 0.62, font * 2.2)
+  const labelH = font + 3
+  const labelX = cx - r - 3 - labelW
+  const labelY = cy - labelH / 2
+  roundRect(ctx, labelX, labelY, labelW, labelH, labelH / 2)
+  ctx.fillStyle = 'rgba(255,250,243,0.92)'
+  ctx.fill()
+  text(ctx, label, labelX + labelW / 2, cy, font, '#6a3a22', 'center', 'middle', 700)
+  ctx.restore()
+}
+
+function drawSpawnBolt(ctx: CanvasRenderingContext2D, box: Rect, now: number): void {
+  const { x, y, size } = spawnMarkBox(box)
   const flicker = 0.86 + 0.14 * (0.5 + 0.5 * Math.sin(now / 170))
-  const x = box.x + box.w - size * 0.78
-  const y = box.y + box.h - size * 0.82
   ctx.save()
   ctx.globalAlpha *= flicker
   ctx.beginPath()
