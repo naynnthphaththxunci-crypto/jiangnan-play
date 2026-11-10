@@ -995,16 +995,6 @@ function drawSpawnClock(ctx: CanvasRenderingContext2D, box: Rect, left: number, 
   ctx.lineCap = 'round'
   ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * ratio)
   ctx.stroke()
-  const label = formatMs(left)
-  const font = Math.max(8, box.w * 0.15)
-  const labelW = Math.max(font * label.length * 0.62, font * 2.2)
-  const labelH = font + 3
-  const labelX = cx - r - 3 - labelW
-  const labelY = cy - labelH / 2
-  roundRect(ctx, labelX, labelY, labelW, labelH, labelH / 2)
-  ctx.fillStyle = 'rgba(255,250,243,0.92)'
-  ctx.fill()
-  text(ctx, label, labelX + labelW / 2, cy, font, '#6a3a22', 'center', 'middle', 700)
   ctx.restore()
 }
 
