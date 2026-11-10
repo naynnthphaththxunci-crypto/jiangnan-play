@@ -46,6 +46,7 @@ import {
 import { itemSprite } from './itemArt'
 import loadingBgUrl from './assets/ui/loading_bg.jpg'
 import tutorialHandUrl from './assets/ui/tutorial_hand.png'
+import iconBoltUrl from './assets/ui/icon_bolt.png'
 import { orderRewardImage, orderTrayImage } from './orderTray'
 import { guestPortrait, measurePortrait, portraitReady } from './portraits'
 import { SLIDERS } from './tuner'
@@ -998,32 +999,25 @@ function drawSpawnClock(ctx: CanvasRenderingContext2D, box: Rect, left: number, 
   ctx.restore()
 }
 
+let iconBoltImg: HTMLImageElement | null = null
+
+function iconBoltImage(): HTMLImageElement | null {
+  const host = globalThis as { Image?: new () => HTMLImageElement; document?: Document }
+  if (!host.document || typeof host.Image !== 'function') return null
+  if (!iconBoltImg) {
+    iconBoltImg = new host.Image()
+    iconBoltImg.src = iconBoltUrl
+  }
+  return iconBoltImg
+}
+
 function drawSpawnBolt(ctx: CanvasRenderingContext2D, box: Rect, now: number): void {
   const { x, y, size } = spawnMarkBox(box)
   const flicker = 0.86 + 0.14 * (0.5 + 0.5 * Math.sin(now / 170))
+  const img = iconBoltImage()
   ctx.save()
   ctx.globalAlpha *= flicker
-  ctx.beginPath()
-  ctx.moveTo(x + size * 0.58, y + size * 0.02)
-  ctx.lineTo(x + size * 0.2, y + size * 0.5)
-  ctx.lineTo(x + size * 0.46, y + size * 0.48)
-  ctx.lineTo(x + size * 0.22, y + size)
-  ctx.lineTo(x + size * 0.9, y + size * 0.4)
-  ctx.lineTo(x + size * 0.56, y + size * 0.44)
-  ctx.closePath()
-  ctx.fillStyle = '#ffe14a'
-  ctx.fill()
-  ctx.lineJoin = 'round'
-  ctx.lineWidth = Math.max(1.4, size * 0.1)
-  ctx.strokeStyle = '#e08a14'
-  ctx.stroke()
-  ctx.beginPath()
-  ctx.moveTo(x + size * 0.54, y + size * 0.16)
-  ctx.lineTo(x + size * 0.4, y + size * 0.4)
-  ctx.lineTo(x + size * 0.5, y + size * 0.4)
-  ctx.lineWidth = Math.max(1, size * 0.07)
-  ctx.strokeStyle = 'rgba(255,250,220,0.85)'
-  ctx.stroke()
+  if (img && (img.naturalWidth || 0) > 0) ctx.drawImage(img, x, y, size, size)
   const spark = (phase: number) => 0.25 + 0.75 * (0.5 + 0.5 * Math.sin(now / 220 + phase))
   drawSpark(ctx, x + size * 0.08, y + size * 0.18, size * 0.16, spark(0))
   drawSpark(ctx, x + size * 0.92, y + size * 0.12, size * 0.12, spark(2.1))
