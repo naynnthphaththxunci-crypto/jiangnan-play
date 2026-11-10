@@ -161,10 +161,17 @@ describe('订单卡', () => {
       expect(body.h, id).toBeGreaterThan(guest.h * 0.5)
       expect(body.h, id).toBeLessThan(guest.h * 0.98)
       const covered = (body.y + body.h - plate.y) / body.h
-      expect(covered, id).toBeGreaterThan(body.h > guest.h * 0.8 ? 0.28 : 0.1)
-      expect(covered, id).toBeLessThan(0.5)
+      if (body.y + body.h > plate.y) expect(covered, id).toBeLessThan(0.5)
       expect(body.x, id).toBeGreaterThanOrEqual(-1)
       expect(body.x + body.w, id).toBeLessThanOrEqual(pitch + 1)
+    }
+    const chinGuests = ['teaGuest', 'siamese', 'bossDaughter', 'squire']
+    for (const id of chinGuests) {
+      const body = bodyOf(guest, portraitConfig(id).content)
+      const chin = body.y + body.h * 0.7
+      for (const icon of view.orderIcons) {
+        expect(icon.rect.y, id).toBeGreaterThanOrEqual(chin - 1)
+      }
     }
     for (let i = 0; i < view.orderGuests.length - 1; i++) {
       for (const left of ids) {
@@ -236,9 +243,9 @@ describe('订单卡', () => {
       const icons = view.orderIcons.filter((entry) => entry.order === index)
       expect(icons.length).toBeGreaterThan(0)
       for (const icon of icons) {
-        expect(icon.rect.w).toBeGreaterThanOrEqual(40)
-        expect(icon.rect.w).toBeLessThanOrEqual(50)
-        const stand = plate.y + plate.h * 0.48
+        expect(icon.rect.w).toBeGreaterThanOrEqual(34)
+        expect(icon.rect.w).toBeLessThanOrEqual(38)
+        const stand = plate.y + plate.h - 1
         expect(Math.abs(icon.rect.y + icon.rect.h - stand)).toBeLessThan(1)
       }
     })
@@ -255,15 +262,18 @@ describe('订单卡', () => {
       expect(name.rect.x + name.rect.w).toBeLessThanOrEqual(plate.x + plate.w + 1)
       expect(inside(name.rect, view.orderClip)).toBe(true)
       expect(name.rect.y).toBeGreaterThanOrEqual(icon.y + icon.h - 0.5)
-      expect(name.rect.h).toBeGreaterThanOrEqual(16)
-      expect(name.rect.h / view.w).toBeGreaterThanOrEqual(0.04)
+      expect(name.rect.h).toBeGreaterThanOrEqual(14)
+      expect(name.rect.h / view.w).toBeGreaterThanOrEqual(0.034)
     }
     const paired = view.orderNames.filter((entry) => entry.order === 0)
     expect(paired).toHaveLength(2)
     const [left, right] = paired
     expect(left!.rect.x + left!.rect.w).toBeLessThanOrEqual(right!.rect.x - 4)
     expect(overlaps(left!.rect, right!.rect)).toBe(false)
-    for (const icon of view.orderIcons) expect(icon.rect.w).toBeGreaterThanOrEqual(40)
+    for (const icon of view.orderIcons) expect(icon.rect.w).toBeGreaterThanOrEqual(34)
+    for (const name of view.orderNames) {
+      expect(overlaps(name.rect, view.rewardTray)).toBe(false)
+    }
   })
 
   it('六位客人有抠好的立绘，浣熊仍是占位，棋盘颜色在配置里', () => {

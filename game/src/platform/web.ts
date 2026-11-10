@@ -11,8 +11,8 @@ export function createWebPlatform(canvas: HTMLCanvasElement): Platform {
   let audio: AudioContextLike | null = null
 
   const sizeQuery = new URLSearchParams(window.location.search).get('size')?.match(/^(\d+)x(\d+)$/)
-  const DESIGN_W = sizeQuery ? Number(sizeQuery[1]) : 393
-  const DESIGN_H = sizeQuery ? Number(sizeQuery[2]) : 852
+  const DESIGN_W = sizeQuery ? Number(sizeQuery[1]) : 390
+  const DESIGN_H = sizeQuery ? Number(sizeQuery[2]) : 844
   const fit = () => {
     const parent = canvas.parentElement ?? document.body
     const pw = parent.clientWidth || window.innerWidth

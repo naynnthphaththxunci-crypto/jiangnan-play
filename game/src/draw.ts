@@ -657,14 +657,21 @@ function drawOrders(model: RenderModel): void {
       ctx.lineWidth = 1
       ctx.strokeStyle = '#6a4328'
       ctx.stroke()
-      const one = (box.w - 8) / Math.max(1, label.length)
-      if (one >= 11) {
-        text(ctx, label, box.x + box.w / 2, box.y + box.h / 2, Math.min(15, one), '#2a160c', 'center', 'middle', 700)
+      ctx.save()
+      ctx.beginPath()
+      ctx.rect(box.x + 1, box.y + 1, box.w - 2, box.h - 2)
+      ctx.clip()
+      const two = order.slots.length > 1
+      const one = (box.w - 6) / Math.max(1, label.length)
+      const minSize = two ? 8 : 10
+      if (one >= minSize + 1) {
+        text(ctx, label, box.x + box.w / 2, box.y + box.h / 2, Math.min(two ? 11 : 15, one), '#2a160c', 'center', 'middle', 700)
       } else {
-        const nameSize = Math.max(10, Math.min(13, (box.w - 6) / Math.max(1, fullName.length)))
+        const nameSize = Math.max(minSize, Math.min(two ? 10 : 13, (box.w - 4) / Math.max(1, fullName.length)))
         text(ctx, fullName, box.x + box.w / 2, box.y + box.h * 0.34, nameSize, '#2a160c', 'center', 'middle', 700)
-        text(ctx, `${slot.level}级`, box.x + box.w / 2, box.y + box.h * 0.72, Math.max(10, nameSize), '#6f6254', 'center', 'middle', 700)
+        text(ctx, `${slot.level}级`, box.x + box.w / 2, box.y + box.h * 0.72, nameSize, '#6f6254', 'center', 'middle', 700)
       }
+      ctx.restore()
     })
     if (orderSatisfied(state, order)) {
       const btn = frame.completes[index]

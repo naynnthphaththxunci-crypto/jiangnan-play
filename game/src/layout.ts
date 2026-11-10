@@ -400,14 +400,14 @@ export function layout(input: LayoutInput): Frame {
       w: top.w * plate.w,
       h: top.h * plate.h,
     }
-    const nameH = Math.max(16, w * 0.042)
+    const nameH = Math.max(14, w * 0.036)
     const nameGutter = Math.max(6, plate.w * 0.06)
     const namePad = 4
     const nameW = (plate.w - namePad * 2 - nameGutter * Math.max(0, slots - 1)) / slots
     const nameY = plate.y + plate.h + Math.max(2, w * 0.004)
     const colW = surface.w / slots
-    const iconSize = Math.max(8, Math.min(w * 0.118, colW - 4))
-    const stand = plate.y + plate.h * 0.48
+    const iconSize = Math.max(8, Math.min(w * 0.09, colW - 4))
+    const stand = plate.y + plate.h - 1
     const iconY = stand - iconSize
     for (let slot = 0; slot < slots; slot++) {
       const colX = surface.x + slot * colW
