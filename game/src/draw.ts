@@ -1,6 +1,6 @@
 import { hostessCostume } from './config'
 import orderLayout from './data/orderLayout.json'
-import { formatDuration, formatMs, orderItemLabel } from './format'
+import { formatDuration, formatMs } from './format'
 import { easeInOut, easeOutBack, easeOutCubic, popScale, type Flyer, type Fx } from './fx'
 import { hintHand, storageLessonHand, tutorialHand } from './coach'
 import { cellRect, chainCardRect, chainCloseRect, chainPopRect, decorPopupRects, detailCard, guestFaceBox, guideHole, levelClaimRect, shopRects, smileDismissRect, talkRect, trackRatio, type Frame, type Rect } from './layout'
@@ -82,6 +82,7 @@ export interface RenderModel {
   modal: 'energy' | null
   hintText: string
   selected: { row: number; col: number } | null
+  orderFocus: { line: string; level: number } | null
   showHand: boolean
   chain: { line: string; level: number; source: 'order' | 'producer' } | null
 }
@@ -645,34 +646,6 @@ function drawOrders(model: RenderModel): void {
     const rewardSize = Math.max(8, Math.min(11, payRect.h * 0.24, frame.w * (orderLayout.rewardFont ?? 0.028)))
     text(ctx, `+${pay.smiles}`, payRect.x + payRect.w * 0.9, payRect.y + payRect.h * 0.28, rewardSize, '#6a3a22', 'right', 'middle', 700)
     text(ctx, `+${pay.coins}`, payRect.x + payRect.w * 0.9, payRect.y + payRect.h * 0.54, rewardSize, '#6a3a22', 'right', 'middle', 700)
-    order.slots.forEach((slot, slotIndex) => {
-      const name = frame.orderNames.find((entry) => entry.order === index && entry.slot === slotIndex)
-      if (!name) return
-      const box = { ...name.rect, x: name.rect.x + dx }
-      const fullName = productName(cfg, slot.line, slot.level)
-      const label = orderItemLabel(fullName, slot.level, order.slots.length === 1)
-      roundRect(ctx, box.x, box.y, box.w, box.h, 4)
-      ctx.fillStyle = '#fff8ec'
-      ctx.fill()
-      ctx.lineWidth = 1
-      ctx.strokeStyle = '#6a4328'
-      ctx.stroke()
-      ctx.save()
-      ctx.beginPath()
-      ctx.rect(box.x + 1, box.y + 1, box.w - 2, box.h - 2)
-      ctx.clip()
-      const two = order.slots.length > 1
-      const one = (box.w - 6) / Math.max(1, label.length)
-      const minSize = two ? 8 : 10
-      if (one >= minSize + 1) {
-        text(ctx, label, box.x + box.w / 2, box.y + box.h / 2, Math.min(two ? 11 : 15, one), '#2a160c', 'center', 'middle', 700)
-      } else {
-        const nameSize = Math.max(minSize, Math.min(two ? 10 : 13, (box.w - 4) / Math.max(1, fullName.length)))
-        text(ctx, fullName, box.x + box.w / 2, box.y + box.h * 0.34, nameSize, '#2a160c', 'center', 'middle', 700)
-        text(ctx, `${slot.level}级`, box.x + box.w / 2, box.y + box.h * 0.72, nameSize, '#6f6254', 'center', 'middle', 700)
-      }
-      ctx.restore()
-    })
     if (orderSatisfied(state, order)) {
       const btn = frame.completes[index]
       if (btn) {
@@ -1093,6 +1066,12 @@ function drawInfo(model: RenderModel): void {
   const item = selected ? state.board[selected.row]?.[selected.col] : null
   const lock = selected ? state.locks.find((entry) => entry.row === selected.row && entry.col === selected.col) : undefined
   const gift = lock?.cover === 'gift' ? lock : undefined
+  if (!item && !lock && model.orderFocus) {
+    const focus = model.orderFocus
+    text(ctx, productName(cfg, focus.line, focus.level), bar.x + 12, bar.y + bar.h * 0.38, 16, PAL.ink, 'left')
+    text(ctx, cnLevel(focus.level), bar.x + 12, bar.y + bar.h * 0.72, 13, PAL.soft, 'left')
+    return
+  }
   if (!item && !lock) {
     text(ctx, INFO_EMPTY, bar.x + 12, bar.y + bar.h / 2, 14, PAL.soft, 'left')
     return

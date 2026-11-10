@@ -243,37 +243,25 @@ describe('订单卡', () => {
       const icons = view.orderIcons.filter((entry) => entry.order === index)
       expect(icons.length).toBeGreaterThan(0)
       for (const icon of icons) {
-        expect(icon.rect.w).toBeGreaterThanOrEqual(34)
-        expect(icon.rect.w).toBeLessThanOrEqual(38)
+        expect(icon.rect.w).toBeGreaterThanOrEqual(38)
+        expect(icon.rect.w).toBeLessThanOrEqual(44)
         const stand = plate.y + plate.h - 1
         expect(Math.abs(icon.rect.y + icon.rect.h - stand)).toBeLessThan(1)
       }
     })
   })
 
-  it('托盘上每件物品的名字独立、不重叠，手机上看得清', () => {
-    const view = frame({ w: 393, h: 852, orderCount: 2, orderSlots: [2, 1] })
-    expect(view.orderNames.length).toBeGreaterThan(0)
-    for (const name of view.orderNames) {
-      const plate = view.orderPlates[name.order]!
-      const icon = view.orderIcons.find((entry) => entry.order === name.order && entry.slot === name.slot)!.rect
-      expect(name.rect.y).toBeGreaterThanOrEqual(plate.y + plate.h - 0.5)
-      expect(name.rect.x).toBeGreaterThanOrEqual(plate.x - 1)
-      expect(name.rect.x + name.rect.w).toBeLessThanOrEqual(plate.x + plate.w + 1)
-      expect(inside(name.rect, view.orderClip)).toBe(true)
-      expect(name.rect.y).toBeGreaterThanOrEqual(icon.y + icon.h - 0.5)
-      expect(name.rect.h).toBeGreaterThanOrEqual(14)
-      expect(name.rect.h / view.w).toBeGreaterThanOrEqual(0.034)
-    }
-    const paired = view.orderNames.filter((entry) => entry.order === 0)
-    expect(paired).toHaveLength(2)
-    const [left, right] = paired
-    expect(left!.rect.x + left!.rect.w).toBeLessThanOrEqual(right!.rect.x - 4)
-    expect(overlaps(left!.rect, right!.rect)).toBe(false)
-    for (const icon of view.orderIcons) expect(icon.rect.w).toBeGreaterThanOrEqual(34)
-    for (const name of view.orderNames) {
-      expect(overlaps(name.rect, view.rewardTray)).toBe(false)
-    }
+  it('托盘下不再放名字牌子，奖励按钮完整落在订单区里', () => {
+    const view = frame({ w: 390, h: 844, orderCount: 2, orderSlots: [2, 1] })
+    expect(view.orderNames).toHaveLength(0)
+    const clip = view.orderClip
+    const chest = view.rewardTray
+    expect(chest.y).toBeGreaterThanOrEqual(clip.y)
+    expect(chest.y + chest.h).toBeLessThanOrEqual(clip.y + clip.h + 1)
+    expect(chest.y + chest.h).toBeLessThanOrEqual(view.board.y)
+    expect(chest.h).toBeGreaterThan(28)
+    expect(overlaps(chest, view.orderPlates[0]!)).toBe(false)
+    for (const icon of view.orderIcons) expect(icon.rect.w).toBeGreaterThanOrEqual(38)
   })
 
   it('六位客人有抠好的立绘，浣熊仍是占位，棋盘颜色在配置里', () => {

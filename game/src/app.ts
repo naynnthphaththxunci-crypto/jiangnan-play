@@ -150,6 +150,7 @@ export function startGame(platform: Platform): void {
   let selected: { row: number; col: number } | null = null
   let orderScroll = 0
   let chain: { line: string; level: number; source: 'order' | 'producer' } | null = null
+  let orderFocus: { line: string; level: number } | null = null
   let lastInput = platform.now()
   const pointers = new Map<number, Pointer>()
   let pinch: { dist: number; scale: number } | null = null
@@ -711,6 +712,7 @@ export function startGame(platform: Platform): void {
     if (hit.kind === 'pending') return
     if (hit.kind === 'order' || hit.kind === 'orderStrip' || hit.kind === 'orderIcon') return
     if (hit.kind === 'cell') {
+      orderFocus = null
       clearSale(state)
       const lock = state.locks.find((entry) => entry.row === hit.row && entry.col === hit.col)
       if (lock?.cover === 'gift' && !state.board[hit.row][hit.col]) {
@@ -1017,7 +1019,10 @@ export function startGame(platform: Platform): void {
       if (action === 'icon' && pointer.hit.kind === 'orderIcon' && state.phase === 'play') {
         const order = state.orders[pointer.hit.order]
         const slot = order?.slots[pointer.hit.slot]
-        if (slot) chain = { line: slot.line, level: slot.level, source: 'order' }
+        if (slot) {
+          selected = null
+          orderFocus = { line: slot.line, level: slot.level }
+        }
       }
       return
     }
@@ -1157,6 +1162,7 @@ export function startGame(platform: Platform): void {
         modal,
         hintText: '',
         selected,
+        orderFocus,
         chain,
         showHand:
           state.phase === 'play' &&
