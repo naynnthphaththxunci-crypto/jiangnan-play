@@ -43,6 +43,7 @@ import {
 } from './logic/sim'
 import { itemSprite } from './itemArt'
 import loadingBgUrl from './assets/ui/loading_bg.jpg'
+import tutorialHandUrl from './assets/ui/tutorial_hand.png'
 import { orderRewardImage, orderTrayImage } from './orderTray'
 import { guestPortrait, measurePortrait, portraitReady } from './portraits'
 import { SLIDERS } from './tuner'
@@ -927,7 +928,29 @@ function drawBoard(model: RenderModel): void {
   }
 }
 
-function paintHand(ctx: CanvasRenderingContext2D, x: number, y: number): void {
+let tutorialHandImg: HTMLImageElement | null = null
+
+function tutorialHandImage(): HTMLImageElement | null {
+  const host = globalThis as { Image?: new () => HTMLImageElement; document?: Document }
+  if (!host.document || typeof host.Image !== 'function') return null
+  if (!tutorialHandImg) {
+    tutorialHandImg = new host.Image()
+    tutorialHandImg.src = tutorialHandUrl
+  }
+  return tutorialHandImg
+}
+
+const HAND_TIP = { x: 8 / 284, y: 14 / 310 }
+const HAND_ASPECT = 284 / 310
+
+function paintHand(ctx: CanvasRenderingContext2D, x: number, y: number, cell = 0): void {
+  const h = Math.max(44, cell || 54)
+  const w = h * HAND_ASPECT
+  const img = tutorialHandImage()
+  if (img && (img.naturalWidth || 0) > 0) {
+    ctx.drawImage(img, x - HAND_TIP.x * w, y - HAND_TIP.y * h, w, h)
+    return
+  }
   ctx.save()
   ctx.translate(x, y)
   ctx.fillStyle = '#fffaf3'
@@ -1044,7 +1067,7 @@ function drawTutorial(model: RenderModel): void {
     ctx.arcTo(hole.x + hole.w, hole.y, hole.x + hole.w, hole.y + hole.h, 8)
     ctx.fill('evenodd')
     ctx.restore()
-    paintHand(ctx, hole.x + hole.w / 2, hole.y + hole.h / 2)
+    paintHand(ctx, hole.x + hole.w / 2, hole.y + hole.h / 2, frame.board.cell)
     return
   }
   const holes = tutorialHoles(model)
@@ -1073,7 +1096,7 @@ function drawTutorial(model: RenderModel): void {
   if (dialogue) text(ctx, '点击任意处继续', card.x + card.w / 2, card.y + card.h - 16, 13, PAL.soft)
   if (step?.id === 'enter') button(ctx, frame.enterBtn, '进厨房', 'primary')
   const pose = tutorialHand(cfg, state, frame, realNow)
-  if (pose?.visible) paintHand(ctx, pose.x, pose.y)
+  if (pose?.visible) paintHand(ctx, pose.x, pose.y, frame.board.cell)
 }
 
 function tutorialHoles(model: RenderModel): Rect[] {
@@ -1201,7 +1224,7 @@ function drawStorageLesson(model: RenderModel): void {
   lines.slice(0, 3).forEach((line, i) => text(ctx, line, card.x + 12, card.y + 22 + i * 20, 15, PAL.ink, 'left'))
   if (lesson === 1) text(ctx, '点击任意处继续', card.x + card.w / 2, card.y + card.h - 16, 13, PAL.soft)
   const pose = storageLessonHand(state, frame, realNow)
-  if (pose?.visible) paintHand(ctx, pose.x, pose.y)
+  if (pose?.visible) paintHand(ctx, pose.x, pose.y, frame.board.cell)
 }
 
 function drawHand(model: RenderModel): void {
@@ -1210,7 +1233,7 @@ function drawHand(model: RenderModel): void {
   if (!hint) return
   const pose = hintHand(hint, model.frame, model.realNow)
   if (!pose?.visible) return
-  paintHand(model.ctx, pose.x, pose.y)
+  paintHand(model.ctx, pose.x, pose.y, model.frame.board.cell)
 }
 
 function drawLevelModal(model: RenderModel): void {
@@ -1494,7 +1517,7 @@ function drawHouse(model: RenderModel): void {
 
   button(ctx, frame.backBtn, '返回', 'ghost')
   const short = upcoming && state.coins < taskPrice(upcoming, cfg) && !state.decorate
-  if (short) paintHand(ctx, frame.backBtn.x + frame.backBtn.w * 0.7, frame.backBtn.y + frame.backBtn.h * 0.75)
+  if (short) paintHand(ctx, frame.backBtn.x + frame.backBtn.w * 0.7, frame.backBtn.y + frame.backBtn.h * 0.75, frame.board.cell || Math.round(frame.w / 7))
   button(ctx, frame.zoomIn, '＋', 'ghost')
   button(ctx, frame.zoomOut, '－', 'ghost')
   button(ctx, frame.zoomReset, '复位', 'ghost')
@@ -1768,7 +1791,7 @@ function drawMintGuide(model: RenderModel): void {
   ctx.fill('evenodd')
   ctx.restore()
   const hand = holes[0]
-  if (hand) paintHand(ctx, hand.x + hand.w / 2, hand.y + hand.h / 2 + Math.sin(realNow / 280) * 3)
+  if (hand) paintHand(ctx, hand.x + hand.w / 2, hand.y + hand.h / 2 + Math.sin(realNow / 280) * 3, frame.board.cell)
   const tip = state.mintStep === 'select' ? '先点一下，选中饮料母棋' : state.mintStep === 'produce' ? '再点一次，产出猫薄荷' : state.mintStep === 'merge' ? '把两份猫薄荷拖到一起' : '交给客人'
   text(ctx, tip, frame.w / 2, frame.dock.y - 16, 14, PAL.white)
 }
@@ -1811,7 +1834,7 @@ function drawGuide(model: RenderModel): void {
   }
   ctx.fill('evenodd')
   ctx.restore()
-  if (hole.w > 0) paintHand(ctx, hole.x + hole.w / 2, hole.y + hole.h / 2 + Math.sin(realNow / 280) * 3)
+  if (hole.w > 0) paintHand(ctx, hole.x + hole.w / 2, hole.y + hole.h / 2 + Math.sin(realNow / 280) * 3, frame.board.cell)
   if (guide === 'smile') text(ctx, '笑脸满了', frame.w / 2, hole.y + hole.h + 18, 14, PAL.white)
 }
 
