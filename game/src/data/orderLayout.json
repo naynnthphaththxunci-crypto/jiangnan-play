@@ -1,20 +1,20 @@
 {
   "ordersPerScreen": 3,
-  "peekRatio": 0.18,
+  "peekRatio": 0,
   "boardMargin": 0.01,
   "yBasis": "height",
-  "rewardFont": 0.03,
-  "orderArea": { "x": 0, "y": 0.07, "w": 1, "h": 0.22 },
-  "rewardEntry": { "x": 0.012, "y": 0.078, "w": 0.122, "h": 0.18 },
+  "rewardFont": 0.028,
+  "orderArea": { "x": 0, "y": 0.07, "w": 1, "h": 0.232 },
+  "rewardEntry": { "x": 0.02, "y": 0.25, "w": 0.138, "h": 0.047 },
   "group": {
-    "w": 100,
-    "h": 168,
-    "portrait": { "x": -21.5, "y": 8.3, "w": 155, "h": 155 },
-    "complete": { "x": 16, "y": 86, "w": 48, "h": 22 },
-    "plate": { "x": 0, "y": 114, "w": 100, "h": 34.49 },
-    "tabletop": { "x": 0.08, "y": 0.08, "w": 0.84, "h": 0.46 },
-    "reward": { "x": 80, "y": 62, "w": 32, "h": 48 },
-    "icon": { "w": 34, "h": 34 }
+    "w": 130,
+    "h": 160,
+    "portrait": { "x": -27, "y": -28, "w": 200, "h": 200 },
+    "complete": { "x": 16, "y": 70, "w": 48, "h": 16 },
+    "plate": { "x": 9, "y": 84, "w": 112, "h": 38.63 },
+    "tabletop": { "x": 0.1, "y": 0.08, "w": 0.8, "h": 0.5 },
+    "reward": { "x": 98, "y": 14, "w": 30, "h": 46 },
+    "icon": { "w": 22, "h": 22 }
   },
-  "itemName": { "h": 0.0235 }
+  "itemName": { "h": 0.042 }
 }

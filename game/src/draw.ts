@@ -42,6 +42,7 @@ import {
   tutorialLine,
 } from './logic/sim'
 import { itemSprite } from './itemArt'
+import loadingBgUrl from './assets/ui/loading_bg.jpg'
 import { orderTrayImage } from './orderTray'
 import { guestPortrait, measurePortrait, portraitReady } from './portraits'
 import { SLIDERS } from './tuner'
@@ -455,6 +456,48 @@ function drawHud(model: RenderModel): void {
 
 const orderSlide = new Map<string, number>()
 
+let tavernBackdrop: HTMLImageElement | null = null
+
+function tavernImage(): HTMLImageElement | null {
+  const host = globalThis as { Image?: new () => HTMLImageElement; document?: Document }
+  if (!host.document || typeof host.Image !== 'function') return null
+  if (!tavernBackdrop) {
+    tavernBackdrop = new host.Image()
+    tavernBackdrop.src = loadingBgUrl
+  }
+  return tavernBackdrop
+}
+
+function drawOrderStage(ctx: CanvasRenderingContext2D, frame: Frame): void {
+  const clip = frame.orderClip
+  if (clip.h <= 0) return
+  const trayTop = frame.orderPlates[0]?.y ?? clip.y + clip.h * 0.5
+  ctx.save()
+  ctx.beginPath()
+  ctx.rect(clip.x, clip.y, clip.w, clip.h)
+  ctx.clip()
+  const bg = tavernImage()
+  const wallH = Math.max(1, trayTop - clip.y)
+  if (bg && (bg.naturalWidth || 0) > 0) {
+    const srcH = Math.max(1, bg.naturalHeight * 0.2)
+    ctx.drawImage(bg, 0, 0, bg.naturalWidth, srcH, clip.x, clip.y, clip.w, wallH + 6)
+  } else {
+    ctx.fillStyle = '#f0d2aa'
+    ctx.fillRect(clip.x, clip.y, clip.w, wallH)
+  }
+  const beamY = trayTop - 2
+  const beamH = Math.max(1, clip.y + clip.h - beamY)
+  const wood = ctx.createLinearGradient(0, beamY, 0, beamY + beamH)
+  wood.addColorStop(0, '#e7c088')
+  wood.addColorStop(0.16, '#c98448')
+  wood.addColorStop(1, '#8a4e28')
+  ctx.fillStyle = wood
+  ctx.fillRect(clip.x, beamY, clip.w, beamH)
+  ctx.fillStyle = '#f6ddb0'
+  ctx.fillRect(clip.x, beamY, clip.w, Math.max(3, frame.w * 0.008))
+  ctx.restore()
+}
+
 function drawOrders(model: RenderModel): void {
   const { ctx, frame, state, cfg } = model
   const spots = state.orders.flatMap((order, index) => {
@@ -471,12 +514,16 @@ function drawOrders(model: RenderModel): void {
     const move = (r: Rect) => ({ ...r, x: r.x + dx })
     return [{ order, index, dx, rect: move(rect), plate: move(plate0), pay: move(pay0), guest: move(guest0), charm: move(charm0) }]
   })
+  drawOrderStage(ctx, frame)
+  const columnPitch = frame.w / Math.max(1, orderLayout.ordersPerScreen)
   spots.forEach((spot) => {
     const who = cfg.characters.find((entry) => entry.id === spot.order.customerId)
     const portrait = guestPortrait(who?.portrait)
     ctx.save()
     ctx.beginPath()
-    ctx.rect(spot.guest.x - frame.w, spot.guest.y, frame.w * 3, Math.max(1, spot.plate.y + spot.plate.h - spot.guest.y))
+    const columnLeft = spot.guest.x + spot.guest.w * 0.46 - columnPitch / 2
+    const tuck = Math.max(1, spot.plate.y + spot.plate.h * 0.55 - spot.guest.y)
+    ctx.rect(columnLeft, spot.guest.y, columnPitch, tuck)
     ctx.clip()
     if (who?.portrait && portrait && portraitReady(portrait)) {
       measurePortrait(who.portrait, portrait)
@@ -560,25 +607,28 @@ function drawOrders(model: RenderModel): void {
         text(ctx, '✓', ix + icon.rect.w - r - 1, iy + icon.rect.h - r - 1, r * 1.15, '#2c7a58')
       }
     })
-    roundRect(ctx, payRect.x, payRect.y, payRect.w, payRect.h, 8)
-    ctx.fillStyle = 'rgba(36,28,22,0.62)'
+    roundRect(ctx, payRect.x, payRect.y, payRect.w, payRect.h, 6)
+    ctx.fillStyle = '#f6e2bc'
     ctx.fill()
+    ctx.lineWidth = Math.max(1, payRect.w * 0.04)
+    ctx.strokeStyle = '#8a5a2b'
+    ctx.stroke()
     const pay = orderPayout(order, cfg)
     const rows: { mark: string; value: string; color: string }[] = [
       { mark: '笑', value: `+${pay.smiles}`, color: '#e0568a' },
       { mark: '经', value: `+${pay.xp}`, color: '#3d8fd4' },
-      { mark: '钱', value: `+${pay.coins}`, color: '#e0a23a' },
+      { mark: '钱', value: `+${pay.coins}`, color: '#c47a20' },
     ]
-    const rewardSize = Math.max(11, frame.w * (orderLayout.rewardFont ?? 0.03))
+    const rewardSize = Math.max(9, Math.min(payRect.h / rows.length * 0.62, frame.w * (orderLayout.rewardFont ?? 0.028)))
     rows.forEach((row, rowIndex) => {
       const cy = payRect.y + ((rowIndex + 0.5) * payRect.h) / rows.length
-      const r = Math.max(5, Math.min(rewardSize * 0.48, payRect.h / rows.length * 0.42))
+      const r = Math.max(4, Math.min(rewardSize * 0.46, payRect.h / rows.length * 0.36))
       ctx.beginPath()
       ctx.fillStyle = row.color
-      ctx.arc(payRect.x + r + 3, cy, r, 0, Math.PI * 2)
+      ctx.arc(payRect.x + r + 2, cy, r, 0, Math.PI * 2)
       ctx.fill()
-      text(ctx, row.mark, payRect.x + r + 3, cy, r * 1.05, PAL.white, 'center', 'middle', 700)
-      text(ctx, row.value, payRect.x + payRect.w - 3, cy, rewardSize, PAL.white, 'right', 'middle', 700)
+      text(ctx, row.mark, payRect.x + r + 2, cy, r * 1.05, PAL.white, 'center', 'middle', 700)
+      text(ctx, row.value, payRect.x + payRect.w - 2, cy, rewardSize, '#4a2c18', 'right', 'middle', 700)
     })
     order.slots.forEach((slot, slotIndex) => {
       const name = frame.orderNames.find((entry) => entry.order === index && entry.slot === slotIndex)

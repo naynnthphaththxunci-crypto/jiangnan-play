@@ -69,7 +69,9 @@ describe('订单卡', () => {
       expect(plate.x).toBeGreaterThanOrEqual(-1)
       expect(plate.x + plate.w).toBeLessThanOrEqual(view.w + 1)
     }
-    expect(view.rewardTray.x + view.rewardTray.w).toBeLessThanOrEqual(view.orders[0]!.x)
+    const third = view.w / 3
+    expect(Math.abs(view.orderPlates[1]!.x - view.orderPlates[0]!.x - third)).toBeLessThanOrEqual(1)
+    expect(overlaps(view.rewardTray, view.orderPlates[0]!)).toBe(false)
     for (let i = 0; i < view.orders.length; i++) {
       const card = view.orders[i]!
       const plate = view.orderPlates[i]!
@@ -154,10 +156,10 @@ describe('订单卡', () => {
       expect(body.h, id).toBeGreaterThan(guest.h * 0.5)
       expect(body.h, id).toBeLessThan(guest.h * 0.75)
       const covered = (body.y + body.h - plate.y) / body.h
-      expect(covered, id).toBeGreaterThan(0.12)
-      expect(covered, id).toBeLessThan(0.24)
-      expect(body.x, id).toBeGreaterThanOrEqual(plate.x - 1)
-      expect(body.x + body.w, id).toBeLessThanOrEqual(plate.x + pitch + 1)
+      expect(covered, id).toBeGreaterThan(0.3)
+      expect(covered, id).toBeLessThan(0.46)
+      expect(body.x, id).toBeGreaterThanOrEqual(-1)
+      expect(body.x + body.w, id).toBeLessThanOrEqual(pitch + 1)
     }
     for (let i = 0; i < view.orderGuests.length - 1; i++) {
       for (const left of ids) {
@@ -170,32 +172,28 @@ describe('订单卡', () => {
     }
   })
 
-  it('393 宽竖屏完整露出 3 个订单，第 4 个只露一截，棋盘左右边距很小', () => {
+  it('393 宽竖屏同时放下 3 位客人，每人正好三分之一宽', () => {
     const width = 393
     const height = 852
     const view = frame({ w: width, h: height, orderCount: 4, orderSlots: [1, 1, 1, 1] })
     expect(orderLayout.ordersPerScreen).toBe(3)
-    expect(orderLayout.peekRatio).toBeGreaterThan(0)
-    expect(orderLayout.peekRatio).toBeLessThan(0.4)
+    expect(orderLayout.peekRatio).toBe(0)
+    const pitch = width / 3
+    expect(Math.abs(view.orderPlates[1]!.x - view.orderPlates[0]!.x - pitch)).toBeLessThanOrEqual(1)
     for (let i = 0; i < orderLayout.ordersPerScreen; i++) {
       const plate = view.orderPlates[i]!
       const guest = view.orderGuests[i]!
-      expect(plate.x, `plate ${i}`).toBeGreaterThanOrEqual(-1)
-      expect(plate.x + plate.w, `plate ${i}`).toBeLessThanOrEqual(width + 1)
+      expect(plate.x, `plate ${i}`).toBeGreaterThanOrEqual(i * pitch - 1)
+      expect(plate.x + plate.w, `plate ${i}`).toBeLessThanOrEqual((i + 1) * pitch + 1)
       expect(Math.abs(guest.w - guest.h), `guest ${i}`).toBeLessThanOrEqual(0.5)
       for (const id of ['teaGuest', 'scholar', 'embroider']) {
         const face = faceOf(guest, portraitConfig(id).content, portraitConfig(id).face)
-        expect(face.x, `${id} face ${i}`).toBeGreaterThanOrEqual(-1)
-        expect(face.x + face.w, `${id} face ${i}`).toBeLessThanOrEqual(width + 1)
+        expect(face.x, `${id} face ${i}`).toBeGreaterThanOrEqual(i * pitch - 1)
+        expect(face.x + face.w, `${id} face ${i}`).toBeLessThanOrEqual((i + 1) * pitch + 1)
       }
     }
     const fourth = view.orderPlates[3]!
-    expect(fourth.x).toBeLessThan(width)
-    expect(fourth.x + fourth.w).toBeGreaterThan(width)
-    const visible = (width - fourth.x) / fourth.w
-    expect(visible).toBeGreaterThan(0.08)
-    expect(visible).toBeLessThan(0.4)
-    expect(Math.abs(visible - orderLayout.peekRatio)).toBeLessThanOrEqual(0.04)
+    expect(fourth.x).toBeGreaterThanOrEqual(width - 1)
     const gridW = view.board.cell * 7
     const margin = (width - gridW) / 2
     expect(margin).toBeLessThanOrEqual(8)
@@ -234,7 +232,10 @@ describe('订单卡', () => {
     for (const name of view.orderNames) {
       const plate = view.orderPlates[name.order]!
       const icon = view.orderIcons.find((entry) => entry.order === name.order && entry.slot === name.slot)!.rect
-      expect(inside(name.rect, plate)).toBe(true)
+      expect(name.rect.y).toBeGreaterThanOrEqual(plate.y + plate.h - 0.5)
+      expect(name.rect.x).toBeGreaterThanOrEqual(plate.x - 1)
+      expect(name.rect.x + name.rect.w).toBeLessThanOrEqual(plate.x + plate.w + 1)
+      expect(inside(name.rect, view.orderClip)).toBe(true)
       expect(name.rect.y).toBeGreaterThanOrEqual(icon.y + icon.h - 0.5)
       expect(name.rect.h).toBeGreaterThanOrEqual(16)
       expect(name.rect.h / view.w).toBeGreaterThanOrEqual(0.04)

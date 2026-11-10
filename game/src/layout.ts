@@ -354,8 +354,8 @@ export function layout(input: LayoutInput): Frame {
         h: spec.rewardEntry.h * h,
       }
     : Z
-  const origin = rewardTray.w > 0 ? rewardTray.x + rewardTray.w + Math.max(2, w * 0.008) : 8
-  const pitch = (w - origin) / Math.max(1, spec.ordersPerScreen + spec.peekRatio)
+  const origin = 0
+  const pitch = w / Math.max(1, spec.ordersPerScreen + spec.peekRatio)
   const group = spec.group
   let scale = pitch / group.w
   const maxScale = orderClip.h > 0 ? orderClip.h / group.h : scale
@@ -404,7 +404,7 @@ export function layout(input: LayoutInput): Frame {
     const nameGutter = Math.max(6, plate.w * 0.06)
     const namePad = 4
     const nameW = (plate.w - namePad * 2 - nameGutter * Math.max(0, slots - 1)) / slots
-    const nameY = plate.y + plate.h - nameH - 3
+    const nameY = plate.y + plate.h + Math.max(2, w * 0.004)
     const iconRoomTop = surface.y
     const iconRoomH = Math.max(8, nameY - 3 - iconRoomTop)
     const colW = surface.w / slots
