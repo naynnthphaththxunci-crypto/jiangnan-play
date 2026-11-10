@@ -890,7 +890,7 @@ function drawBoard(model: RenderModel): void {
         }
       }
       drawItem(ctx, cfg, item, box, scale, 1, realNow, unlimited && item.kind === 'producer')
-      if (item.kind === 'producer' && producerCanSpawn(cfg, item, realNow)) drawSpawnBolt(ctx, box)
+      if (item.kind === 'producer' && producerCanSpawn(cfg, item, realNow)) drawSpawnBolt(ctx, box, realNow)
       if (checks.has(key)) {
         const r = Math.max(5, box.w * 0.16)
         const cx = box.x + box.w - r - 1
@@ -945,28 +945,57 @@ function tutorialHandImage(): HTMLImageElement | null {
 const HAND_TIP = { x: 8 / 284, y: 14 / 310 }
 const HAND_ASPECT = 284 / 310
 
-function drawSpawnBolt(ctx: CanvasRenderingContext2D, box: Rect): void {
-  const size = Math.max(12, box.w * 0.25)
-  const x = box.x + Math.max(1, box.w * 0.04)
-  const y = box.y + Math.max(1, box.h * 0.04)
+function drawSpark(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, alpha: number): void {
+  if (alpha <= 0.05) return
   ctx.save()
+  ctx.globalAlpha *= alpha
+  ctx.fillStyle = '#fffaf0'
   ctx.beginPath()
-  ctx.fillStyle = '#fffaf3'
-  ctx.arc(x + size * 0.48, y + size * 0.5, size * 0.58, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.beginPath()
-  ctx.moveTo(x + size * 0.56, y + size * 0.02)
-  ctx.lineTo(x + size * 0.18, y + size * 0.54)
-  ctx.lineTo(x + size * 0.44, y + size * 0.54)
-  ctx.lineTo(x + size * 0.3, y + size * 0.98)
-  ctx.lineTo(x + size * 0.9, y + size * 0.4)
-  ctx.lineTo(x + size * 0.58, y + size * 0.4)
+  ctx.moveTo(x, y - r)
+  ctx.lineTo(x + r * 0.28, y - r * 0.28)
+  ctx.lineTo(x + r, y)
+  ctx.lineTo(x + r * 0.28, y + r * 0.28)
+  ctx.lineTo(x, y + r)
+  ctx.lineTo(x - r * 0.28, y + r * 0.28)
+  ctx.lineTo(x - r, y)
+  ctx.lineTo(x - r * 0.28, y - r * 0.28)
   ctx.closePath()
-  ctx.fillStyle = '#8ee04a'
   ctx.fill()
-  ctx.lineWidth = Math.max(1, size * 0.08)
-  ctx.strokeStyle = '#3d8a22'
+  ctx.restore()
+}
+
+function drawSpawnBolt(ctx: CanvasRenderingContext2D, box: Rect, now: number): void {
+  const size = Math.max(14, box.w * 0.3)
+  const flicker = 0.86 + 0.14 * (0.5 + 0.5 * Math.sin(now / 170))
+  const x = box.x + box.w - size * 0.78
+  const y = box.y + box.h - size * 0.82
+  ctx.save()
+  ctx.globalAlpha *= flicker
+  ctx.beginPath()
+  ctx.moveTo(x + size * 0.58, y + size * 0.02)
+  ctx.lineTo(x + size * 0.2, y + size * 0.5)
+  ctx.lineTo(x + size * 0.46, y + size * 0.48)
+  ctx.lineTo(x + size * 0.22, y + size)
+  ctx.lineTo(x + size * 0.9, y + size * 0.4)
+  ctx.lineTo(x + size * 0.56, y + size * 0.44)
+  ctx.closePath()
+  ctx.fillStyle = '#ffe14a'
+  ctx.fill()
+  ctx.lineJoin = 'round'
+  ctx.lineWidth = Math.max(1.4, size * 0.1)
+  ctx.strokeStyle = '#e08a14'
   ctx.stroke()
+  ctx.beginPath()
+  ctx.moveTo(x + size * 0.54, y + size * 0.16)
+  ctx.lineTo(x + size * 0.4, y + size * 0.4)
+  ctx.lineTo(x + size * 0.5, y + size * 0.4)
+  ctx.lineWidth = Math.max(1, size * 0.07)
+  ctx.strokeStyle = 'rgba(255,250,220,0.85)'
+  ctx.stroke()
+  const spark = (phase: number) => 0.25 + 0.75 * (0.5 + 0.5 * Math.sin(now / 220 + phase))
+  drawSpark(ctx, x + size * 0.08, y + size * 0.18, size * 0.16, spark(0))
+  drawSpark(ctx, x + size * 0.92, y + size * 0.12, size * 0.12, spark(2.1))
+  drawSpark(ctx, x + size * 0.16, y + size * 0.86, size * 0.1, spark(4.2))
   ctx.restore()
 }
 
