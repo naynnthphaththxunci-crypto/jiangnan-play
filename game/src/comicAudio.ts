@@ -58,8 +58,10 @@ export function createComicAudio(getCtx: () => AudioContext | null): ComicAudio 
   let active = false
   const loops = new Map<string, Loop>()
   let oneShot: AudioBufferSourceNode | null = null
+  let ambience: AudioBufferSourceNode | null = null
   let inflight: Promise<void> | null = null
   let pendingCue: ComicCue | null = null
+  let lastScript: OpeningScript | null = null
   let stopToken = 0
 
   const note = (line: string) => {
@@ -123,7 +125,7 @@ export function createComicAudio(getCtx: () => AudioContext | null): ComicAudio 
       }),
     ).then(() => {
       if (active) applyBed()
-      if (pendingCue && buffers.has(pendingCue) && comicCue(lastStep) === pendingCue) {
+      if (pendingCue && buffers.has(pendingCue) && lastScript && comicCue(lastScript, lastStep) === pendingCue) {
         const cue = pendingCue
         pendingCue = null
         playCue(cue)
@@ -178,13 +180,16 @@ export function createComicAudio(getCtx: () => AudioContext | null): ComicAudio 
       note(`miss:${cue}`)
       return
     }
-    if (oneShot) {
+    const layered = cue === 'crickets'
+    const previous = layered ? ambience : oneShot
+    if (previous) {
       try {
-        oneShot.stop()
+        previous.stop()
       } catch {
         /* 已经停了 */
       }
-      oneShot = null
+      if (layered) ambience = null
+      else oneShot = null
     }
     const source = audio.createBufferSource()
     const gain = audio.createGain()
@@ -193,9 +198,11 @@ export function createComicAudio(getCtx: () => AudioContext | null): ComicAudio 
     source.connect(gain)
     gain.connect(master)
     source.start()
-    oneShot = source
+    if (layered) ambience = source
+    else oneShot = source
     source.onended = () => {
       if (oneShot === source) oneShot = null
+      if (ambience === source) ambience = null
     }
     note(`play:${cue}`)
   }
@@ -221,17 +228,20 @@ export function createComicAudio(getCtx: () => AudioContext | null): ComicAudio 
       }
       void decodeAll()
       active = storyActive
+      lastScript = script
       bed = storyActive ? comicBed(script, step) : null
       applyBed()
       if (!storyActive) {
-        if (oneShot) {
+        for (const source of [oneShot, ambience]) {
+          if (!source) continue
           try {
-            oneShot.stop()
+            source.stop()
           } catch {
             /* 已经停了 */
           }
-          oneShot = null
         }
+        oneShot = null
+        ambience = null
         if (lastStep !== -2) note('stop')
         lastStep = -2
         const token = ++stopToken
@@ -250,7 +260,7 @@ export function createComicAudio(getCtx: () => AudioContext | null): ComicAudio 
       }
       stopToken += 1
       if (step !== lastStep) {
-        const cue = comicCue(step)
+        const cue = comicCue(script, step)
         if (cue) playCue(cue)
         if (bed) note(`bed:${bed}`)
         lastStep = step

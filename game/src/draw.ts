@@ -49,9 +49,9 @@ import tutorialHandUrl from './assets/ui/tutorial_hand.png'
 import iconBoltUrl from './assets/ui/icon_bolt.png'
 import { orderRewardImage, orderTrayImage } from './orderTray'
 import { guestPortrait, measurePortrait, portraitReady } from './portraits'
-import { COMIC_FONT, comicCursor, comicFontReady, comicPageImage, comicPrompt, comicSilaImage, wrapComicText } from './comic'
+import { COMIC_FONT, comicCursor, comicFontReady, comicPanelImage, comicPrompt, comicSilaImage, wrapComicText } from './comic'
 import { SLIDERS } from './tuner'
-import { COLS, ROWS, type GameConfig, type GameState, type Item, type NormBox } from './types'
+import { COLS, ROWS, type ComicEnter, type GameConfig, type GameState, type Item, type NormBox, type OpeningScript } from './types'
 
 export const FONT = '"WenQuanYi Micro Hei", "Noto Sans CJK SC", "Droid Sans Fallback", sans-serif'
 
@@ -327,57 +327,155 @@ function drawStory(model: RenderModel): void {
   const cursor = comicCursor(cfg.opening, state.storyStep)
   const script = cfg.opening
   if (cursor) {
+    if (fx.comicFadeAt === 0) fx.comicFadeAt = realNow
     const pageW = script.width
     const pageH = script.height
     const scale = Math.min(frame.w / pageW, frame.h / pageH)
     let ox = (frame.w - pageW * scale) / 2
     let oy = (frame.h - pageH * scale) / 2
-    const shakeLeft = fx.shakeUntil - realNow
-    if (shakeLeft > 0) {
-      const t = 1 - shakeLeft / 460
+    const shakeStart = fx.shakeUntil - 460
+    if (fx.shakeUntil > realNow && realNow >= shakeStart) {
+      const t = 1 - (fx.shakeUntil - realNow) / 460
       const amp = (1 - t) * 8 * scale
       ox += Math.sin(t * 26) * amp
       oy += Math.cos(t * 21) * amp * 0.65
     }
+    const prev = fx.comicFrom >= 0 ? comicCursor(script, fx.comicFrom) : null
+    const turnMs = 350
+    const turnAge = realNow - fx.comicFadeAt
+    const turning = !!prev && prev.page !== cursor.page && turnAge >= 0 && turnAge < turnMs
+    const turnT = turning ? easeOutCubic(turnAge / turnMs) : 1
+    const arrivedByTurn = !!prev && prev.page !== cursor.page
     ctx.save()
     ctx.translate(ox, oy)
     ctx.scale(scale, scale)
-    const img = comicPageImage(cursor.page)
-    if (img && (img.naturalWidth || 0) > 0) ctx.drawImage(img as CanvasImageSource, 0, 0, pageW, pageH)
-    const page = script.pages[cursor.page]
-    const sila = comicSilaImage()
-    if (page && sila && (sila.naturalWidth || 0) > 0) {
-      const silaAt = page.beats.findIndex((beat) => beat.kind === 'sila')
-      if (silaAt >= 0 && cursor.shown > silaAt) {
-        const sw = pageW * 0.7
-        const sh = sw * ((sila.naturalHeight || 1) / (sila.naturalWidth || 1))
-        const age = fx.shakeUntil > 0 ? Math.max(0, realNow - (fx.shakeUntil - 460)) : 999
-        const pop = popScale(age, 280)
-        ctx.save()
-        ctx.translate(384, 690)
-        ctx.scale(pop, pop)
-        ctx.drawImage(sila as CanvasImageSource, -sw / 2, -sh / 2, sw, sh)
-        ctx.restore()
-      }
-    }
-    if (comicFontReady()) {
-      const fadeMs = 240
-      const age = fx.comicFadeAt > 0 ? realNow - fx.comicFadeAt : fadeMs
-      const fade = Math.max(0, Math.min(1, age / fadeMs))
-      const current = comicPrompt(script, state.storyStep)
-      const previous = fx.comicFrom >= 0 ? comicPrompt(script, fx.comicFrom) : null
-      if (fade < 1 && previous && previous.page === cursor.page && (previous.prompt === 'line' || previous.prompt === 'start') && previous.beat?.text) {
-        paintComicBubble(ctx, script, previous.beat, false, 1 - fade, realNow)
-      }
-      if ((current.prompt === 'line' || current.prompt === 'start') && current.page === cursor.page && current.beat?.text) {
-        paintComicBubble(ctx, script, current.beat, current.prompt === 'start', fade < 1 && previous ? fade : 1, realNow)
-      }
+    if (turning && prev) {
+      ctx.save()
+      ctx.translate(-turnT * pageW, 0)
+      paintComicPanels(ctx, script, prev.page, prev.index, realNow, fx.comicFadeAt, fx.silaAt, false)
+      ctx.restore()
+      ctx.save()
+      ctx.translate((1 - turnT) * pageW, 0)
+      paintComicPanels(ctx, script, cursor.page, cursor.index, realNow, fx.comicFadeAt, fx.silaAt, false)
+      paintStoryBubble(ctx, script, state.storyStep, fx.comicFrom, fx.comicFadeAt, realNow)
+      ctx.restore()
+    } else {
+      paintComicPanels(ctx, script, cursor.page, cursor.index, realNow, fx.comicFadeAt, fx.silaAt, !arrivedByTurn)
+      paintStoryBubble(ctx, script, state.storyStep, fx.comicFrom, fx.comicFadeAt, realNow)
     }
     ctx.restore()
   }
   if (model.comicHand !== 'off') paintComicHand(ctx, frame, model.comicHand === 'first')
   paintMute(ctx, frame.muteBtn, state.soundMuted)
   button(ctx, frame.skip, '跳过', 'ghost')
+}
+
+function paintStoryBubble(
+  ctx: CanvasRenderingContext2D,
+  script: OpeningScript,
+  step: number,
+  fromStep: number,
+  fadeAt: number,
+  now: number,
+): void {
+  if (!comicFontReady()) return
+  const fadeMs = 240
+  const age = fadeAt > 0 ? now - fadeAt : fadeMs
+  const fade = Math.max(0, Math.min(1, age / fadeMs))
+  const current = comicPrompt(script, step)
+  const previous = fromStep >= 0 ? comicPrompt(script, fromStep) : null
+  const cursor = comicCursor(script, step)
+  if (fade < 1 && previous && cursor && previous.page === cursor.page && previous.beat?.text) {
+    paintComicBubble(ctx, script, previous.beat, false, 1 - fade, now)
+  }
+  if ((current.prompt === 'line' || current.prompt === 'start') && current.beat?.text) {
+    paintComicBubble(ctx, script, current.beat, current.prompt === 'start', fade < 1 && previous ? fade : 1, now)
+  }
+}
+
+function paintComicPanels(
+  ctx: CanvasRenderingContext2D,
+  script: OpeningScript,
+  pageIndex: number,
+  beatIndex: number,
+  now: number,
+  beatAt: number,
+  silaAt: number,
+  animate: boolean,
+): void {
+  const page = script.pages[pageIndex]
+  if (!page) return
+  ctx.fillStyle = '#14110e'
+  ctx.fillRect(0, 0, script.width, script.height)
+  const shown = page.beats.slice(0, beatIndex + 1)
+  const current = page.beats[beatIndex]
+  const order: string[] = []
+  for (const beat of shown) if (!order.includes(beat.panel)) order.push(beat.panel)
+  const fresh = shown.filter((beat) => beat.panel === current?.panel).length === 1
+  for (const id of order) {
+    const panel = page.panels.find((item) => item.id === id)
+    const img = comicPanelImage(id)
+    if (!panel || !img || (img.naturalWidth || 0) <= 0) continue
+    const posing = animate && current?.panel === id && (fresh || current.enter === 'push')
+    const pose = posing ? enterPose(current?.enter, now - beatAt, current?.ms ?? 450) : { alpha: 1, dx: 0, dy: 0, scale: 1, fx: 0.5, fy: 0.5 }
+    const cx = panel.x + panel.w * pose.fx
+    const cy = panel.y + panel.h * pose.fy
+    ctx.save()
+    ctx.globalAlpha *= Math.max(0, Math.min(1, pose.alpha))
+    ctx.translate(pose.dx, pose.dy)
+    ctx.translate(cx, cy)
+    ctx.scale(pose.scale, pose.scale)
+    ctx.translate(-cx, -cy)
+    ctx.drawImage(img as CanvasImageSource, panel.x, panel.y, panel.w, panel.h)
+    ctx.restore()
+  }
+  if (!shown.some((beat) => beat.kind === 'sila')) return
+  const sila = comicSilaImage()
+  if (!sila || (sila.naturalWidth || 0) <= 0) return
+  const popAge = silaAt > 0 ? now - silaAt : 999
+  if (popAge < 0) return
+  const sw = script.width * 0.7
+  const sh = sw * ((sila.naturalHeight || 1) / (sila.naturalWidth || 1))
+  const pop = popScale(popAge, 280)
+  ctx.save()
+  ctx.translate(384, 680)
+  ctx.scale(pop, pop)
+  ctx.drawImage(sila as CanvasImageSource, -sw / 2, -sh / 2, sw, sh)
+  ctx.restore()
+}
+
+function enterPose(enter: ComicEnter | undefined, age: number, ms: number): { alpha: number; dx: number; dy: number; scale: number; fx: number; fy: number } {
+  const dur = Math.max(280, ms)
+  const t = Math.max(0, Math.min(1, age / dur))
+  const ease = 1 - (1 - t) ** 3
+  const overshoot = (from: number, peak: number) => {
+    if (t < 0.7) return from + (peak - from) * (1 - (1 - t / 0.7) ** 3)
+    const k = (t - 0.7) / 0.3
+    return peak + (1 - peak) * (1 - (1 - k) ** 2)
+  }
+  const rest = { alpha: 1, dx: 0, dy: 0, scale: 1, fx: 0.5, fy: 0.5 }
+  if (enter === 'fade-push') {
+    const z = Math.min(1, age / 500)
+    return { alpha: Math.min(1, age / 400), dx: 0, dy: 0, scale: 1 + 0.07 * (1 - (1 - z) ** 3), fx: 0.82, fy: 0.42 }
+  }
+  if (enter === 'fade-face') {
+    const z = Math.max(0, Math.min(1, (age - 180) / 500))
+    return { alpha: Math.min(1, age / 300), dx: 0, dy: 0, scale: 1 + 0.09 * (1 - (1 - z) ** 3), fx: 0.78, fy: 0.42 }
+  }
+  if (enter === 'push') {
+    const z = Math.min(1, age / dur)
+    return { alpha: 1, dx: 0, dy: 0, scale: 1 + 0.06 * (1 - (1 - z) ** 3), fx: 0.55, fy: 0.28 }
+  }
+  if (age >= dur) return rest
+  if (enter === 'pop') return { alpha: Math.min(1, age / 120), dx: 0, dy: 0, scale: overshoot(0.62, 1.06), fx: 0.5, fy: 0.55 }
+  if (enter === 'slide-right') return { alpha: 1, dx: (1 - ease) * 240, dy: 0, scale: 1, fx: 0.5, fy: 0.5 }
+  if (enter === 'slide-left') return { alpha: 1, dx: -(1 - ease) * 240, dy: 0, scale: 1, fx: 0.5, fy: 0.5 }
+  if (enter === 'pop-right') return { alpha: Math.min(1, age / 100), dx: (1 - ease) * 170, dy: 0, scale: overshoot(0.78, 1.05), fx: 0.55, fy: 0.45 }
+  if (enter === 'pop-big') return { alpha: Math.min(1, age / 80), dx: 0, dy: 0, scale: overshoot(0.7, 1.08), fx: 0.5, fy: 0.5 }
+  if (enter === 'rise') return { alpha: Math.min(1, age / 280), dx: 0, dy: (1 - ease) * 170, scale: 1, fx: 0.5, fy: 0.35 }
+  if (enter === 'fade') return { alpha: Math.min(1, age / dur), dx: 0, dy: 0, scale: 1, fx: 0.5, fy: 0.5 }
+  if (enter === 'slide-slant') return { alpha: 1, dx: (1 - ease) * 260, dy: -(1 - ease) * 36, scale: 1, fx: 0.5, fy: 0.5 }
+  return rest
 }
 
 function paintMute(ctx: CanvasRenderingContext2D, rect: Rect, muted: boolean): void {
@@ -423,13 +521,6 @@ function paintMute(ctx: CanvasRenderingContext2D, rect: Rect, muted: boolean): v
   }
 }
 
-function comicBubbleNudge(text: string): { dx: number; dy: number; align?: 'right' } {
-  if (text.startsWith('这双绣鞋')) return { dx: 10, dy: 98 }
-  if (text.startsWith('我从不穿桃红')) return { dx: 0, dy: -22, align: 'right' }
-  if (text.startsWith('娘，我们去哪儿')) return { dx: 0, dy: 112 }
-  return { dx: 0, dy: 0 }
-}
-
 function paintComicBubble(
   ctx: CanvasRenderingContext2D,
   script: { width: number; height: number },
@@ -451,17 +542,15 @@ function paintComicBubble(
   const maxW = Math.max(80, Math.min(beat.w ?? 420, script.width - 24))
   const lines = wrapComicText(line, maxW, (value) => ctx.measureText(value).width).slice(0, 3)
   const textW = Math.max(48, ...lines.map((row) => ctx.measureText(row).width))
-  const nudge = comicBubbleNudge(line)
-  const namePx = nameSize
-  ctx.font = `700 ${namePx}px ${COMIC_FONT}`
+  ctx.font = `700 ${nameSize}px ${COMIC_FONT}`
   const nameW = beat.speaker ? ctx.measureText(beat.speaker).width : 0
   const innerW = Math.max(textW, nameW)
-  const nameH = beat.speaker ? namePx + 2 : 0
+  const nameH = beat.speaker ? nameSize + 2 : 0
   const foot = start ? 36 : 14
   const boxW = innerW + padX * 2
   const boxH = padY + nameH + lines.length * lineH + foot + padY
-  let x = nudge.align === 'right' ? script.width - 8 - boxW : (beat.x ?? 24) + nudge.dx
-  let y = (beat.y ?? 24) - padY - nameH + nudge.dy
+  let x = beat.x ?? 24
+  let y = (beat.y ?? 24) - padY - nameH
   if (x < 8) x = 8
   if (y < 8) y = 8
   if (x + boxW > script.width - 8) x = Math.max(8, script.width - 8 - boxW)
@@ -471,7 +560,7 @@ function paintComicBubble(
   ctx.fill()
   let textY = y + padY
   if (beat.speaker) {
-    ctx.font = `700 ${namePx}px ${COMIC_FONT}`
+    ctx.font = `700 ${nameSize}px ${COMIC_FONT}`
     ctx.textAlign = 'left'
     ctx.textBaseline = 'top'
     ctx.fillStyle = '#f3d48a'

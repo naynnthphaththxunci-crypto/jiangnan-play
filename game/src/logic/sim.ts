@@ -1672,7 +1672,7 @@ export function scrollOrders(start: number, dx: number, max: number): number {
 }
 
 export function storyLength(cfg: GameConfig): number {
-  return cfg.opening.pages.reduce((sum, page) => sum + page.beats.length + 1, 0)
+  return cfg.opening.pages.reduce((sum, page) => sum + page.beats.length, 0)
 }
 
 export function advanceStory(state: GameState, cfg: GameConfig): void {

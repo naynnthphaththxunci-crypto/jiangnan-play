@@ -557,11 +557,7 @@ export function startGame(platform: Platform): void {
       return
     }
     if (hit.kind === 'story') {
-      const before = state.storyStep
-      advanceStory(state, cfg)
-      fx.comicFrom = before
-      fx.comicFadeAt = platform.now()
-      if (silaJustShown(cfg.opening, before, state.storyStep)) fx.shakeUntil = platform.now() + 460
+      stepStory()
       sfx.ui()
       mark()
       return
@@ -862,6 +858,19 @@ export function startGame(platform: Platform): void {
     return true
   }
 
+  function stepStory(): void {
+    const before = state.storyStep
+    if (before === 0) comicAudio.sync(cfg.opening, 0, true)
+    advanceStory(state, cfg)
+    fx.comicFrom = before
+    fx.comicFadeAt = platform.now()
+    if (silaJustShown(cfg.opening, before, state.storyStep)) {
+      fx.silaAt = platform.now() + 420
+      fx.shakeUntil = fx.silaAt + 460
+    }
+    comicAudio.sync(cfg.opening, state.storyStep, state.phase === 'story')
+  }
+
   function onDown(x: number, y: number, id: number): void {
     sfx.unlock()
     lastInput = platform.now()
@@ -955,12 +964,7 @@ export function startGame(platform: Platform): void {
         sfx.ui()
         mark()
       } else if (hit.kind === 'hotspot') {
-        const before = state.storyStep
-        advanceStory(state, cfg)
-        fx.comicFrom = before
-        fx.comicFadeAt = platform.now()
-        if (silaJustShown(cfg.opening, before, state.storyStep)) fx.shakeUntil = platform.now() + 460
-        comicAudio.sync(cfg.opening, state.storyStep, state.phase === 'story')
+        stepStory()
         sfx.ui()
         mark()
       }

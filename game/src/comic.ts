@@ -1,6 +1,14 @@
-import page1 from './assets/comic/page1.jpg'
-import page2 from './assets/comic/page2.jpg'
-import page3 from './assets/comic/page3.jpg'
+import p1_1 from './assets/comic/p1_1.webp'
+import p1_2 from './assets/comic/p1_2.webp'
+import p1_3 from './assets/comic/p1_3.webp'
+import p1_4 from './assets/comic/p1_4.webp'
+import p2_1 from './assets/comic/p2_1.webp'
+import p2_2 from './assets/comic/p2_2.webp'
+import p2_3 from './assets/comic/p2_3.webp'
+import p2_4 from './assets/comic/p2_4.webp'
+import p3_1 from './assets/comic/p3_1.webp'
+import p3_2 from './assets/comic/p3_2.webp'
+import p3_3 from './assets/comic/p3_3.webp'
 import silaUrl from './assets/comic/sila.webp'
 import regularUrl from './assets/comic/comic-regular.woff2'
 import boldUrl from './assets/comic/comic-bold.woff2'
@@ -8,7 +16,11 @@ import type { ComicBeat, OpeningScript } from './types'
 
 export const COMIC_FONT = 'JiangnanComic'
 
-const PAGE_URLS = [page1, page2, page3]
+const PANEL_URLS: Record<string, string> = {
+  p1_1, p1_2, p1_3, p1_4,
+  p2_1, p2_2, p2_3, p2_4,
+  p3_1, p3_2, p3_3,
+}
 
 type ComicImage = CanvasImageSource & { complete?: boolean; naturalWidth?: number; naturalHeight?: number }
 
@@ -20,11 +32,11 @@ function loadImage(src: string): ComicImage | null {
   return img
 }
 
-const pageImages = PAGE_URLS.map((src) => loadImage(src))
+const panelImages = new Map<string, ComicImage | null>(Object.entries(PANEL_URLS).map(([id, src]) => [id, loadImage(src)]))
 const silaImage = loadImage(silaUrl)
 
-export function comicPageImage(index: number): ComicImage | null {
-  return pageImages[index] ?? null
+export function comicPanelImage(id: string): ComicImage | null {
+  return panelImages.get(id) ?? null
 }
 
 export function comicSilaImage(): ComicImage | null {
@@ -34,7 +46,7 @@ export function comicSilaImage(): ComicImage | null {
 export function comicImageElements(): HTMLImageElement[] {
   const Ctor = (globalThis as { HTMLImageElement?: typeof HTMLImageElement }).HTMLImageElement
   if (!Ctor) return []
-  return [...pageImages, silaImage].filter((img): img is HTMLImageElement => img instanceof Ctor)
+  return [...panelImages.values(), silaImage].filter((img): img is HTMLImageElement => img instanceof Ctor)
 }
 
 let fontPromise: Promise<void> | null = null
@@ -68,46 +80,46 @@ export function comicFontReady(): boolean {
   return fonts.check(`400 32px ${COMIC_FONT}`) && fonts.check(`700 32px ${COMIC_FONT}`)
 }
 
-export type ComicPrompt = 'blank' | 'line' | 'sila' | 'start'
+export type ComicPrompt = 'blank' | 'line' | 'hold' | 'sila' | 'start'
 
-/** 当前这一拍要给玩家看的东西。最后一页台词出完后是「开始营业」。 */
+/** 当前这一拍要给玩家看的东西。最后一句出完后是「开始营业」。 */
 export function comicPrompt(script: OpeningScript, step: number): { prompt: ComicPrompt; beat: ComicBeat | null; page: number } {
   const cursor = comicCursor(script, step)
   if (!cursor) return { prompt: 'blank', beat: null, page: 0 }
   const page = script.pages[cursor.page]
-  if (!page || cursor.shown <= 0) return { prompt: 'blank', beat: null, page: cursor.page }
-  const beat = page.beats[cursor.shown - 1] ?? null
-  if (beat?.kind === 'sila') return { prompt: 'sila', beat, page: cursor.page }
+  const beat = page?.beats[cursor.index] ?? null
+  if (!beat) return { prompt: 'blank', beat: null, page: cursor.page }
+  if (beat.kind === 'sila' || !beat.text) return { prompt: beat.kind === 'sila' ? 'sila' : 'hold', beat, page: cursor.page }
   const lastPage = cursor.page === script.pages.length - 1
-  if (lastPage && cursor.shown >= page.beats.length) return { prompt: 'start', beat, page: cursor.page }
+  if (lastPage && cursor.index >= page.beats.length - 1) return { prompt: 'start', beat, page: cursor.page }
   return { prompt: 'line', beat, page: cursor.page }
 }
 
 export interface ComicCursor {
   page: number
-  shown: number
+  index: number
 }
 
-/** storyStep 0 是第一页还没出字。每一页的拍数是「句子数 + 1」（含出完后的那一拍）。 */
+/** storyStep 0 就是第一页第一格。点一下进入下一拍，拍数用完进入教学。 */
 export function comicCursor(script: OpeningScript, step: number): ComicCursor | null {
   let left = step
   for (let page = 0; page < script.pages.length; page++) {
-    const count = script.pages[page].beats.length + 1
-    if (left < count) return { page, shown: left }
+    const count = script.pages[page].beats.length
+    if (left < count) return { page, index: left }
     left -= count
   }
   return null
 }
 
 export function storyBeatCount(script: OpeningScript): number {
-  return script.pages.reduce((sum, page) => sum + page.beats.length + 1, 0)
+  return script.pages.reduce((sum, page) => sum + page.beats.length, 0)
 }
 
 export function silaVisible(script: OpeningScript, step: number): boolean {
   const cursor = comicCursor(script, step)
   if (!cursor) return false
-  const index = script.pages[cursor.page]?.beats.findIndex((beat) => beat.kind === 'sila') ?? -1
-  return index >= 0 && cursor.shown > index
+  const beats = script.pages[cursor.page]?.beats ?? []
+  return beats.slice(0, cursor.index + 1).some((beat) => beat.kind === 'sila')
 }
 
 export function silaJustShown(script: OpeningScript, before: number, after: number): boolean {
@@ -164,11 +176,8 @@ export function wrapComicText(text: string, maxW: number, measure: (value: strin
   return lines.filter((line) => line.length > 0)
 }
 
-export function comicCue(step: number): ComicCue | null {
-  if (step === 1) return 'crickets'
-  if (step === 2) return 'hmm'
-  if (step === 3) return 'snore'
-  if (step === 4) return 'hmph'
-  if (step === 7) return 'tear'
-  return null
+export function comicCue(script: OpeningScript, step: number): ComicCue | null {
+  const cursor = comicCursor(script, step)
+  if (!cursor) return null
+  return script.pages[cursor.page]?.beats[cursor.index]?.cue ?? null
 }

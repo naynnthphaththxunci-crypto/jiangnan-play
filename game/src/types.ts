@@ -91,16 +91,42 @@ export interface BoardTheme {
   ready: string
 }
 
+export type ComicEnter =
+  | 'fade-push'
+  | 'pop'
+  | 'slide-right'
+  | 'fade-face'
+  | 'slide-left'
+  | 'pop-right'
+  | 'pop-big'
+  | 'rise'
+  | 'fade'
+  | 'push'
+  | 'slide-slant'
+
+export interface ComicPanel {
+  id: string
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
 export interface ComicBeat {
-  kind: 'line' | 'sila'
+  kind: 'line' | 'sila' | 'hold'
+  panel: string
+  enter?: ComicEnter
+  ms?: number
   speaker?: string
   text?: string
   x?: number
   y?: number
   w?: number
+  cue?: 'crickets' | 'hmm' | 'snore' | 'hmph' | 'tear'
 }
 
 export interface ComicPage {
+  panels: ComicPanel[]
   beats: ComicBeat[]
 }
 
