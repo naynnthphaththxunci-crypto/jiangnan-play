@@ -125,6 +125,45 @@ export function comicBed(script: OpeningScript, step: number): ComicBed | null {
   return cursor.page >= 2 ? 'gentle' : 'tense'
 }
 
+const BREAK_AFTER = new Set(['。', '！', '？', '，', '、', '；', '：'])
+
+/** 先在句号、问号、叹号处断行；一行放不下时再按标点切，不把一个字或一个标点单独留到下一行。 */
+export function wrapComicText(text: string, maxW: number, measure: (value: string) => number): string[] {
+  const clauses: string[] = []
+  let clause = ''
+  for (const ch of text) {
+    clause += ch
+    if (ch === '。' || ch === '！' || ch === '？') {
+      clauses.push(clause)
+      clause = ''
+    }
+  }
+  if (clause) clauses.push(clause)
+  const lines: string[] = []
+  for (const piece of clauses) {
+    if (measure(piece) <= maxW) {
+      lines.push(piece)
+      continue
+    }
+    let cur = ''
+    const contentCount = (value: string) => [...value].filter((ch) => !BREAK_AFTER.has(ch)).length
+    for (const ch of piece) {
+      const next = cur + ch
+      if (cur && measure(next) > maxW) {
+        let nextLine = ch
+        while (cur.length > 2 && contentCount(nextLine) < 2) {
+          nextLine = cur.slice(-1) + nextLine
+          cur = cur.slice(0, -1)
+        }
+        lines.push(cur)
+        cur = nextLine
+      } else cur = next
+    }
+    if (cur) lines.push(cur)
+  }
+  return lines.filter((line) => line.length > 0)
+}
+
 export function comicCue(step: number): ComicCue | null {
   if (step === 1) return 'crickets'
   if (step === 2) return 'hmm'

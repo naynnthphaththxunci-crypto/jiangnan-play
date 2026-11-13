@@ -807,6 +807,12 @@ export function startGame(platform: Platform): void {
     cam.y = worldY - (sy - cy) / cam.scale
   }
 
+  function openingMergeSticky(): boolean {
+    if (state.phase !== 'opening') return false
+    const id = currentTutorial(cfg, state)?.id
+    return id === 'merge' || id === 'mergeC' || id === 'mergeD'
+  }
+
   function noteGuide(now: number): void {
     const key = guideLockKey(state)
     if (key === guideKey) return
@@ -922,7 +928,7 @@ export function startGame(platform: Platform): void {
         (hole ? contains(hole, x, y) : !tutorialBlocks(hit))
       if (!aimed) {
         guideMisses += 1
-        if (guideMisses >= 3 || platform.now() - guideSince > 8000) {
+        if (!openingMergeSticky() && (guideMisses >= 3 || platform.now() - guideSince > 8000)) {
           dismissStuckGuide(state, cfg)
           mark()
           hit = hitTest(frame, x, y) ?? { kind: 'swallow' as const }
@@ -1156,7 +1162,7 @@ export function startGame(platform: Platform): void {
     arrangeOrders(state, real)
     resolveGuides(state, cfg)
     noteGuide(real)
-    if (guideIsLocking(state, cfg) && real - guideSince > 8000) {
+    if (guideIsLocking(state, cfg) && !openingMergeSticky() && real - guideSince > 8000) {
       dismissStuckGuide(state, cfg)
       mark()
     }

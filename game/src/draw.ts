@@ -49,7 +49,7 @@ import tutorialHandUrl from './assets/ui/tutorial_hand.png'
 import iconBoltUrl from './assets/ui/icon_bolt.png'
 import { orderRewardImage, orderTrayImage } from './orderTray'
 import { guestPortrait, measurePortrait, portraitReady } from './portraits'
-import { COMIC_FONT, comicCursor, comicFontReady, comicPageImage, comicPrompt, comicSilaImage } from './comic'
+import { COMIC_FONT, comicCursor, comicFontReady, comicPageImage, comicPrompt, comicSilaImage, wrapComicText } from './comic'
 import { SLIDERS } from './tuner'
 import { COLS, ROWS, type GameConfig, type GameState, type Item, type NormBox } from './types'
 
@@ -320,19 +320,10 @@ function drawItem(
   ctx.restore()
 }
 
-function comicWrap(ctx: CanvasRenderingContext2D, value: string, maxW: number, size: number): string[] {
-  ctx.font = `400 ${size}px ${COMIC_FONT}`
-  const lines: string[] = []
-  let cur = ''
-  for (const ch of value) {
-    const next = cur + ch
-    if (ctx.measureText(next).width > maxW && cur) {
-      lines.push(cur)
-      cur = ch
-    } else cur = next
-  }
-  if (cur) lines.push(cur)
-  return lines
+function comicPageBox(frame: Frame, script: { width: number; height: number }): { bottom: number } {
+  const scale = Math.min(frame.w / script.width, frame.h / script.height)
+  const top = (frame.h - script.height * scale) / 2
+  return { bottom: top + script.height * scale }
 }
 
 function drawStory(model: RenderModel): void {
@@ -379,7 +370,7 @@ function drawStory(model: RenderModel): void {
   }
   const prompt = comicPrompt(script, state.storyStep)
   if ((prompt.prompt === 'line' || prompt.prompt === 'start') && prompt.beat?.text && comicFontReady()) {
-    paintComicDialog(ctx, frame, prompt.beat.speaker, prompt.beat.text, prompt.prompt === 'start', realNow)
+    paintComicDialog(ctx, frame, comicPageBox(frame, script).bottom, prompt.beat.speaker, prompt.beat.text, prompt.prompt === 'start', realNow)
   }
   if (model.comicHand !== 'off') paintComicHand(ctx, frame, model.comicHand === 'first')
   paintMute(ctx, frame.muteBtn, state.soundMuted)
@@ -432,49 +423,61 @@ function paintMute(ctx: CanvasRenderingContext2D, rect: Rect, muted: boolean): v
 function paintComicDialog(
   ctx: CanvasRenderingContext2D,
   frame: Frame,
+  comicBottom: number,
   speaker: string | undefined,
   line: string,
   start: boolean,
   now: number,
 ): void {
-  const pad = Math.max(14, frame.w * 0.04)
-  const boxW = frame.w - pad * 2
-  const nameSize = Math.max(15, frame.w * 0.04)
-  const bodySize = Math.max(16, frame.w * 0.042)
-  const textW = boxW - pad * 2 - (start ? frame.w * 0.3 : 28)
-  const lines = comicWrap(ctx, line, textW, bodySize).slice(0, 3)
-  const nameH = speaker ? nameSize + 6 : 0
-  const boxH = pad + nameH + lines.length * (bodySize + 6) + (start ? 8 : 22) + pad * 0.4
-  const box = { x: pad, y: frame.h - boxH - Math.max(14, frame.h * 0.028), w: boxW, h: boxH }
+  const padX = Math.max(14, Math.round(frame.w * 0.04))
+  const bodySize = Math.max(16, Math.round(frame.w * (16 / 390)))
+  const lineH = bodySize * 1.5
+  const nameSize = Math.max(15, Math.round(bodySize * 0.95))
+  const padY = Math.round(bodySize * 0.75)
+  const nameH = nameSize + Math.round(bodySize * 0.45)
+  const arrowCol = start ? Math.round(frame.w * 0.32) : 36
+  const boxW = frame.w - padX * 2
+  const textW = boxW - padX * 2 - arrowCol
+  ctx.font = `400 ${bodySize}px ${COMIC_FONT}`
+  const lines = wrapComicText(line, textW, (value) => ctx.measureText(value).width).slice(0, 3)
+  const textRows = Math.max(2, lines.length)
+  const boxH = padY + nameH + textRows * lineH + padY
+  const margin = Math.max(10, Math.round(frame.h * 0.016))
+  const gap = frame.h - comicBottom
+  const y = gap >= boxH + margin ? comicBottom + Math.max(margin, (gap - boxH) / 2) : Math.max(margin, frame.h - boxH - margin)
+  const box = { x: padX, y, w: boxW, h: boxH }
   ctx.save()
   roundRect(ctx, box.x, box.y, box.w, box.h, 16)
-  ctx.fillStyle = 'rgba(0,0,0,0.7)'
+  ctx.fillStyle = 'rgba(12,10,8,0.78)'
   ctx.fill()
-  let textY = box.y + pad
+  ctx.lineWidth = 1.5
+  ctx.strokeStyle = 'rgba(255,255,255,0.28)'
+  ctx.stroke()
+  let textY = box.y + padY
   if (speaker) {
     ctx.font = `700 ${nameSize}px ${COMIC_FONT}`
     ctx.textAlign = 'left'
     ctx.textBaseline = 'top'
     ctx.fillStyle = '#f3d48a'
-    ctx.fillText(speaker, box.x + pad, textY)
-    textY += nameH
+    ctx.fillText(speaker, box.x + padX, textY)
   }
+  textY += nameH
   ctx.font = `400 ${bodySize}px ${COMIC_FONT}`
   ctx.fillStyle = '#ffffff'
   ctx.textAlign = 'left'
   ctx.textBaseline = 'top'
   for (const row of lines) {
-    ctx.fillText(row, box.x + pad, textY)
-    textY += bodySize + 6
+    ctx.fillText(row, box.x + padX, textY + (lineH - bodySize) / 2)
+    textY += lineH
   }
   if (start) {
     const label = '开始营业'
-    ctx.font = `700 ${Math.max(15, bodySize)}px ${COMIC_FONT}`
+    ctx.font = `700 ${bodySize}px ${COMIC_FONT}`
     const tw = ctx.measureText(label).width
     const bw = tw + 28
-    const bh = Math.max(30, bodySize + 12)
+    const bh = Math.max(32, Math.round(bodySize * 1.8))
     const bx = box.x + box.w - bw - 12
-    const by = box.y + box.h - bh - 10
+    const by = box.y + box.h - bh - 12
     roundRect(ctx, bx, by, bw, bh, bh / 2)
     ctx.fillStyle = '#f3d48a'
     ctx.fill()
@@ -484,14 +487,14 @@ function paintComicDialog(
     ctx.fillText(label, bx + bw / 2, by + bh / 2)
   } else {
     const alpha = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(now / 160))
-    const ax = box.x + box.w - 22
-    const ay = box.y + box.h - 18
+    const ax = box.x + box.w - 20
+    const ay = box.y + box.h - 22
     ctx.globalAlpha = alpha
     ctx.fillStyle = '#ffffff'
     ctx.beginPath()
-    ctx.moveTo(ax, ay + 8)
-    ctx.lineTo(ax - 7, ay - 2)
-    ctx.lineTo(ax + 7, ay - 2)
+    ctx.moveTo(ax, ay + 7)
+    ctx.lineTo(ax - 6, ay - 2)
+    ctx.lineTo(ax + 6, ay - 2)
     ctx.closePath()
     ctx.fill()
   }

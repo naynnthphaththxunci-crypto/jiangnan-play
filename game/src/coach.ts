@@ -27,7 +27,7 @@ export function gesturePose(
     const press = Math.sin(t * Math.PI * 2)
     return { x: ax, y: ay + (press < 0 ? press * 8 : 0), visible: true }
   }
-  if (t > 0.86) return { x: ax, y: ay, visible: false }
+  if (t > 0.86) return { x: ax, y: ay, visible: true }
   const u = t < 0.14 ? 0 : t > 0.72 ? 1 : (t - 0.14) / 0.58
   const e = ease(u)
   return { x: ax + (bx - ax) * e, y: ay + (by - ay) * e, visible: true }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { comicBed, comicCue, comicCursor, comicPrompt, silaVisible } from '../src/comic'
+import { comicBed, comicCue, comicCursor, comicPrompt, silaVisible, wrapComicText } from '../src/comic'
 import { defaultConfig } from '../src/config'
 import { layout, type LayoutInput } from '../src/layout'
 import {
@@ -92,6 +92,17 @@ describe('第三轮教学、订单和布局', () => {
     expect(comicBed(cfg.opening, 0)).toBeNull()
     expect(comicBed(cfg.opening, 6)).toBe('tense')
     expect(comicBed(cfg.opening, 9)).toBe('gentle')
+    const width = (value: string) => [...value].length * 16
+    expect(wrapComicText('正好，休书我早写好了。丫头你也一并带走。', 240, width)).toEqual([
+      '正好，休书我早写好了。',
+      '丫头你也一并带走。',
+    ])
+    expect(wrapComicText('要走，也是我写和离书。嫁妆单子在我手里，一文不少。', 240, width)).toEqual([
+      '要走，也是我写和离书。',
+      '嫁妆单子在我手里，一文不少。',
+    ])
+    const tight = wrapComicText('嫁妆单子在我手里，一文不少。', 180, width)
+    expect(tight.at(-1)!.replace(/[。！？，、；：]/g, '').length).toBeGreaterThan(1)
     const quiet = createGame(1, cfg)
     quiet.soundMuted = true
     const kept = hydrate(serialize(quiet, cfg), cfg)
