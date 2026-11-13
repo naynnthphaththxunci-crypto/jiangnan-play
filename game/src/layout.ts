@@ -662,6 +662,7 @@ export function hitTest(frame: Frame, x: number, y: number): Hit | null {
     return { kind: 'swallow' }
   }
   if (contains(frame.skip, x, y)) return { kind: 'skip' }
+  if (frame.mode === 'story') return { kind: 'hotspot' }
   if (frame.shop) {
     const shop = shopRects(frame)
     if (contains(shop.daily, x, y)) return { kind: 'shopDaily' }
@@ -677,10 +678,6 @@ export function hitTest(frame: Frame, x: number, y: number): Hit | null {
   if (contains(frame.tuneBtn, x, y)) return { kind: 'tune' }
   if (contains(frame.multBtn, x, y)) return { kind: 'mult' }
   if (contains(frame.shopBtn, x, y)) return { kind: 'shop' }
-  if (frame.mode === 'story') {
-    if (contains(frame.hotspot, x, y)) return { kind: 'hotspot' }
-    return { kind: 'swallow' }
-  }
   if (contains(frame.sheetSkip, x, y)) return { kind: 'skip' }
   if (contains(frame.sheetBtn, x, y)) return { kind: 'sheet' }
   if (contains(frame.sheet, x, y)) return { kind: 'swallow' }

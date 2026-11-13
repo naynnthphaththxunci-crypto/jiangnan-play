@@ -91,11 +91,27 @@ export interface BoardTheme {
   ready: string
 }
 
-export interface OpeningStepDef {
-  scene: string
-  speaker: string
+export interface ComicLineBox {
   text: string
-  hotspot: string
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
+export interface ComicBeat {
+  kind: 'lines' | 'sila'
+  lines?: ComicLineBox[]
+}
+
+export interface ComicPage {
+  beats: ComicBeat[]
+}
+
+export interface OpeningScript {
+  width: number
+  height: number
+  pages: ComicPage[]
 }
 
 export interface ChestWeight {
@@ -206,7 +222,7 @@ export interface GameConfig {
   }
   buildings: { steps: StepDef[] }
   characters: CharacterDef[]
-  opening: OpeningStepDef[]
+  opening: OpeningScript
   stories: Record<string, { speaker: string; text: string }[]>
   economy: Economy
   board: BoardFile

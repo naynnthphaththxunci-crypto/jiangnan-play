@@ -83,7 +83,7 @@ describe('Allen 11-06 母棋、剧情和暂存', () => {
     expect(cfg.copy.producerExtra.length).toBeGreaterThan(0)
   })
 
-  it('剧情只有点热点才下一步，跳过之外的空白不算', () => {
+  it('开场漫画点一下出一句，没点不算', () => {
     const cfg = defaultConfig()
     const state = createGame(1_700_000_000_000, cfg)
     expect(tryAdvanceStory(state, cfg, false)).toBe(false)

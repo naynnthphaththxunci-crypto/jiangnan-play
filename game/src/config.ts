@@ -17,7 +17,7 @@ const RAW = {
   orders: ordersJson,
   buildings: buildingsJson,
   characters: charactersJson.list,
-  opening: openingJson.steps,
+  opening: openingJson,
   economy: economyJson,
   board: boardJson,
   boardTheme: themeJson,

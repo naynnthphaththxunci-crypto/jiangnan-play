@@ -76,6 +76,7 @@ export interface Fx {
   energyFlash: number
   drag: { row: number; col: number; x: number; y: number; pending?: boolean; index?: number } | null
   hover: Hover
+  shakeUntil: number
   ghostOrder: null | {
     customerId: string
     slots: OrderSlot[]
@@ -99,6 +100,7 @@ export function createFx(): Fx {
     energyFlash: 0,
     drag: null,
     hover: null,
+    shakeUntil: 0,
     ghostOrder: null,
   }
 }

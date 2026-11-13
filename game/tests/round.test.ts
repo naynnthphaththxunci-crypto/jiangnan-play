@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { comicCursor, silaVisible } from '../src/comic'
 import { defaultConfig } from '../src/config'
 import { layout, type LayoutInput } from '../src/layout'
 import {
@@ -69,7 +70,13 @@ describe('第三轮教学、订单和布局', () => {
     const state = createGame(1_700_000_000_000, cfg)
     expect(state.phase).toBe('story')
     expect(state.storyStep).toBe(0)
-    expect(cfg.opening[storyLength(cfg) - 1]?.scene.includes('小铺')).toBe(true)
+    expect(cfg.opening.pages).toHaveLength(3)
+    expect(storyLength(cfg)).toBe(14)
+    expect(comicCursor(cfg.opening, 0)).toEqual({ page: 0, shown: 0 })
+    expect(comicCursor(cfg.opening, 4)).toEqual({ page: 0, shown: 4 })
+    expect(silaVisible(cfg.opening, 6)).toBe(false)
+    expect(silaVisible(cfg.opening, 7)).toBe(true)
+    expect(comicCursor(cfg.opening, 13)?.page).toBe(2)
     for (let i = 0; i < storyLength(cfg); i++) advanceStory(state, cfg)
     expect(state.phase).toBe('opening')
     expect(state.storySeen).toBe(true)

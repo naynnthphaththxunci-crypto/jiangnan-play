@@ -1671,8 +1671,7 @@ export function scrollOrders(start: number, dx: number, max: number): number {
 }
 
 export function storyLength(cfg: GameConfig): number {
-  const cut = cfg.opening.findIndex((step) => step.scene.startsWith('棋盘'))
-  return cut === -1 ? cfg.opening.length : cut
+  return cfg.opening.pages.reduce((sum, page) => sum + page.beats.length + 1, 0)
 }
 
 export function advanceStory(state: GameState, cfg: GameConfig): void {
@@ -1772,8 +1771,8 @@ export function producerChain(state: GameState, producerId: string, current: num
   })
 }
 
-export function tryAdvanceStory(state: GameState, cfg: GameConfig, hotspot: boolean): boolean {
-  if (state.phase !== 'story' || !hotspot) return false
+export function tryAdvanceStory(state: GameState, cfg: GameConfig, tapped: boolean): boolean {
+  if (state.phase !== 'story' || !tapped) return false
   advanceStory(state, cfg)
   return true
 }
@@ -2613,6 +2612,11 @@ export function hydrate(raw: string, cfg: GameConfig): GameState | null {
     state.producerLesson ??= null
     state.newestLine ??= null
     state.storyStep ??= 0
+    if (state.phase === 'story' && state.storyStep >= storyLength(cfg)) {
+      state.storySeen = true
+      state.phase = 'opening'
+      state.openingStep ??= 0
+    }
     state.storageOpen ??= (state.stats?.ordersDone ?? 0) > 0
     if (state.storySeen == null) state.storySeen = state.phase === 'play' || (state.openingStep ?? 0) > 0
     if (!state.storySeen && state.phase === 'opening' && state.openingStep === 0) state.phase = 'story'

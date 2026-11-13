@@ -1,4 +1,5 @@
 import { tutorialHand } from './coach'
+import { silaJustShown } from './comic'
 import { createSfx, type Sfx } from './audio'
 import { defaultConfig, resetEconomy } from './config'
 import { partAt, render } from './draw'
@@ -550,7 +551,9 @@ export function startGame(platform: Platform): void {
       return
     }
     if (hit.kind === 'story') {
+      const before = state.storyStep
       advanceStory(state, cfg)
+      if (silaJustShown(cfg.opening, before, state.storyStep)) fx.shakeUntil = platform.now() + 460
       sfx.ui()
       mark()
       return
@@ -932,7 +935,9 @@ export function startGame(platform: Platform): void {
         sfx.ui()
         mark()
       } else if (hit.kind === 'hotspot') {
+        const before = state.storyStep
         advanceStory(state, cfg)
+        if (silaJustShown(cfg.opening, before, state.storyStep)) fx.shakeUntil = platform.now() + 460
         sfx.ui()
         mark()
       }

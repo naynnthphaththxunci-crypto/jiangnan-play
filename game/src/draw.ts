@@ -49,6 +49,8 @@ import tutorialHandUrl from './assets/ui/tutorial_hand.png'
 import iconBoltUrl from './assets/ui/icon_bolt.png'
 import { orderRewardImage, orderTrayImage } from './orderTray'
 import { guestPortrait, measurePortrait, portraitReady } from './portraits'
+import { COMIC_FONT, comicCursor, comicFontReady, comicPageImage, comicSilaImage } from './comic'
+import type { ComicLineBox } from './types'
 import { SLIDERS } from './tuner'
 import { COLS, ROWS, type GameConfig, type GameState, type Item, type NormBox } from './types'
 
@@ -318,52 +320,127 @@ function drawItem(
   ctx.restore()
 }
 
-const STORY_BG = ['#1c2433', '#2a2118', '#3a2430', '#241c18', '#2c241c', '#3a2a28', '#1a2830', '#3d3428']
+const comicFit = new Map<string, { size: number; dx: number; dy: number; sx: number; sy: number }>()
 
-const STORY_PORTRAIT: Record<string, string> = {
-  温如月: 'ruyue',
-  小桃: 'xiaotao',
-  赵文轩: 'zhao',
-  柳姑娘: 'liu',
-  柳氏: 'liu',
+function comicPlacement(value: string, boxW: number, boxH: number): { size: number; dx: number; dy: number; sx: number; sy: number } {
+  const key = `${value}|${boxW}|${boxH}`
+  const cached = comicFit.get(key)
+  if (cached) return cached
+  const size = Math.max(8, boxH - 2)
+  const host = globalThis as { document?: Document }
+  const canvas = host.document?.createElement('canvas')
+  if (!canvas) return { size, dx: 0, dy: 0, sx: 1, sy: 1 }
+  const pad = 8
+  canvas.width = Math.ceil(size * [...value].length * 1.3) + pad * 2
+  canvas.height = Math.ceil(size * 2.2) + pad * 2
+  const probe = canvas.getContext('2d')
+  if (!probe) return { size, dx: 0, dy: 0, sx: 1, sy: 1 }
+  probe.font = `700 ${size}px ${COMIC_FONT}`
+  probe.textAlign = 'left'
+  probe.textBaseline = 'alphabetic'
+  probe.lineJoin = 'round'
+  probe.miterLimit = 2
+  probe.lineWidth = 2
+  probe.strokeStyle = '#000'
+  probe.fillStyle = '#fff'
+  const anchorX = pad
+  const anchorY = pad + size
+  probe.strokeText(value, anchorX, anchorY)
+  probe.fillText(value, anchorX, anchorY)
+  const data = probe.getImageData(0, 0, canvas.width, canvas.height).data
+  let minX = canvas.width
+  let minY = canvas.height
+  let maxX = 0
+  let maxY = 0
+  for (let i = 0; i < data.length; i += 4) {
+    if ((data[i + 3] ?? 0) < 24) continue
+    const px = (i / 4) % canvas.width
+    const py = Math.floor(i / 4 / canvas.width)
+    if (px < minX) minX = px
+    if (py < minY) minY = py
+    if (px > maxX) maxX = px
+    if (py > maxY) maxY = py
+  }
+  const visW = Math.max(1, maxX - minX + 1)
+  const visH = Math.max(1, maxY - minY + 1)
+  const fit = {
+    size,
+    dx: minX - anchorX,
+    dy: minY - anchorY,
+    sx: boxW / visW,
+    sy: boxH / visH,
+  }
+  comicFit.set(key, fit)
+  return fit
+}
+
+function paintComicLine(ctx: CanvasRenderingContext2D, line: ComicLineBox): void {
+  const fit = comicPlacement(line.text, line.w, line.h)
+  ctx.save()
+  ctx.translate(line.x, line.y)
+  ctx.scale(fit.sx, fit.sy)
+  ctx.translate(-fit.dx, -fit.dy)
+  ctx.font = `700 ${fit.size}px ${COMIC_FONT}`
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'alphabetic'
+  ctx.lineJoin = 'round'
+  ctx.miterLimit = 2
+  ctx.lineWidth = 2
+  ctx.strokeStyle = '#111111'
+  ctx.strokeText(line.text, 0, 0)
+  ctx.fillStyle = '#ffffff'
+  ctx.fillText(line.text, 0, 0)
+  ctx.restore()
 }
 
 function drawStory(model: RenderModel): void {
-  const { ctx, frame, state, cfg } = model
-  const step = cfg.opening[state.storyStep]
-  if (!step) return
-  ctx.fillStyle = STORY_BG[state.storyStep % STORY_BG.length] ?? '#241c18'
+  const { ctx, frame, state, cfg, realNow, fx } = model
+  ctx.fillStyle = '#000'
   ctx.fillRect(0, 0, frame.w, frame.h)
-  const portraitKey = STORY_PORTRAIT[step.speaker]
-  const portrait = guestPortrait(portraitKey)
-  if (portraitKey && portrait && portraitReady(portrait)) {
-    measurePortrait(portraitKey, portrait)
-    const cardTop = frame.h * 0.58
-    const height = frame.h * 0.5
-    const width = height
-    const x = frame.w - width * 0.78
-    const y = cardTop - height * 0.62
-    ctx.drawImage(portrait as CanvasImageSource, x, y, width, height)
+  const cursor = comicCursor(cfg.opening, state.storyStep)
+  const script = cfg.opening
+  if (cursor) {
+    const pageW = script.width
+    const pageH = script.height
+    const scale = Math.min(frame.w / pageW, frame.h / pageH)
+    let ox = (frame.w - pageW * scale) / 2
+    let oy = (frame.h - pageH * scale) / 2
+    const shakeLeft = fx.shakeUntil - realNow
+    if (shakeLeft > 0) {
+      const t = 1 - shakeLeft / 460
+      const amp = (1 - t) * 8 * scale
+      ox += Math.sin(t * 26) * amp
+      oy += Math.cos(t * 21) * amp * 0.65
+    }
+    ctx.save()
+    ctx.translate(ox, oy)
+    ctx.scale(scale, scale)
+    const img = comicPageImage(cursor.page)
+    if (img && (img.naturalWidth || 0) > 0) ctx.drawImage(img as CanvasImageSource, 0, 0, pageW, pageH)
+    const page = script.pages[cursor.page]
+    if (page && comicFontReady()) {
+      const sila = comicSilaImage()
+      for (let i = 0; i < cursor.shown && i < page.beats.length; i++) {
+        const beat = page.beats[i]
+        if (!beat) continue
+        if (beat.kind === 'lines') {
+          for (const line of beat.lines ?? []) paintComicLine(ctx, line)
+        } else if (beat.kind === 'sila' && sila && (sila.naturalWidth || 0) > 0) {
+          const sw = pageW * 0.7
+          const sh = sw * ((sila.naturalHeight || 1) / (sila.naturalWidth || 1))
+          const age = fx.shakeUntil > 0 ? Math.max(0, realNow - (fx.shakeUntil - 460)) : 999
+          const pop = popScale(age, 280)
+          ctx.save()
+          ctx.translate(384, 690)
+          ctx.scale(pop, pop)
+          ctx.drawImage(sila as CanvasImageSource, -sw / 2, -sh / 2, sw, sh)
+          ctx.restore()
+        }
+      }
+    }
+    ctx.restore()
   }
   button(ctx, frame.skip, '跳过', 'ghost')
-  const scene = wrap(ctx, step.scene, frame.w - 48, 22, 700)
-  scene.forEach((line, i) => text(ctx, line, frame.w / 2, frame.h * 0.28 + i * 32, 22, '#fffaf3'))
-  const card = { x: 16, y: frame.h * 0.58, w: frame.w - 32, h: frame.h * 0.28 }
-  roundRect(ctx, card.x, card.y, card.w, card.h, 14)
-  ctx.fillStyle = PAL.white
-  ctx.fill()
-  text(ctx, step.speaker, card.x + 18, card.y + 28, 16, PAL.danger, 'left')
-  const lines = wrap(ctx, step.text, card.w - 36, 18, 600)
-  lines.forEach((line, i) => text(ctx, line, card.x + 18, card.y + 64 + i * 28, 18, PAL.ink, 'left'))
-  const pulse = 0.45 + 0.55 * (0.5 + 0.5 * Math.sin(model.realNow / 180))
-  roundRect(ctx, frame.hotspot.x, frame.hotspot.y, frame.hotspot.w, frame.hotspot.h, 12)
-  ctx.fillStyle = '#fffaf3'
-  ctx.fill()
-  ctx.lineWidth = 4
-  ctx.strokeStyle = `rgba(184, 67, 47, ${pulse})`
-  ctx.stroke()
-  text(ctx, step.hotspot, frame.hotspot.x + frame.hotspot.w / 2, frame.hotspot.y + frame.hotspot.h / 2 - 8, 22, PAL.ink)
-  text(ctx, '点这里', frame.hotspot.x + frame.hotspot.w / 2, frame.hotspot.y + frame.hotspot.h - 28, 14, PAL.soft)
 }
 
 function pill(ctx: CanvasRenderingContext2D, rect: Rect, label: string, value: string, color: string): void {
@@ -1463,7 +1540,6 @@ function drawChain(model: RenderModel): void {
 function drawSheet(model: RenderModel): void {
   if (model.frame.sheet.h <= 0) return
   const { ctx, frame, cfg, state } = model
-  const step = cfg.opening[9]
   const task = cfg.buildings.steps[0]?.tasks[0]
   roundRect(ctx, frame.sheet.x, frame.sheet.y, frame.sheet.w, frame.sheet.h, 14)
   ctx.fillStyle = PAL.white
@@ -1472,11 +1548,6 @@ function drawSheet(model: RenderModel): void {
   ctx.lineWidth = 1.5
   ctx.stroke()
   button(ctx, frame.sheetSkip, '跳过', 'ghost')
-  if (step) {
-    text(ctx, step.speaker, frame.sheet.x + 16, frame.sheet.y + 22, 13, PAL.danger, 'left')
-    const lines = wrap(ctx, step.text, frame.sheet.w - 100, 16)
-    lines.forEach((line, i) => text(ctx, line, frame.sheet.x + 16, frame.sheet.y + 48 + i * 22, 16, PAL.ink, 'left'))
-  }
   const price = task ? taskPrice(task, cfg) : 0
   const afford = state.coins >= price
   button(ctx, frame.sheetBtn, `${task?.name ?? '挂招牌'} · ${price} 铜钱`, afford ? 'primary' : 'ghost')
