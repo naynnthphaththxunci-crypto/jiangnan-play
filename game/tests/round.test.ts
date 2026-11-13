@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { comicCursor, comicPrompt, silaVisible } from '../src/comic'
+import { comicBed, comicCue, comicCursor, comicPrompt, silaVisible } from '../src/comic'
 import { defaultConfig } from '../src/config'
 import { layout, type LayoutInput } from '../src/layout'
 import {
@@ -10,6 +10,7 @@ import {
   createGame,
   currentTutorial,
   guardedDrop,
+  hydrate,
   lineChain,
   makeChest,
   makePotion,
@@ -23,6 +24,7 @@ import {
   orderTakeCells,
   pickHint,
   sellItem,
+  serialize,
   skipStory,
   storyLength,
   tutorialAllowsInspect,
@@ -81,6 +83,19 @@ describe('第三轮教学、订单和布局', () => {
     expect(comicPrompt(cfg.opening, 1).beat?.speaker).toBeUndefined()
     expect(comicPrompt(cfg.opening, 7).prompt).toBe('sila')
     expect(comicPrompt(cfg.opening, 13).prompt).toBe('start')
+    expect(comicCue(1)).toBe('crickets')
+    expect(comicCue(2)).toBe('hmm')
+    expect(comicCue(3)).toBe('snore')
+    expect(comicCue(4)).toBe('hmph')
+    expect(comicCue(7)).toBe('tear')
+    expect(comicCue(6)).toBeNull()
+    expect(comicBed(cfg.opening, 0)).toBeNull()
+    expect(comicBed(cfg.opening, 6)).toBe('tense')
+    expect(comicBed(cfg.opening, 9)).toBe('gentle')
+    const quiet = createGame(1, cfg)
+    quiet.soundMuted = true
+    const kept = hydrate(serialize(quiet, cfg), cfg)
+    expect(kept?.soundMuted).toBe(true)
     expect(comicCursor(cfg.opening, 13)?.page).toBe(2)
     for (let i = 0; i < storyLength(cfg); i++) advanceStory(state, cfg)
     expect(state.phase).toBe('opening')

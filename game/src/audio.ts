@@ -3,6 +3,7 @@ import type { AudioContextLike } from './platform/types'
 // 全部用振荡器现写，不载入采样。见 AUDIO_CREDITS.md。
 export interface Sfx {
   unlock(): void
+  setMuted(muted: boolean): void
   merge(): void
   spawn(): void
   land(when: number): void
@@ -16,6 +17,7 @@ export interface Sfx {
 
 export function createSfx(getCtx: () => AudioContextLike | null): Sfx {
   let ctx: AudioContextLike | null = null
+  let muted = false
   const ensure = () => {
     if (!ctx) ctx = getCtx()
     if (ctx?.state === 'suspended') {
@@ -37,6 +39,7 @@ export function createSfx(getCtx: () => AudioContextLike | null): Sfx {
     type: 'sine' | 'triangle' | 'square',
     gain: number,
   ) => {
+    if (muted) return
     const ac = ensure()
     if (!ac) return
     try {
@@ -61,6 +64,9 @@ export function createSfx(getCtx: () => AudioContextLike | null): Sfx {
   return {
     unlock() {
       ensure()
+    },
+    setMuted(next: boolean) {
+      muted = next
     },
     now() {
       return ensure()?.currentTime ?? 0

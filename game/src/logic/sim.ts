@@ -552,6 +552,7 @@ export function createGame(now: number, cfg: GameConfig): GameState {
     openingStep: 0,
     storyStep: 0,
     storySeen: false,
+    soundMuted: false,
     storageOpen: false,
     bagPhase: 'place',
     smiles: 0,
@@ -2612,6 +2613,7 @@ export function hydrate(raw: string, cfg: GameConfig): GameState | null {
     state.producerLesson ??= null
     state.newestLine ??= null
     state.storyStep ??= 0
+    state.soundMuted ??= false
     if (state.phase === 'story' && state.storyStep >= storyLength(cfg)) {
       state.storySeen = true
       state.phase = 'opening'

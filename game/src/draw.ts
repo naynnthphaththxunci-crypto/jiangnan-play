@@ -382,7 +382,51 @@ function drawStory(model: RenderModel): void {
     paintComicDialog(ctx, frame, prompt.beat.speaker, prompt.beat.text, prompt.prompt === 'start', realNow)
   }
   if (model.comicHand !== 'off') paintComicHand(ctx, frame, model.comicHand === 'first')
+  paintMute(ctx, frame.muteBtn, state.soundMuted)
   button(ctx, frame.skip, '跳过', 'ghost')
+}
+
+function paintMute(ctx: CanvasRenderingContext2D, rect: Rect, muted: boolean): void {
+  if (rect.w <= 0) return
+  roundRect(ctx, rect.x, rect.y, rect.w, rect.h, 10)
+  ctx.fillStyle = PAL.white
+  ctx.fill()
+  ctx.lineWidth = 1.5
+  ctx.strokeStyle = PAL.ink
+  ctx.stroke()
+  const cx = rect.x + rect.w * 0.38
+  const cy = rect.y + rect.h / 2
+  const s = Math.min(rect.w, rect.h) * 0.22
+  ctx.fillStyle = '#2a2118'
+  ctx.beginPath()
+  ctx.rect(cx - s * 0.35, cy - s * 0.45, s * 0.7, s * 0.9)
+  ctx.fill()
+  ctx.beginPath()
+  ctx.moveTo(cx + s * 0.2, cy - s * 0.45)
+  ctx.lineTo(cx + s * 1.15, cy - s * 1.15)
+  ctx.lineTo(cx + s * 1.15, cy + s * 1.15)
+  ctx.lineTo(cx + s * 0.2, cy + s * 0.45)
+  ctx.closePath()
+  ctx.fill()
+  ctx.lineWidth = Math.max(1.4, s * 0.28)
+  ctx.lineCap = 'round'
+  if (muted) {
+    ctx.strokeStyle = '#9c2f2f'
+    ctx.beginPath()
+    ctx.moveTo(cx + s * 1.5, cy - s * 1.05)
+    ctx.lineTo(cx + s * 2.7, cy + s * 1.05)
+    ctx.moveTo(cx + s * 2.7, cy - s * 1.05)
+    ctx.lineTo(cx + s * 1.5, cy + s * 1.05)
+    ctx.stroke()
+  } else {
+    ctx.strokeStyle = '#2a2118'
+    ctx.beginPath()
+    ctx.arc(cx + s * 1.35, cy, s * 0.85, -0.8, 0.8)
+    ctx.stroke()
+    ctx.beginPath()
+    ctx.arc(cx + s * 1.35, cy, s * 1.45, -0.7, 0.7)
+    ctx.stroke()
+  }
 }
 
 function paintComicDialog(

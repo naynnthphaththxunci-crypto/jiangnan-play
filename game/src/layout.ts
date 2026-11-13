@@ -49,6 +49,7 @@ export interface Frame {
   mode: 'story' | 'board' | 'house'
   hotspot: Rect
   skip: Rect
+  muteBtn: Rect
   hud: Rect
   orders: Rect[]
   completes: Rect[]
@@ -245,6 +246,7 @@ export function cellAt(frame: Frame, x: number, y: number): { row: number; col: 
 
 export type Hit =
   | { kind: 'skip' }
+  | { kind: 'mute' }
   | { kind: 'hotspot' }
   | { kind: 'story' }
   | { kind: 'cell'; row: number; col: number }
@@ -434,6 +436,10 @@ export function layout(input: LayoutInput): Frame {
   const skip: Rect = input.showSkip
     ? { x: tuneBtn.x - 8 - skipW, y: top + 6, w: skipW, h: Math.round(30 * unit) }
     : Z
+  const muteS = Math.round(30 * unit)
+  const muteBtn: Rect = input.mode === 'story' && skip.w > 0
+    ? { x: skip.x - 6 - muteS, y: skip.y, w: muteS, h: skip.h }
+    : Z
   const dailyBtn: Rect = input.showDaily
     ? { x: tuneBtn.x, y: tuneBtn.y + tuneS + 4, w: tuneS, h: tuneS }
     : Z
@@ -548,6 +554,7 @@ export function layout(input: LayoutInput): Frame {
         ? { x: (w - Math.round(180 * unit)) / 2, y: h * 0.36, w: Math.round(180 * unit), h: Math.round(120 * unit) }
         : Z,
     skip,
+    muteBtn,
     hud,
     orders,
     completes,
@@ -662,6 +669,7 @@ export function hitTest(frame: Frame, x: number, y: number): Hit | null {
     return { kind: 'swallow' }
   }
   if (contains(frame.skip, x, y)) return { kind: 'skip' }
+  if (frame.muteBtn.w > 0 && contains(frame.muteBtn, x, y)) return { kind: 'mute' }
   if (frame.mode === 'story') return { kind: 'hotspot' }
   if (frame.shop) {
     const shop = shopRects(frame)

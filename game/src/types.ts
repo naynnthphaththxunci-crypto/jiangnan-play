@@ -423,6 +423,7 @@ export interface GameState {
   openingStep: number
   storyStep: number
   storySeen: boolean
+  soundMuted: boolean
   storageOpen: boolean
   bagPhase: 'place' | 'merge'
   smiles: number

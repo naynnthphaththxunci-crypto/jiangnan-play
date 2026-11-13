@@ -113,3 +113,23 @@ export function silaVisible(script: OpeningScript, step: number): boolean {
 export function silaJustShown(script: OpeningScript, before: number, after: number): boolean {
   return !silaVisible(script, before) && silaVisible(script, after)
 }
+
+export type ComicCue = 'crickets' | 'hmm' | 'snore' | 'hmph' | 'tear'
+export type ComicBed = 'tense' | 'gentle'
+
+/** 第 1、2 页用紧张古筝，第 3 页换成温柔古筝。第一步之前不响。 */
+export function comicBed(script: OpeningScript, step: number): ComicBed | null {
+  if (step < 1) return null
+  const cursor = comicCursor(script, step)
+  if (!cursor) return null
+  return cursor.page >= 2 ? 'gentle' : 'tense'
+}
+
+export function comicCue(step: number): ComicCue | null {
+  if (step === 1) return 'crickets'
+  if (step === 2) return 'hmm'
+  if (step === 3) return 'snore'
+  if (step === 4) return 'hmph'
+  if (step === 7) return 'tear'
+  return null
+}

@@ -1,5 +1,6 @@
 import { tutorialHand } from './coach'
 import { silaJustShown } from './comic'
+import { createComicAudio } from './comicAudio'
 import { createSfx, type Sfx } from './audio'
 import { defaultConfig, resetEconomy } from './config'
 import { partAt, render } from './draw'
@@ -138,6 +139,10 @@ export function startGame(platform: Platform): void {
 
   const fx = createFx()
   const sfx = createSfx(() => platform.audio())
+  const comicAudio = createComicAudio(() => platform.audio() as AudioContext | null)
+  comicAudio.preload()
+  comicAudio.setMuted(state.soundMuted)
+  sfx.setMuted(state.soundMuted)
   let view: 'board' | 'house' = 'board'
   let modal: 'energy' | null = null
   let tuner = false
@@ -540,6 +545,7 @@ export function startGame(platform: Platform): void {
       sfx.ui()
       if (state.phase === 'story') {
         skipStory(state)
+        comicAudio.sync(cfg.opening, state.storyStep, false)
         mark()
         return
       }
@@ -930,14 +936,21 @@ export function startGame(platform: Platform): void {
       return
     }
     if (state.phase === 'story') {
-      if (hit.kind === 'skip') {
+      if (hit.kind === 'mute') {
+        state.soundMuted = !state.soundMuted
+        comicAudio.setMuted(state.soundMuted)
+        sfx.setMuted(state.soundMuted)
+        mark()
+      } else if (hit.kind === 'skip') {
         skipStory(state)
+        comicAudio.sync(cfg.opening, state.storyStep, false)
         sfx.ui()
         mark()
       } else if (hit.kind === 'hotspot') {
         const before = state.storyStep
         advanceStory(state, cfg)
         if (silaJustShown(cfg.opening, before, state.storyStep)) fx.shakeUntil = platform.now() + 460
+        comicAudio.sync(cfg.opening, state.storyStep, state.phase === 'story')
         sfx.ui()
         mark()
       }
@@ -1267,6 +1280,15 @@ export function startGame(platform: Platform): void {
     },
     skip() {
       return frame.skip.w > 0 ? frame.skip : frame.sheetSkip
+    },
+    mute() {
+      return frame.muteBtn
+    },
+    audioTrace() {
+      return comicAudio.trace()
+    },
+    audioReady() {
+      return comicAudio.whenReady()
     },
     buttons() {
       return {
