@@ -4,25 +4,25 @@
   "pages": [
     {
       "beats": [
-        { "kind": "line", "text": "深夜，赵府书房的灯还亮着。" },
-        { "kind": "line", "speaker": "温如月", "text": "这双绣鞋，不是我的。" },
-        { "kind": "line", "speaker": "温如月", "text": "我从不穿桃红……" },
-        { "kind": "line", "speaker": "温如月", "text": "出来吧！柳姑娘。" }
+        { "kind": "line", "text": "深夜，赵府书房的灯还亮着。", "x": 90, "y": 172, "w": 568 },
+        { "kind": "line", "speaker": "温如月", "text": "这双绣鞋，不是我的。", "x": 21, "y": 652, "w": 291 },
+        { "kind": "line", "speaker": "温如月", "text": "我从不穿桃红……", "x": 437, "y": 857, "w": 282 },
+        { "kind": "line", "speaker": "温如月", "text": "出来吧！柳姑娘。", "x": 21, "y": 1060, "w": 381 }
       ]
     },
     {
       "beats": [
-        { "kind": "line", "speaker": "赵文轩", "text": "正好，休书我早写好了。丫头你也一并带走。" },
+        { "kind": "line", "speaker": "赵文轩", "text": "正好，休书我早写好了。丫头你也一并带走。", "x": 20, "y": 35, "w": 373 },
         { "kind": "sila" },
-        { "kind": "line", "speaker": "温如月", "text": "要走，也是我写和离书。嫁妆单子在我手里，一文不少。" }
+        { "kind": "line", "speaker": "温如月", "text": "要走，也是我写和离书。嫁妆单子在我手里，一文不少。", "x": 56, "y": 1116, "w": 670 }
       ]
     },
     {
       "beats": [
-        { "kind": "line", "speaker": "小桃", "text": "娘，我们去哪儿？" },
-        { "kind": "line", "speaker": "温如月", "text": "回江南，回外婆的铺子。" },
-        { "kind": "line", "speaker": "小桃", "text": "娘，我饿了。" },
-        { "kind": "line", "speaker": "小桃", "text": "娘做的小鱼干最好吃！" }
+        { "kind": "line", "speaker": "小桃", "text": "娘，我们去哪儿？", "x": 34, "y": 544, "w": 233 },
+        { "kind": "line", "speaker": "温如月", "text": "回江南，回外婆的铺子。", "x": 242, "y": 180, "w": 322 },
+        { "kind": "line", "speaker": "小桃", "text": "娘，我饿了。", "x": 459, "y": 467, "w": 172 },
+        { "kind": "line", "speaker": "小桃", "text": "娘做的小鱼干最好吃！", "x": 160, "y": 1253, "w": 459 }
       ]
     }
   ]

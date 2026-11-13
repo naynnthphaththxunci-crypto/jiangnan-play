@@ -320,12 +320,6 @@ function drawItem(
   ctx.restore()
 }
 
-function comicPageBox(frame: Frame, script: { width: number; height: number }): { bottom: number } {
-  const scale = Math.min(frame.w / script.width, frame.h / script.height)
-  const top = (frame.h - script.height * scale) / 2
-  return { bottom: top + script.height * scale }
-}
-
 function drawStory(model: RenderModel): void {
   const { ctx, frame, state, cfg, realNow, fx } = model
   ctx.fillStyle = '#000'
@@ -366,11 +360,20 @@ function drawStory(model: RenderModel): void {
         ctx.restore()
       }
     }
+    if (comicFontReady()) {
+      const fadeMs = 240
+      const age = fx.comicFadeAt > 0 ? realNow - fx.comicFadeAt : fadeMs
+      const fade = Math.max(0, Math.min(1, age / fadeMs))
+      const current = comicPrompt(script, state.storyStep)
+      const previous = fx.comicFrom >= 0 ? comicPrompt(script, fx.comicFrom) : null
+      if (fade < 1 && previous && previous.page === cursor.page && (previous.prompt === 'line' || previous.prompt === 'start') && previous.beat?.text) {
+        paintComicBubble(ctx, script, previous.beat, false, 1 - fade, realNow)
+      }
+      if ((current.prompt === 'line' || current.prompt === 'start') && current.page === cursor.page && current.beat?.text) {
+        paintComicBubble(ctx, script, current.beat, current.prompt === 'start', fade < 1 && previous ? fade : 1, realNow)
+      }
+    }
     ctx.restore()
-  }
-  const prompt = comicPrompt(script, state.storyStep)
-  if ((prompt.prompt === 'line' || prompt.prompt === 'start') && prompt.beat?.text && comicFontReady()) {
-    paintComicDialog(ctx, frame, comicPageBox(frame, script).bottom, prompt.beat.speaker, prompt.beat.text, prompt.prompt === 'start', realNow)
   }
   if (model.comicHand !== 'off') paintComicHand(ctx, frame, model.comicHand === 'first')
   paintMute(ctx, frame.muteBtn, state.soundMuted)
@@ -420,64 +423,77 @@ function paintMute(ctx: CanvasRenderingContext2D, rect: Rect, muted: boolean): v
   }
 }
 
-function paintComicDialog(
+function comicBubbleNudge(text: string): { dx: number; dy: number; align?: 'right' } {
+  if (text.startsWith('这双绣鞋')) return { dx: 10, dy: 98 }
+  if (text.startsWith('我从不穿桃红')) return { dx: 0, dy: -22, align: 'right' }
+  if (text.startsWith('娘，我们去哪儿')) return { dx: 0, dy: 112 }
+  return { dx: 0, dy: 0 }
+}
+
+function paintComicBubble(
   ctx: CanvasRenderingContext2D,
-  frame: Frame,
-  comicBottom: number,
-  speaker: string | undefined,
-  line: string,
+  script: { width: number; height: number },
+  beat: { speaker?: string; text?: string; x?: number; y?: number; w?: number },
   start: boolean,
+  alpha: number,
   now: number,
 ): void {
-  const padX = Math.max(14, Math.round(frame.w * 0.04))
-  const bodySize = Math.max(16, Math.round(frame.w * (16 / 390)))
-  const lineH = bodySize * 1.5
-  const nameSize = Math.max(15, Math.round(bodySize * 0.95))
-  const padY = Math.round(bodySize * 0.75)
-  const nameH = nameSize + Math.round(bodySize * 0.45)
-  const arrowCol = start ? Math.round(frame.w * 0.32) : 36
-  const boxW = frame.w - padX * 2
-  const textW = boxW - padX * 2 - arrowCol
-  ctx.font = `400 ${bodySize}px ${COMIC_FONT}`
-  const lines = wrapComicText(line, textW, (value) => ctx.measureText(value).width).slice(0, 3)
-  const textRows = Math.max(2, lines.length)
-  const boxH = padY + nameH + textRows * lineH + padY
-  const margin = Math.max(10, Math.round(frame.h * 0.016))
-  const gap = frame.h - comicBottom
-  const y = gap >= boxH + margin ? comicBottom + Math.max(margin, (gap - boxH) / 2) : Math.max(margin, frame.h - boxH - margin)
-  const box = { x: padX, y, w: boxW, h: boxH }
+  const line = beat.text
+  if (!line || alpha <= 0.02) return
+  const body = 27
+  const lineH = body + 6
+  const nameSize = 18
+  const padX = 12
+  const padY = 7
   ctx.save()
-  roundRect(ctx, box.x, box.y, box.w, box.h, 16)
-  ctx.fillStyle = 'rgba(12,10,8,0.78)'
+  ctx.globalAlpha *= alpha
+  ctx.font = `400 ${body}px ${COMIC_FONT}`
+  const maxW = Math.max(80, Math.min(beat.w ?? 420, script.width - 24))
+  const lines = wrapComicText(line, maxW, (value) => ctx.measureText(value).width).slice(0, 3)
+  const textW = Math.max(48, ...lines.map((row) => ctx.measureText(row).width))
+  const nudge = comicBubbleNudge(line)
+  const namePx = nameSize
+  ctx.font = `700 ${namePx}px ${COMIC_FONT}`
+  const nameW = beat.speaker ? ctx.measureText(beat.speaker).width : 0
+  const innerW = Math.max(textW, nameW)
+  const nameH = beat.speaker ? namePx + 2 : 0
+  const foot = start ? 36 : 14
+  const boxW = innerW + padX * 2
+  const boxH = padY + nameH + lines.length * lineH + foot + padY
+  let x = nudge.align === 'right' ? script.width - 8 - boxW : (beat.x ?? 24) + nudge.dx
+  let y = (beat.y ?? 24) - padY - nameH + nudge.dy
+  if (x < 8) x = 8
+  if (y < 8) y = 8
+  if (x + boxW > script.width - 8) x = Math.max(8, script.width - 8 - boxW)
+  if (y + boxH > script.height - 8) y = Math.max(8, script.height - 8 - boxH)
+  roundRect(ctx, x, y, boxW, boxH, 12)
+  ctx.fillStyle = 'rgba(0,0,0,0.7)'
   ctx.fill()
-  ctx.lineWidth = 1.5
-  ctx.strokeStyle = 'rgba(255,255,255,0.28)'
-  ctx.stroke()
-  let textY = box.y + padY
-  if (speaker) {
-    ctx.font = `700 ${nameSize}px ${COMIC_FONT}`
+  let textY = y + padY
+  if (beat.speaker) {
+    ctx.font = `700 ${namePx}px ${COMIC_FONT}`
     ctx.textAlign = 'left'
     ctx.textBaseline = 'top'
     ctx.fillStyle = '#f3d48a'
-    ctx.fillText(speaker, box.x + padX, textY)
+    ctx.fillText(beat.speaker, x + padX, textY)
+    textY += nameH
   }
-  textY += nameH
-  ctx.font = `400 ${bodySize}px ${COMIC_FONT}`
+  ctx.font = `400 ${body}px ${COMIC_FONT}`
   ctx.fillStyle = '#ffffff'
   ctx.textAlign = 'left'
   ctx.textBaseline = 'top'
   for (const row of lines) {
-    ctx.fillText(row, box.x + padX, textY + (lineH - bodySize) / 2)
+    ctx.fillText(row, x + padX, textY + (lineH - body) / 2)
     textY += lineH
   }
   if (start) {
     const label = '开始营业'
-    ctx.font = `700 ${bodySize}px ${COMIC_FONT}`
+    ctx.font = `700 22px ${COMIC_FONT}`
     const tw = ctx.measureText(label).width
-    const bw = tw + 28
-    const bh = Math.max(32, Math.round(bodySize * 1.8))
-    const bx = box.x + box.w - bw - 12
-    const by = box.y + box.h - bh - 12
+    const bw = tw + 22
+    const bh = 30
+    const bx = x + boxW - bw - 8
+    const by = y + boxH - bh - 8
     roundRect(ctx, bx, by, bw, bh, bh / 2)
     ctx.fillStyle = '#f3d48a'
     ctx.fill()
@@ -486,15 +502,15 @@ function paintComicDialog(
     ctx.textBaseline = 'middle'
     ctx.fillText(label, bx + bw / 2, by + bh / 2)
   } else {
-    const alpha = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(now / 160))
-    const ax = box.x + box.w - 20
-    const ay = box.y + box.h - 22
-    ctx.globalAlpha = alpha
+    const blink = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(now / 160))
+    const ax = x + boxW - 16
+    const ay = y + boxH - 16
+    ctx.globalAlpha *= blink
     ctx.fillStyle = '#ffffff'
     ctx.beginPath()
-    ctx.moveTo(ax, ay + 7)
-    ctx.lineTo(ax - 6, ay - 2)
-    ctx.lineTo(ax + 6, ay - 2)
+    ctx.moveTo(ax, ay + 6)
+    ctx.lineTo(ax - 5.5, ay - 2)
+    ctx.lineTo(ax + 5.5, ay - 2)
     ctx.closePath()
     ctx.fill()
   }

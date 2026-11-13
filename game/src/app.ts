@@ -559,6 +559,8 @@ export function startGame(platform: Platform): void {
     if (hit.kind === 'story') {
       const before = state.storyStep
       advanceStory(state, cfg)
+      fx.comicFrom = before
+      fx.comicFadeAt = platform.now()
       if (silaJustShown(cfg.opening, before, state.storyStep)) fx.shakeUntil = platform.now() + 460
       sfx.ui()
       mark()
@@ -955,6 +957,8 @@ export function startGame(platform: Platform): void {
       } else if (hit.kind === 'hotspot') {
         const before = state.storyStep
         advanceStory(state, cfg)
+        fx.comicFrom = before
+        fx.comicFadeAt = platform.now()
         if (silaJustShown(cfg.opening, before, state.storyStep)) fx.shakeUntil = platform.now() + 460
         comicAudio.sync(cfg.opening, state.storyStep, state.phase === 'story')
         sfx.ui()

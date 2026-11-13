@@ -77,6 +77,8 @@ export interface Fx {
   drag: { row: number; col: number; x: number; y: number; pending?: boolean; index?: number } | null
   hover: Hover
   shakeUntil: number
+  comicFrom: number
+  comicFadeAt: number
   ghostOrder: null | {
     customerId: string
     slots: OrderSlot[]
@@ -101,6 +103,8 @@ export function createFx(): Fx {
     drag: null,
     hover: null,
     shakeUntil: 0,
+    comicFrom: -1,
+    comicFadeAt: 0,
     ghostOrder: null,
   }
 }

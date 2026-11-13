@@ -95,6 +95,9 @@ export interface ComicBeat {
   kind: 'line' | 'sila'
   speaker?: string
   text?: string
+  x?: number
+  y?: number
+  w?: number
 }
 
 export interface ComicPage {
