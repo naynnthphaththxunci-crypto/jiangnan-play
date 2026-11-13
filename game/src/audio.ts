@@ -20,7 +20,8 @@ export function createSfx(getCtx: () => AudioContextLike | null): Sfx {
     if (!ctx) ctx = getCtx()
     if (ctx?.state === 'suspended') {
       try {
-        void ctx.resume?.()
+        const pending = ctx.resume?.()
+        if (pending && typeof (pending as Promise<void>).catch === 'function') void (pending as Promise<void>).catch(() => {})
       } catch {
         /* 静音继续玩 */
       }

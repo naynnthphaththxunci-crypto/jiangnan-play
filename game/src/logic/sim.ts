@@ -2124,6 +2124,54 @@ function findBoardBox(state: GameState): Pos | null {
   return null
 }
 
+function openingStepPossible(state: GameState, cfg: GameConfig): boolean {
+  const step = currentTutorial(cfg, state)
+  if (!step) return true
+  const hasFood = (level: number) =>
+    state.board.some((row) => row.some((item) => item?.kind === 'producer' && item.producerId === 'food' && item.level === level))
+  if (step.id === 'merge') {
+    const a = cfg.board.roles.mergeA
+    const b = cfg.board.roles.mergeB
+    const piece = (pos: { row: number; col: number }) => state.board[pos.row]?.[pos.col]
+    const left = piece(a)
+    const right = piece(b)
+    return left?.kind === 'producer' && left.producerId === 'food' && right?.kind === 'producer' && right.producerId === 'food'
+  }
+  if (step.id === 'mergeC' || step.id === 'unlock') return hasFood(2)
+  if (step.id === 'mergeD') return hasFood(3)
+  return true
+}
+
+export function guideLockKey(state: GameState): string {
+  return [state.phase, state.openingStep, state.chestLesson, state.producerLesson ?? '', state.mintStep, state.storageLesson, state.guide].join('|')
+}
+
+export function guideIsLocking(state: GameState, cfg?: GameConfig): boolean {
+  if (state.phase === 'opening') return true
+  if (guideSpot(state, cfg)) return true
+  if (state.storageLesson > 0 && state.storageLesson < 4) return true
+  if (state.mintStep === 'select' || state.mintStep === 'produce' || state.mintStep === 'merge' || state.mintStep === 'deliver') return true
+  return false
+}
+
+/** 引导对不上棋盘，或玩家连点别处时，收起所有会锁输入的引导。 */
+export function dismissStuckGuide(state: GameState, cfg: GameConfig): void {
+  if (state.phase === 'opening') {
+    state.phase = 'play'
+    state.openingStep = cfg.copy.tutorial.length
+    state.storySeen = true
+  }
+  if (state.chestLesson < 3) state.chestLesson = 3
+  state.chestCell = null
+  state.producerLesson = null
+  if (state.mintStep === 'select' || state.mintStep === 'produce' || state.mintStep === 'merge' || state.mintStep === 'deliver' || state.mintStep === 'talk') {
+    state.mintStep = 'off'
+  }
+  if (state.storageLesson > 0 && state.storageLesson < 4) state.storageLesson = 4
+  if (state.guide !== 'none') state.guide = 'none'
+  state.notice = null
+}
+
 export function resolveGuides(state: GameState, cfg?: GameConfig): string[] {
   const notes: string[] = []
   const empty = findEmpty(state).length
@@ -2186,6 +2234,46 @@ export function resolveGuides(state: GameState, cfg?: GameConfig): string[] {
   if (state.storageLesson === 3 && empty === 0) {
     state.storageLesson = 4
     notes.push('storage')
+  }
+  if (state.mintStep === 'select' || state.mintStep === 'produce') {
+    const bev = state.board.some((row) => row.some((item) => item?.kind === 'producer' && item.producerId === 'bev' && item.level >= 5))
+    if (!bev) {
+      state.mintStep = 'off'
+      notes.push('mint')
+    }
+  } else if (state.mintStep === 'merge') {
+    const piece = state.board.some((row) => row.some((item) => item?.kind === 'product' && item.line === 'mint'))
+    if (!piece) {
+      state.mintStep = 'off'
+      notes.push('mint')
+    }
+  } else if (state.mintStep === 'deliver') {
+    const ready = state.orders.some((order) => order.slots.some((slot) => slot.line === 'mint') && orderSatisfied(state, order))
+    if (!ready) {
+      state.mintStep = 'off'
+      notes.push('mint')
+    }
+  }
+  if (state.storageLesson === 2) {
+    const any = state.board.some((row) => row.some((item) => item))
+    if (!any) {
+      state.storageLesson = 4
+      notes.push('storage')
+    }
+  }
+  if (cfg && state.phase === 'opening' && !currentTutorial(cfg, state)) {
+    state.phase = 'play'
+    state.openingStep = cfg.copy.tutorial.length
+    state.storySeen = true
+    notes.push('opening')
+  }
+  if (cfg && state.phase === 'opening') {
+    let guard = 0
+    while (state.phase === 'opening' && guard < 6 && !openingStepPossible(state, cfg)) {
+      advanceTutorial(state, cfg)
+      guard += 1
+      notes.push('opening')
+    }
   }
   if (cfg && state.phase === 'opening' && empty === 0 && currentTutorial(cfg, state)?.id === 'produce') {
     advanceTutorial(state, cfg)
@@ -2551,6 +2639,8 @@ export function hydrate(raw: string, cfg: GameConfig): GameState | null {
     state.smiles ??= 0
     state.spawnMult ??= 1
     state.mintStep ??= 'off'
+    resolveGuides(state, cfg)
+    if (state.phase === 'opening' && !openingStepPossible(state, cfg)) dismissStuckGuide(state, cfg)
     state.shopOpen ??= false
     state.shopClaimDate ??= null
     state.shopPackClaimed ??= false

@@ -35,6 +35,8 @@ import {
   collectLock,
   confirmDecor,
   atStep,
+  guideIsLocking,
+  guideLockKey,
   guideSpot,
   beatVisit,
   buildTask,
@@ -53,6 +55,7 @@ import {
   completeOrder,
   createGame,
   currentTutorial,
+  dismissStuckGuide,
   enterKitchen,
   finishTutorial,
   guardedDrop,
@@ -152,6 +155,9 @@ export function startGame(platform: Platform): void {
   let chain: { line: string; level: number; source: 'order' | 'producer' } | null = null
   let orderFocus: { line: string; level: number } | null = null
   let lastInput = platform.now()
+  let guideKey = ''
+  let guideSince = platform.now()
+  let guideMisses = 0
   const pointers = new Map<number, Pointer>()
   let pinch: { dist: number; scale: number } | null = null
   let frame = makeFrame()
@@ -792,6 +798,14 @@ export function startGame(platform: Platform): void {
     cam.y = worldY - (sy - cy) / cam.scale
   }
 
+  function noteGuide(now: number): void {
+    const key = guideLockKey(state)
+    if (key === guideKey) return
+    guideKey = key
+    guideSince = now
+    guideMisses = 0
+  }
+
   function tutorialBlocks(hit: Hit): boolean {
     if (activeOverlay(state) === 'mint' && state.mintStep && state.mintStep !== 'off' && state.mintStep !== 'talk' && state.mintStep !== 'wait') {
       if (state.mintStep === 'select' || state.mintStep === 'produce') {
@@ -809,7 +823,7 @@ export function startGame(platform: Platform): void {
     if (state.phase !== 'opening') return false
     if (hit.kind === 'skip') return false
     const step = currentTutorial(cfg, state)
-    if (!step || step.type !== '对话') return false
+    if (!step || step.type === '对话') return false
     const onCell = (row: number, col: number) => hit.kind === 'cell' && hit.row === row && hit.col === col
     if (step.id === 'merge') {
       const a = cfg.board.roles.mergeA
@@ -890,8 +904,28 @@ export function startGame(platform: Platform): void {
     }
     const step = currentTutorial(cfg, state)
     let hit = hitTest(frame, x, y) ?? { kind: 'swallow' as const }
-    const hole = guideHole(frame, state, cfg)
-    if (!overlay && hole && hit.kind !== 'tune' && !(state.phase === 'opening' && hit.kind === 'skip') && !contains(hole, x, y)) return
+    const hole = state.phase === 'opening' ? null : guideHole(frame, state, cfg)
+    noteGuide(platform.now())
+    if (guideIsLocking(state, cfg)) {
+      const aimed =
+        hit.kind === 'tune' ||
+        (state.phase === 'opening' && hit.kind === 'skip') ||
+        (hole ? contains(hole, x, y) : !tutorialBlocks(hit))
+      if (!aimed) {
+        guideMisses += 1
+        if (guideMisses >= 3 || platform.now() - guideSince > 8000) {
+          dismissStuckGuide(state, cfg)
+          mark()
+          hit = hitTest(frame, x, y) ?? { kind: 'swallow' as const }
+        } else if (hole && !contains(hole, x, y)) {
+          return
+        } else if (tutorialBlocks(hit)) {
+          return
+        }
+      }
+    } else if (!overlay && hole && hit.kind !== 'tune' && !contains(hole, x, y)) {
+      return
+    }
     if (state.phase === 'story') {
       if (hit.kind === 'skip') {
         skipStory(state)
@@ -1103,6 +1137,11 @@ export function startGame(platform: Platform): void {
     settleGifts(state, cfg, real)
     arrangeOrders(state, real)
     resolveGuides(state, cfg)
+    noteGuide(real)
+    if (guideIsLocking(state, cfg) && real - guideSince > 8000) {
+      dismissStuckGuide(state, cfg)
+      mark()
+    }
     if (guideSpot(state, cfg) === 'reward') orderScroll = 0
     refreshGuide(state, cfg, view)
     pumpMint(state)

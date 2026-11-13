@@ -82,7 +82,11 @@ export function createWebPlatform(canvas: HTMLCanvasElement): Platform {
       canvas.addEventListener('pointerdown', (event) => {
         if (event.button !== 0) return
         event.preventDefault()
-        canvas.setPointerCapture(event.pointerId)
+        try {
+          canvas.setPointerCapture(event.pointerId)
+        } catch {
+          /* Safari 在指针还没激活时会抛错，不能因此丢掉这次点击 */
+        }
         const p = rel(event.clientX, event.clientY)
         down(p.x, p.y, event.pointerId)
       })

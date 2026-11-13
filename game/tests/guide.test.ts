@@ -6,6 +6,8 @@ import {
   advanceGuide,
   createGame,
   currentTutorial,
+  dismissStuckGuide,
+  guideIsLocking,
   findEmpty,
   guideSpot,
   hydrate,
@@ -364,7 +366,53 @@ describe('强制引导', () => {
     makingSave.phase = 'opening'
     makingSave.storySeen = true
     makingSave.openingStep = 0
-    const loaded = hydrate(serialize(makingSave, cfg), defaultConfig())
-    expect(currentTutorial(defaultConfig(), loaded!)?.id).toBe('merge')
+    const loaded = hydrate(serialize(makingSave, cfg), cfg)
+    expect(currentTutorial(cfg, loaded!)?.id).toBe('merge')
+  })
+
+  it('对不上的开局引导和坏存档不会锁死', () => {
+    const cfg = defaultConfig()
+    const broken = createGame(1, cfg)
+    broken.phase = 'opening'
+    broken.storySeen = true
+    broken.openingStep = 0
+    for (const row of broken.board) {
+      for (let col = 0; col < row.length; col++) {
+        if (row[col]?.kind === 'producer') row[col] = null
+      }
+    }
+    resolveGuides(broken, cfg)
+    expect(broken.phase).toBe('play')
+    expect(guideSpot(broken, cfg)).toBeNull()
+
+    const saved = createGame(2, cfg)
+    saved.phase = 'play'
+    saved.locks = []
+    saved.chestLesson = 1
+    saved.rewards = []
+    saved.producerLesson = 'boat'
+    saved.mintStep = 'select'
+    saved.guide = 'smile'
+    saved.smiles = 0
+    const loaded = hydrate(serialize(saved, cfg), defaultConfig())
+    expect(loaded?.chestLesson).toBe(3)
+    expect(loaded?.producerLesson).toBeNull()
+    expect(loaded?.mintStep).toBe('off')
+    expect(loaded?.guide).toBe('none')
+
+    const stale = createGame(12, cfg)
+    stale.phase = 'opening'
+    stale.storySeen = true
+    stale.openingStep = 9
+    resolveGuides(stale, cfg)
+    expect(stale.phase).toBe('play')
+
+    const live = createGame(3, cfg)
+    live.phase = 'play'
+    live.chestLesson = 1
+    live.rewards = [makeRewardBox(live, cfg, mulberry32(3), 'blue')]
+    dismissStuckGuide(live, cfg)
+    expect(live.chestLesson).toBe(3)
+    expect(guideIsLocking(live, cfg)).toBe(false)
   })
 })

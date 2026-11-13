@@ -1271,6 +1271,7 @@ function drawStorageLesson(model: RenderModel): void {
   const { ctx, frame, state, cfg, realNow } = model
   const lesson = state.storageLesson
   if (state.phase !== 'play' || lesson < 1 || lesson > 3) return
+  if (guideHole(frame, state, cfg)) return
   const step = cfg.copy.storageLesson[lesson - 1] ?? ''
   ctx.save()
   ctx.fillStyle = 'rgba(12,10,8,0.72)'
@@ -1312,6 +1313,9 @@ function drawStorageLesson(model: RenderModel): void {
 
 function drawHand(model: RenderModel): void {
   if (!model.showHand || model.state.phase !== 'play' || model.chain) return
+  if (model.state.storageLesson > 0 && model.state.storageLesson < 4) return
+  if (model.state.mintStep === 'select' || model.state.mintStep === 'produce' || model.state.mintStep === 'merge' || model.state.mintStep === 'deliver') return
+  if (guideHole(model.frame, model.state, model.cfg)) return
   const hint = pickHint(model.state, model.realNow)
   if (!hint) return
   const pose = hintHand(hint, model.frame, model.realNow)
@@ -1881,6 +1885,7 @@ function drawMintGuide(model: RenderModel): void {
 
 function drawGuide(model: RenderModel): void {
   const { ctx, frame, state, cfg, realNow } = model
+  if (state.phase === 'opening') return
   const forced = guideHole(frame, state, cfg)
   const guide = state.guide
   if (!forced && (!guide || guide === 'none')) return
