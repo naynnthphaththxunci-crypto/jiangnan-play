@@ -2,8 +2,9 @@ import page1 from './assets/comic/page1.jpg'
 import page2 from './assets/comic/page2.jpg'
 import page3 from './assets/comic/page3.jpg'
 import silaUrl from './assets/comic/sila.webp'
-import fontUrl from './assets/comic/comic-bold.woff2'
-import type { OpeningScript } from './types'
+import regularUrl from './assets/comic/comic-regular.woff2'
+import boldUrl from './assets/comic/comic-bold.woff2'
+import type { ComicBeat, OpeningScript } from './types'
 
 export const COMIC_FONT = 'JiangnanComic'
 
@@ -48,11 +49,11 @@ export function loadComicFont(): Promise<void> {
     fontPromise = Promise.resolve()
     return fontPromise
   }
-  const face = new host.FontFace(COMIC_FONT, `url(${fontUrl})`, { weight: '700', style: 'normal' })
-  fontPromise = face
-    .load()
-    .then((loaded) => {
-      host.document?.fonts.add(loaded)
+  const regular = new host.FontFace(COMIC_FONT, `url(${regularUrl})`, { weight: '400', style: 'normal' })
+  const bold = new host.FontFace(COMIC_FONT, `url(${boldUrl})`, { weight: '700', style: 'normal' })
+  fontPromise = Promise.all([regular.load(), bold.load()])
+    .then((faces) => {
+      for (const face of faces) host.document?.fonts.add(face)
     })
     .catch(() => {
       /* 字库没载上时仍能翻页，下一帧再试 */
@@ -64,7 +65,22 @@ export function loadComicFont(): Promise<void> {
 export function comicFontReady(): boolean {
   const fonts = (globalThis as { document?: Document }).document?.fonts
   if (!fonts) return false
-  return fonts.check(`700 32px ${COMIC_FONT}`)
+  return fonts.check(`400 32px ${COMIC_FONT}`) && fonts.check(`700 32px ${COMIC_FONT}`)
+}
+
+export type ComicPrompt = 'blank' | 'line' | 'sila' | 'start'
+
+/** 当前这一拍要给玩家看的东西。最后一页台词出完后是「开始营业」。 */
+export function comicPrompt(script: OpeningScript, step: number): { prompt: ComicPrompt; beat: ComicBeat | null; page: number } {
+  const cursor = comicCursor(script, step)
+  if (!cursor) return { prompt: 'blank', beat: null, page: 0 }
+  const page = script.pages[cursor.page]
+  if (!page || cursor.shown <= 0) return { prompt: 'blank', beat: null, page: cursor.page }
+  const beat = page.beats[cursor.shown - 1] ?? null
+  if (beat?.kind === 'sila') return { prompt: 'sila', beat, page: cursor.page }
+  const lastPage = cursor.page === script.pages.length - 1
+  if (lastPage && cursor.shown >= page.beats.length) return { prompt: 'start', beat, page: cursor.page }
+  return { prompt: 'line', beat, page: cursor.page }
 }
 
 export interface ComicCursor {

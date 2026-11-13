@@ -49,8 +49,7 @@ import tutorialHandUrl from './assets/ui/tutorial_hand.png'
 import iconBoltUrl from './assets/ui/icon_bolt.png'
 import { orderRewardImage, orderTrayImage } from './orderTray'
 import { guestPortrait, measurePortrait, portraitReady } from './portraits'
-import { COMIC_FONT, comicCursor, comicFontReady, comicPageImage, comicSilaImage } from './comic'
-import type { ComicLineBox } from './types'
+import { COMIC_FONT, comicCursor, comicFontReady, comicPageImage, comicPrompt, comicSilaImage } from './comic'
 import { SLIDERS } from './tuner'
 import { COLS, ROWS, type GameConfig, type GameState, type Item, type NormBox } from './types'
 
@@ -87,6 +86,7 @@ export interface RenderModel {
   orderFocus: { line: string; level: number } | null
   showHand: boolean
   chain: { line: string; level: number; source: 'order' | 'producer' } | null
+  comicHand: 'first' | 'idle' | 'off'
 }
 
 export function render(model: RenderModel): void {
@@ -320,77 +320,19 @@ function drawItem(
   ctx.restore()
 }
 
-const comicFit = new Map<string, { size: number; dx: number; dy: number; sx: number; sy: number }>()
-
-function comicPlacement(value: string, boxW: number, boxH: number): { size: number; dx: number; dy: number; sx: number; sy: number } {
-  const key = `${value}|${boxW}|${boxH}`
-  const cached = comicFit.get(key)
-  if (cached) return cached
-  const size = Math.max(8, boxH - 2)
-  const host = globalThis as { document?: Document }
-  const canvas = host.document?.createElement('canvas')
-  if (!canvas) return { size, dx: 0, dy: 0, sx: 1, sy: 1 }
-  const pad = 8
-  canvas.width = Math.ceil(size * [...value].length * 1.3) + pad * 2
-  canvas.height = Math.ceil(size * 2.2) + pad * 2
-  const probe = canvas.getContext('2d')
-  if (!probe) return { size, dx: 0, dy: 0, sx: 1, sy: 1 }
-  probe.font = `700 ${size}px ${COMIC_FONT}`
-  probe.textAlign = 'left'
-  probe.textBaseline = 'alphabetic'
-  probe.lineJoin = 'round'
-  probe.miterLimit = 2
-  probe.lineWidth = 2
-  probe.strokeStyle = '#000'
-  probe.fillStyle = '#fff'
-  const anchorX = pad
-  const anchorY = pad + size
-  probe.strokeText(value, anchorX, anchorY)
-  probe.fillText(value, anchorX, anchorY)
-  const data = probe.getImageData(0, 0, canvas.width, canvas.height).data
-  let minX = canvas.width
-  let minY = canvas.height
-  let maxX = 0
-  let maxY = 0
-  for (let i = 0; i < data.length; i += 4) {
-    if ((data[i + 3] ?? 0) < 24) continue
-    const px = (i / 4) % canvas.width
-    const py = Math.floor(i / 4 / canvas.width)
-    if (px < minX) minX = px
-    if (py < minY) minY = py
-    if (px > maxX) maxX = px
-    if (py > maxY) maxY = py
+function comicWrap(ctx: CanvasRenderingContext2D, value: string, maxW: number, size: number): string[] {
+  ctx.font = `400 ${size}px ${COMIC_FONT}`
+  const lines: string[] = []
+  let cur = ''
+  for (const ch of value) {
+    const next = cur + ch
+    if (ctx.measureText(next).width > maxW && cur) {
+      lines.push(cur)
+      cur = ch
+    } else cur = next
   }
-  const visW = Math.max(1, maxX - minX + 1)
-  const visH = Math.max(1, maxY - minY + 1)
-  const fit = {
-    size,
-    dx: minX - anchorX,
-    dy: minY - anchorY,
-    sx: boxW / visW,
-    sy: boxH / visH,
-  }
-  comicFit.set(key, fit)
-  return fit
-}
-
-function paintComicLine(ctx: CanvasRenderingContext2D, line: ComicLineBox): void {
-  const fit = comicPlacement(line.text, line.w, line.h)
-  ctx.save()
-  ctx.translate(line.x, line.y)
-  ctx.scale(fit.sx, fit.sy)
-  ctx.translate(-fit.dx, -fit.dy)
-  ctx.font = `700 ${fit.size}px ${COMIC_FONT}`
-  ctx.textAlign = 'left'
-  ctx.textBaseline = 'alphabetic'
-  ctx.lineJoin = 'round'
-  ctx.miterLimit = 2
-  ctx.lineWidth = 2
-  ctx.strokeStyle = '#111111'
-  ctx.strokeText(line.text, 0, 0)
-  ctx.fillStyle = '#ffffff'
-  ctx.fillText(line.text, 0, 0)
-  ctx.restore()
+  if (cur) lines.push(cur)
+  return lines
 }
 
 function drawStory(model: RenderModel): void {
@@ -418,29 +360,118 @@ function drawStory(model: RenderModel): void {
     const img = comicPageImage(cursor.page)
     if (img && (img.naturalWidth || 0) > 0) ctx.drawImage(img as CanvasImageSource, 0, 0, pageW, pageH)
     const page = script.pages[cursor.page]
-    if (page && comicFontReady()) {
-      const sila = comicSilaImage()
-      for (let i = 0; i < cursor.shown && i < page.beats.length; i++) {
-        const beat = page.beats[i]
-        if (!beat) continue
-        if (beat.kind === 'lines') {
-          for (const line of beat.lines ?? []) paintComicLine(ctx, line)
-        } else if (beat.kind === 'sila' && sila && (sila.naturalWidth || 0) > 0) {
-          const sw = pageW * 0.7
-          const sh = sw * ((sila.naturalHeight || 1) / (sila.naturalWidth || 1))
-          const age = fx.shakeUntil > 0 ? Math.max(0, realNow - (fx.shakeUntil - 460)) : 999
-          const pop = popScale(age, 280)
-          ctx.save()
-          ctx.translate(384, 690)
-          ctx.scale(pop, pop)
-          ctx.drawImage(sila as CanvasImageSource, -sw / 2, -sh / 2, sw, sh)
-          ctx.restore()
-        }
+    const sila = comicSilaImage()
+    if (page && sila && (sila.naturalWidth || 0) > 0) {
+      const silaAt = page.beats.findIndex((beat) => beat.kind === 'sila')
+      if (silaAt >= 0 && cursor.shown > silaAt) {
+        const sw = pageW * 0.7
+        const sh = sw * ((sila.naturalHeight || 1) / (sila.naturalWidth || 1))
+        const age = fx.shakeUntil > 0 ? Math.max(0, realNow - (fx.shakeUntil - 460)) : 999
+        const pop = popScale(age, 280)
+        ctx.save()
+        ctx.translate(384, 690)
+        ctx.scale(pop, pop)
+        ctx.drawImage(sila as CanvasImageSource, -sw / 2, -sh / 2, sw, sh)
+        ctx.restore()
       }
     }
     ctx.restore()
   }
+  const prompt = comicPrompt(script, state.storyStep)
+  if ((prompt.prompt === 'line' || prompt.prompt === 'start') && prompt.beat?.text && comicFontReady()) {
+    paintComicDialog(ctx, frame, prompt.beat.speaker, prompt.beat.text, prompt.prompt === 'start', realNow)
+  }
+  if (model.comicHand !== 'off') paintComicHand(ctx, frame, model.comicHand === 'first')
   button(ctx, frame.skip, '跳过', 'ghost')
+}
+
+function paintComicDialog(
+  ctx: CanvasRenderingContext2D,
+  frame: Frame,
+  speaker: string | undefined,
+  line: string,
+  start: boolean,
+  now: number,
+): void {
+  const pad = Math.max(14, frame.w * 0.04)
+  const boxW = frame.w - pad * 2
+  const nameSize = Math.max(15, frame.w * 0.04)
+  const bodySize = Math.max(16, frame.w * 0.042)
+  const textW = boxW - pad * 2 - (start ? frame.w * 0.3 : 28)
+  const lines = comicWrap(ctx, line, textW, bodySize).slice(0, 3)
+  const nameH = speaker ? nameSize + 6 : 0
+  const boxH = pad + nameH + lines.length * (bodySize + 6) + (start ? 8 : 22) + pad * 0.4
+  const box = { x: pad, y: frame.h - boxH - Math.max(14, frame.h * 0.028), w: boxW, h: boxH }
+  ctx.save()
+  roundRect(ctx, box.x, box.y, box.w, box.h, 16)
+  ctx.fillStyle = 'rgba(0,0,0,0.7)'
+  ctx.fill()
+  let textY = box.y + pad
+  if (speaker) {
+    ctx.font = `700 ${nameSize}px ${COMIC_FONT}`
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'top'
+    ctx.fillStyle = '#f3d48a'
+    ctx.fillText(speaker, box.x + pad, textY)
+    textY += nameH
+  }
+  ctx.font = `400 ${bodySize}px ${COMIC_FONT}`
+  ctx.fillStyle = '#ffffff'
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'top'
+  for (const row of lines) {
+    ctx.fillText(row, box.x + pad, textY)
+    textY += bodySize + 6
+  }
+  if (start) {
+    const label = '开始营业'
+    ctx.font = `700 ${Math.max(15, bodySize)}px ${COMIC_FONT}`
+    const tw = ctx.measureText(label).width
+    const bw = tw + 28
+    const bh = Math.max(30, bodySize + 12)
+    const bx = box.x + box.w - bw - 12
+    const by = box.y + box.h - bh - 10
+    roundRect(ctx, bx, by, bw, bh, bh / 2)
+    ctx.fillStyle = '#f3d48a'
+    ctx.fill()
+    ctx.fillStyle = '#2a2118'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(label, bx + bw / 2, by + bh / 2)
+  } else {
+    const alpha = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(now / 160))
+    const ax = box.x + box.w - 22
+    const ay = box.y + box.h - 18
+    ctx.globalAlpha = alpha
+    ctx.fillStyle = '#ffffff'
+    ctx.beginPath()
+    ctx.moveTo(ax, ay + 8)
+    ctx.lineTo(ax - 7, ay - 2)
+    ctx.lineTo(ax + 7, ay - 2)
+    ctx.closePath()
+    ctx.fill()
+  }
+  ctx.restore()
+}
+
+function paintComicHand(ctx: CanvasRenderingContext2D, frame: Frame, caption: boolean): void {
+  const x = frame.w / 2
+  const y = frame.h * 0.42
+  const hand = Math.max(54, frame.w * 0.16)
+  paintHand(ctx, x, y, hand)
+  if (!caption || !comicFontReady()) return
+  const size = Math.max(16, frame.w * 0.046)
+  const label = '点击屏幕继续'
+  const textY = y + hand + size * 0.55
+  ctx.font = `400 ${size}px ${COMIC_FONT}`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'top'
+  ctx.lineJoin = 'round'
+  ctx.lineWidth = Math.max(3, size * 0.16)
+  ctx.strokeStyle = 'rgba(0,0,0,0.85)'
+  ctx.strokeText(label, x, textY)
+  ctx.fillStyle = '#ffffff'
+  ctx.fillText(label, x, textY)
 }
 
 function pill(ctx: CanvasRenderingContext2D, rect: Rect, label: string, value: string, color: string): void {

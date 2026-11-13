@@ -1214,6 +1214,8 @@ export function startGame(platform: Platform): void {
           !state.smileModal &&
           !tuner &&
           real - lastInput > cfg.economy.idleHintMs,
+        comicHand:
+          state.phase !== 'story' ? 'off' : state.storyStep === 0 ? 'first' : real - lastInput >= 3000 ? 'idle' : 'off',
       })
     }
     if (dirty && real - lastSave > 500) saveNow()

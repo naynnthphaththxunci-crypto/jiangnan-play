@@ -91,17 +91,10 @@ export interface BoardTheme {
   ready: string
 }
 
-export interface ComicLineBox {
-  text: string
-  x: number
-  y: number
-  w: number
-  h: number
-}
-
 export interface ComicBeat {
-  kind: 'lines' | 'sila'
-  lines?: ComicLineBox[]
+  kind: 'line' | 'sila'
+  speaker?: string
+  text?: string
 }
 
 export interface ComicPage {
