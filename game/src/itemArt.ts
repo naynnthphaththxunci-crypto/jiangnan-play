@@ -1,6 +1,21 @@
+import producerArt from './data/producerArt.json'
+
 const raw = import.meta.glob('./assets/items/*.png', { eager: true, import: 'default' }) as Record<string, string>
+const producerRaw = import.meta.glob('./assets/producers/*.webp', { eager: true, import: 'default' }) as Record<string, string>
 
 const sprites = new Map<string, CanvasImageSource & { complete?: boolean; naturalWidth?: number }>()
+
+const producerSprites = new Map<string, CanvasImageSource & { complete?: boolean; naturalWidth?: number }>()
+
+for (const [path, url] of Object.entries(producerRaw)) {
+  const match = path.match(/([^/]+)_(\d+)\.webp$/)
+  if (!match || typeof url !== 'string') continue
+  const host = globalThis as { Image?: new () => HTMLImageElement; document?: Document }
+  if (!host.document || typeof host.Image !== 'function') continue
+  const img = new host.Image()
+  img.src = url
+  producerSprites.set(`${match[1]}:${match[2]}`, img)
+}
 
 for (const [path, url] of Object.entries(raw)) {
   const match = path.match(/([^/]+)_(\d+)\.png$/)
@@ -90,6 +105,40 @@ function usable(img: (CanvasImageSource & { complete?: boolean; naturalWidth?: n
   if (img.complete === false) return false
   if ((img.naturalWidth ?? 0) <= 0 && img.complete !== true) return false
   return true
+}
+
+export interface ArtBox {
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
+const artTable = producerArt as {
+  cellW: number
+  bolt: ArtBox
+  names: Record<string, string[]>
+  place: Record<string, Record<string, ArtBox>>
+}
+
+/** 设计稿格子宽。母棋偏移按这个边长等比缩到当前格子。 */
+export const PRODUCER_CELL_W = artTable.cellW
+
+export function producerPieceName(id: string, level: number): string | null {
+  return artTable.names[id]?.[level - 1] ?? null
+}
+
+export function producerPlace(id: string, level: number): ArtBox | null {
+  return artTable.place[id]?.[String(level)] ?? null
+}
+
+export function producerBoltPlace(): ArtBox {
+  return artTable.bolt
+}
+
+export function producerSprite(id: string, level: number): (CanvasImageSource & { complete?: boolean; naturalWidth?: number }) | null {
+  const exact = producerSprites.get(`${id}:${level}`)
+  return usable(exact) ? exact ?? null : null
 }
 
 /** 新链还没有专属图，先借用现有图。名字只在详情栏里写。 */

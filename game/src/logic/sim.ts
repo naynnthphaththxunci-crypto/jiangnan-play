@@ -14,6 +14,7 @@ import type {
 } from '../types'
 import { COLS, ROWS } from '../types'
 import { formatMs } from '../format'
+import { producerPieceName } from '../itemArt'
 import openingBoard from '../data/openingBoard.json'
 
 export function mulberry32(seed: number): Rng {
@@ -676,6 +677,13 @@ export function tutorialHint(state: GameState): string {
 
 function producerKind(cfg: GameConfig, id: string): 'normal' | 'netSource' | 'plant' | 'consumable' {
   return cfg.producers.find((entry) => entry.id === id)?.kind ?? 'normal'
+}
+
+/** 点一下会扣玩家体力。猫粮、饮料从 4 级起，和 PSD 上的闪电一致。花盆和消耗品不扣。 */
+export function producerTapCostsEnergy(cfg: GameConfig, item: ProducerItem): boolean {
+  const kind = producerKind(cfg, item.producerId)
+  if (kind === 'consumable' || kind === 'plant') return false
+  return item.level >= (cfg.economy.producerOutputLevel ?? 4)
 }
 
 export function producerCanSpawn(cfg: GameConfig, item: ProducerItem, now: number): boolean {
@@ -1743,7 +1751,7 @@ export function infoCaption(cfg: GameConfig, item: Item, now = 0): { title: stri
     const cooling = producerCooldown(cfg, item, now)
     const status = cooling ? `冷却中，还剩 ${formatMs(cooling.left)}` : `剩余体力 ${item.charges}`
     return {
-      title: producerName(cfg, item.producerId),
+      title: producerPieceName(item.producerId, item.level) ?? producerName(cfg, item.producerId),
       usage: `${cnLevel(item.level)} · ${lineName} · ${status}`,
     }
   }
@@ -2770,7 +2778,7 @@ export function describeAt(cfg: GameConfig, state: GameState, pos: Pos): { title
           : buried.kind === 'gem'
             ? gemName(cfg, buried.tier)
             : buried.kind === 'producer'
-              ? producerName(cfg, buried.id)
+              ? (producerPieceName(buried.id, buried.level) ?? producerName(cfg, buried.id))
               : `${buried.amount} 铜钱`
     return { title: `半开 · ${title}`, level: '锁格', text: cfg.copy.lock }
   }
@@ -2786,7 +2794,7 @@ export function describeAt(cfg: GameConfig, state: GameState, pos: Pos): { title
   if (item.kind === 'producer') {
     const lineName = cfg.items.lines.find((line) => line.id === item.line)?.name ?? '原料'
     const text = item.charges <= 0 && item.cooldownUntil > 0 ? cfg.copy.producerCool : cfg.copy.producer.replace('{line}', lineName)
-    return { title: producerName(cfg, item.producerId), level: '母棋', text }
+    return { title: producerPieceName(item.producerId, item.level) ?? producerName(cfg, item.producerId), level: cnLevel(item.level), text }
   }
   if (item.kind === 'potion') {
     return {

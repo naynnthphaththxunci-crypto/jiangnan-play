@@ -30,6 +30,7 @@ import {
   pickHint,
   producerCanSpawn,
   producerCooldown,
+  producerTapCostsEnergy,
   producerName,
   producerChain,
   producerOfLine,
@@ -41,9 +42,9 @@ import {
   taskStep,
   tutorialLine,
 } from './logic/sim'
-import { itemSprite, spriteContent } from './itemArt'
+import { itemSprite, producerBoltPlace, producerPieceName, producerPlace, producerSprite, PRODUCER_CELL_W, spriteContent, type ArtBox } from './itemArt'
 import tutorialHandUrl from './assets/ui/tutorial_hand.png'
-import iconBoltUrl from './assets/ui/icon_bolt.png'
+import iconBoltUrl from './assets/ui/stamina_bolt.webp'
 import { guestPortrait, portraitReady } from './portraits'
 import { drawAvatar, drawCharacter } from './cast'
 import { hechengImage, speedArtId } from './hechengArt'
@@ -220,6 +221,16 @@ function drawLevelShape(ctx: CanvasRenderingContext2D, level: number, x: number,
   ctx.fill()
 }
 
+function placedRect(box: Rect, place: ArtBox): Rect {
+  const scale = box.w / PRODUCER_CELL_W
+  return {
+    x: box.x + place.x * scale,
+    y: box.y + place.y * scale,
+    w: place.w * scale,
+    h: place.h * scale,
+  }
+}
+
 function drawFittedSprite(
   ctx: CanvasRenderingContext2D,
   sprite: CanvasImageSource & { complete?: boolean; naturalWidth?: number; naturalHeight?: number; src?: string },
@@ -253,6 +264,16 @@ function drawItem(
   ctx.translate(cx, cy)
   ctx.scale(scale, scale)
   ctx.translate(-cx, -cy)
+  if (item.kind === 'producer') {
+    const sprite = producerSprite(item.producerId, item.level)
+    const place = producerPlace(item.producerId, item.level)
+    if (sprite && place) {
+      const rect = placedRect(box, place)
+      ctx.drawImage(sprite as CanvasImageSource, rect.x, rect.y, rect.w, rect.h)
+      ctx.restore()
+      return
+    }
+  }
   const piece = item.kind === 'product' || item.kind === 'producer' ? item : null
   const sprite = piece ? itemSprite(piece.line, piece.level) : null
   if (sprite && piece) {
@@ -1166,9 +1187,9 @@ function drawBoard(model: RenderModel): void {
         }
       }
       drawItem(ctx, cfg, item, box, scale, 1, realNow, unlimited && item.kind === 'producer')
-      if (item.kind === 'producer') {
+      if (item.kind === 'producer' && producerTapCostsEnergy(cfg, item)) {
         const cooling = producerCooldown(cfg, item, realNow)
-        if (producerCanSpawn(cfg, item, realNow)) drawSpawnBolt(ctx, box, realNow)
+        if (producerCanSpawn(cfg, item, realNow)) drawSpawnBolt(ctx, box)
         else if (cooling) drawSpawnClock(ctx, box, cooling.left, cooling.total)
       }
       if (checks.has(key)) {
@@ -1225,32 +1246,11 @@ function tutorialHandImage(): HTMLImageElement | null {
 const HAND_TIP = { x: 8 / 284, y: 14 / 310 }
 const HAND_ASPECT = 284 / 310
 
-function drawSpark(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, alpha: number): void {
-  if (alpha <= 0.05) return
-  ctx.save()
-  ctx.globalAlpha *= alpha
-  ctx.fillStyle = '#fffaf0'
-  ctx.beginPath()
-  ctx.moveTo(x, y - r)
-  ctx.lineTo(x + r * 0.28, y - r * 0.28)
-  ctx.lineTo(x + r, y)
-  ctx.lineTo(x + r * 0.28, y + r * 0.28)
-  ctx.lineTo(x, y + r)
-  ctx.lineTo(x - r * 0.28, y + r * 0.28)
-  ctx.lineTo(x - r, y)
-  ctx.lineTo(x - r * 0.28, y - r * 0.28)
-  ctx.closePath()
-  ctx.fill()
-  ctx.restore()
-}
-
-function spawnMarkBox(box: Rect): { x: number; y: number; size: number } {
-  const size = Math.max(14, box.w * 0.3)
-  return { size, x: box.x + box.w - size * 0.78, y: box.y + box.h - size * 0.82 }
-}
-
 function drawSpawnClock(ctx: CanvasRenderingContext2D, box: Rect, left: number, total: number): void {
-  const { x, y, size } = spawnMarkBox(box)
+  const mark = placedRect(box, producerBoltPlace())
+  const size = Math.min(mark.w, mark.h)
+  const x = mark.x + (mark.w - size) / 2
+  const y = mark.y + (mark.h - size) / 2
   const cx = x + size * 0.5
   const cy = y + size * 0.5
   const r = size * 0.42
@@ -1285,18 +1285,10 @@ function iconBoltImage(): HTMLImageElement | null {
   return iconBoltImg
 }
 
-function drawSpawnBolt(ctx: CanvasRenderingContext2D, box: Rect, now: number): void {
-  const { x, y, size } = spawnMarkBox(box)
-  const flicker = 0.86 + 0.14 * (0.5 + 0.5 * Math.sin(now / 170))
+function drawSpawnBolt(ctx: CanvasRenderingContext2D, box: Rect): void {
+  const rect = placedRect(box, producerBoltPlace())
   const img = iconBoltImage()
-  ctx.save()
-  ctx.globalAlpha *= flicker
-  if (img && (img.naturalWidth || 0) > 0) ctx.drawImage(img, x, y, size, size)
-  const spark = (phase: number) => 0.25 + 0.75 * (0.5 + 0.5 * Math.sin(now / 220 + phase))
-  drawSpark(ctx, x + size * 0.08, y + size * 0.18, size * 0.16, spark(0))
-  drawSpark(ctx, x + size * 0.92, y + size * 0.12, size * 0.12, spark(2.1))
-  drawSpark(ctx, x + size * 0.16, y + size * 0.86, size * 0.1, spark(4.2))
-  ctx.restore()
+  if (img && (img.naturalWidth || 0) > 0) ctx.drawImage(img, rect.x, rect.y, rect.w, rect.h)
 }
 
 function paintHand(ctx: CanvasRenderingContext2D, x: number, y: number, cell = 0): void {
@@ -1653,7 +1645,7 @@ function drawChain(model: RenderModel): void {
   button(ctx, close, '×', 'ghost')
   if (chain.source === 'producer') {
     const producer = producerOfLine(cfg, chain.line)
-    const name = producer ? producerName(cfg, producer.id) : '母棋'
+    const name = producer ? (producerPieceName(producer.id, chain.level) ?? producerName(cfg, producer.id)) : '母棋'
     text(ctx, name, card.x + card.w / 2, card.y + 36, 20, PAL.ink)
     text(ctx, `等级 ${chain.level}`, card.x + card.w / 2, card.y + 62, 14, PAL.soft)
     const slots = producerChain(state, producer?.id ?? chain.line, chain.level, cfg.economy.producerMaxLevel)
@@ -1663,14 +1655,24 @@ function drawChain(model: RenderModel): void {
       const x = card.x + 28 + col * 74
       const y = card.y + 84 + row * 70
       roundRect(ctx, x, y, 62, 58, 8)
-      ctx.fillStyle = slot.seen ? lineColor(cfg, chain.line) : '#c8b89a'
+      ctx.fillStyle = slot.seen ? '#fffaf3' : '#c8b89a'
       ctx.fill()
+      const art = producer ? producerSprite(producer.id, slot.level) : null
+      const place = producer ? producerPlace(producer.id, slot.level) : null
+      if (art && place && slot.seen) {
+        const rect = placedRect({ x, y, w: 62, h: 58 }, place)
+        ctx.save()
+        ctx.beginPath()
+        ctx.rect(x, y, 62, 58)
+        ctx.clip()
+        ctx.drawImage(art as CanvasImageSource, rect.x, rect.y, rect.w, rect.h)
+        ctx.restore()
+      } else text(ctx, slot.label, x + 31, y + 29, 16, PAL.white)
       if (slot.current) {
         ctx.lineWidth = 3
         ctx.strokeStyle = '#3d6ea8'
         ctx.stroke()
       }
-      text(ctx, slot.label, x + 31, y + 29, 16, PAL.white)
     })
     let cursor = card.y + 240
     if (chain.level >= cfg.economy.producerSpawnLevel) {
