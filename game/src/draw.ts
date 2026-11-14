@@ -2,12 +2,11 @@ import { hostessCostume } from './config'
 import { formatDuration, formatMs } from './format'
 import { easeInOut, easeOutBack, easeOutCubic, popScale, type Flyer, type Fx } from './fx'
 import { hintHand, storageLessonHand, tutorialHand } from './coach'
-import { cellRect, chainCardRect, chainCloseRect, chainPopRect, decorPopupRects, detailCard, guestFaceBox, guideHole, levelClaimRect, shopRects, smileDismissRect, talkRect, trackRatio, type Frame, type Rect } from './layout'
+import { cellRect, chainCardRect, chainCloseRect, chainPopRect, decorPopupRects, detailCard, guideHole, levelClaimRect, shopRects, smileDismissRect, talkRect, trackRatio, type Frame, type Rect } from './layout'
 import {
   allTasks,
   atStep,
   canSell,
-  characterName,
   cnLevel,
   currentTutorial,
   gemAmount,
@@ -51,7 +50,7 @@ import { hechengImage, speedArtId } from './hechengArt'
 import { designToScreen } from './hechengLayout'
 import { COMIC_FONT, comicCursor, comicFontReady, comicPanelImage, comicPrompt, comicSilaImage, wrapComicText } from './comic'
 import { SLIDERS } from './tuner'
-import { COLS, ROWS, type ComicEnter, type GameConfig, type GameState, type Item, type NormBox, type OpeningScript } from './types'
+import { COLS, ROWS, type ComicEnter, type GameConfig, type GameState, type Item, type OpeningScript } from './types'
 
 export const FONT = '"WenQuanYi Micro Hei", "Noto Sans CJK SC", "Droid Sans Fallback", sans-serif'
 
@@ -700,6 +699,7 @@ function drawHecheng(model: RenderModel): void {
     ctx.rect(frame.orderClip.x, frame.orderClip.y, frame.orderClip.w, frame.orderClip.h)
     ctx.clip()
   }
+  const stripScroll = 29 * scale - frame.storyBtn.x
   ctx.save()
   clipOrders()
   state.orders.forEach((order, index) => {
@@ -707,11 +707,25 @@ function drawHecheng(model: RenderModel): void {
     if (!guest) return
     const who = cfg.characters.find((entry) => entry.id === order.customerId)
     const portrait = guestPortrait(who?.portrait)
-    if (who && portrait && portraitReady(portrait) && drawCharacter(ctx, who.portrait, portrait, guest, realNow)) return
-    paintStandIn(ctx, characterName(cfg, order.customerId), SILHOUETTE[order.customerId] ?? '#8a6a4a', guest, who?.face ?? { x: 0.18, y: 0.08, w: 0.64, h: 0.42 })
+    if (who && portrait && portraitReady(portrait)) drawCharacter(ctx, who.portrait, portrait, guest, realNow, 'fill')
   })
   ctx.restore()
-  blit(ctx, 'counter', at({ x: 0, y: 598, w: 1080, h: 324 }))
+  const counterImg = hechengImage('counter')
+  if (counterImg && (counterImg.naturalWidth || 0) > 0) {
+    const tileW = 1080 * scale
+    const counterY = top + 598 * scale
+    const counterH = 324 * scale
+    const cover = Math.max(
+      frame.w,
+      ...frame.orderGuests.map((rect) => rect.x + rect.w),
+      ...frame.orderPlates.map((rect) => rect.x + rect.w),
+      ...frame.orderRewards.map((rect) => rect.x + rect.w),
+      ...frame.completes.map((rect) => rect.x + rect.w),
+    ) + 8
+    for (let x = -stripScroll; x < cover; x += tileW) {
+      ctx.drawImage(counterImg as CanvasImageSource, x, counterY, tileW, counterH)
+    }
+  }
   ctx.save()
   clipOrders()
   frame.orderPlates.forEach((plate) => blit(ctx, 'plate', plate))
@@ -766,15 +780,16 @@ function drawHecheng(model: RenderModel): void {
   blit(ctx, 'build', frame.houseBtn)
   const task = nextTask(state, cfg)
   const buildHot = state.phase === 'play' && state.guide === 'none' && task && state.coins >= taskPrice(task, cfg)
+  const slide = (rect: Rect): Rect => ({ ...rect, x: rect.x - stripScroll })
   blit(ctx, 'taskFrame', frame.taskBtn)
-  blit(ctx, 'taskIcon', at({ x: 206, y: 482, w: 89, h: 103 }))
-  if (buildHot) blit(ctx, 'badgeTask', at({ x: 292, y: 452, w: 44, h: 45 }))
+  blit(ctx, 'taskIcon', slide(at({ x: 206, y: 482, w: 89, h: 103 })))
+  if (buildHot) blit(ctx, 'badgeTask', slide(at({ x: 292, y: 452, w: 44, h: 45 })))
   blit(ctx, 'chestFrame', frame.chestBtn)
-  blit(ctx, 'chestIcon', at({ x: 43, y: 548, w: 85, h: 81 }))
-  if (!state.freeRefillUsed) blit(ctx, 'badgeSmall', at({ x: 114, y: 521, w: 36, h: 36 }))
+  blit(ctx, 'chestIcon', slide(at({ x: 43, y: 548, w: 85, h: 81 })))
+  if (!state.freeRefillUsed) blit(ctx, 'badgeSmall', slide(at({ x: 114, y: 521, w: 36, h: 36 })))
   blit(ctx, 'chestFrame', frame.storyBtn)
-  blit(ctx, 'book', at({ x: 40, y: 421, w: 91, h: 85 }))
-  if (!state.storySeen) blit(ctx, 'badgeSmall', at({ x: 114, y: 399, w: 36, h: 36 }))
+  blit(ctx, 'book', slide(at({ x: 40, y: 421, w: 91, h: 85 })))
+  if (!state.storySeen) blit(ctx, 'badgeSmall', slide(at({ x: 114, y: 399, w: 36, h: 36 })))
   blit(ctx, 'energy', frame.energySlot)
   blit(ctx, 'coin', frame.coinSlot)
   blit(ctx, 'gem', frame.gemSlot)
@@ -916,36 +931,6 @@ function drawHud(model: RenderModel): void {
   if (frame.skip.w > 0) button(ctx, frame.skip, '跳过', 'ghost')
 }
 
-
-const SILHOUETTE: Record<string, string> = {
-  xiaotao: '#e07a8a',
-  teaGuest: '#2f8f78',
-  boatman: '#3d6ea8',
-  scholar: '#b08948',
-  embroider: '#a85cad',
-  squire: '#d4652f',
-  fisherman: '#d08a3a',
-  siamese: '#d7c4a2',
-  bossDaughter: '#e07a8a',
-  raccoon: '#6e6258',
-}
-
-function paintStandIn(ctx: CanvasRenderingContext2D, name: string, color: string, guest: Rect, face: NormBox): void {
-  const head = guestFaceBox(guest, face)
-  const cx = head.x + head.w / 2
-  const cy = head.y + head.h / 2
-  const radius = Math.min(head.w, head.h) / 2
-  ctx.beginPath()
-  ctx.fillStyle = '#f3d2b0'
-  ctx.arc(cx, cy, radius, 0, Math.PI * 2)
-  ctx.fill()
-  const bodyTop = cy + radius * 0.15
-  const bodyH = Math.max(8, guest.y + guest.h - bodyTop)
-  roundRect(ctx, cx - radius * 1.05, bodyTop, radius * 2.1, bodyH, 8)
-  ctx.fillStyle = color
-  ctx.fill()
-  text(ctx, name, cx, bodyTop + 12, 10, PAL.ink)
-}
 
 function drawHudTools(model: RenderModel): void {
   const { ctx, frame, state } = model

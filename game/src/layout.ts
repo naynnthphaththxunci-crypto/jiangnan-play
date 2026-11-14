@@ -131,6 +131,7 @@ export interface LayoutInput {
   orderCount: number
   orderSlots: number[]
   orderScroll: number
+  guestCanvasScale?: number
   showHint: boolean
   showSheet: boolean
   showSkip: boolean
@@ -571,6 +572,7 @@ export function layout(input: LayoutInput): Frame {
         orderSlots: input.orderSlots,
         orderScroll: input.orderScroll,
         showRush: input.showRush,
+        guestCanvasScale: input.guestCanvasScale,
       })
     : null
 

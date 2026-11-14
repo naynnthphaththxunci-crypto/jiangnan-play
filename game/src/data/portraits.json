@@ -28,19 +28,19 @@
     }
   },
   "boatman": {
-    "file": "boatman.png",
+    "file": "boatman.webp",
     "aspect": 1,
     "content": { "x": 0.1182, "y": 0.0488, "w": 0.8818, "h": 0.9482 },
     "face": { "x": 0.22, "y": 0.16, "w": 0.46, "h": 0.32 }
   },
   "squire": {
-    "file": "squire.png",
+    "file": "squire.webp",
     "aspect": 1,
     "content": { "x": 0.0918, "y": 0.0928, "w": 0.9082, "h": 0.9072 },
     "face": { "x": 0.22, "y": 0.16, "w": 0.46, "h": 0.32 }
   },
   "fisherman": {
-    "file": "fisherman.png",
+    "file": "fisherman.webp",
     "aspect": 1,
     "content": { "x": 0.0488, "y": 0.0664, "w": 0.9512, "h": 0.9258 },
     "face": { "x": 0.24, "y": 0.2, "w": 0.42, "h": 0.28 }

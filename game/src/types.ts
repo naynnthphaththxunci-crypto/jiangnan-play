@@ -226,6 +226,8 @@ export interface Economy {
   smileUnlockLevel: number
   /** 达到这个等级，倍速按钮才出现 x4。x8 不进循环。 */
   speed4Level: number
+  /** 客人 1024 画布缩到设计稿上的比例。0.29 时宽约 297。 */
+  guestCanvasScale: number
   spawn1High: number
   spawn2Mid: number
   spawnTable: { mult: 1 | 2 | 4 | 8; cost: number; enabled: boolean; weights: { level: number; p: number }[] }[]

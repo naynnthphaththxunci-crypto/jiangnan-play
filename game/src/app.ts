@@ -241,6 +241,7 @@ export function startGame(platform: Platform): void {
       orderCount: state.orders.length,
       orderSlots: state.orders.map((order) => order.slots.length),
       orderScroll,
+      guestCanvasScale: cfg.economy.guestCanvasScale,
       showHint: false,
       showSheet: false,
       showSkip: state.phase === 'story' || state.buildStory != null,
@@ -1040,9 +1041,15 @@ export function startGame(platform: Platform): void {
       cam.y = pointer.camY - (y - pointer.sy) / cam.scale
       return
     }
+    const onOrderStrip =
+      pointer.sy >= frame.orderClip.y && pointer.sy < frame.orderClip.y + frame.orderClip.h
     if (
       pointer.moved &&
-      (pointer.hit.kind === 'order' || pointer.hit.kind === 'orderStrip' || pointer.hit.kind === 'orderIcon' || pointer.hit.kind === 'complete')
+      (pointer.hit.kind === 'order' ||
+        pointer.hit.kind === 'orderStrip' ||
+        pointer.hit.kind === 'orderIcon' ||
+        pointer.hit.kind === 'complete' ||
+        (onOrderStrip && (pointer.hit.kind === 'swallow' || pointer.hit.kind === 'refill')))
     ) {
       orderScroll = scrollOrders(pointer.orderScroll, x - pointer.sx, frame.orderMaxScroll)
       return

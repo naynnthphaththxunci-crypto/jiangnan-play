@@ -23,9 +23,12 @@ html = html.replace(/<script type="module"[^>]*src="([^"]+)"><\/script>/g, (_, s
       }
     })
     if (!file) throw new Error(`missing portrait ${name}`)
-    return `data:image/png;base64,${readFileSync(file).toString('base64')}`
+    const mime = name.endsWith('.webp') ? 'image/webp' : 'image/png'
+    return `data:${mime};base64,${readFileSync(file).toString('base64')}`
   }
-  js = js.replace(/new URL\(`(?:assets\/)?([^`]+\.png)`,\s*import\.meta\.url\)/g, (_, name) => `\`${embed(name)}\``)
+  // Vite 把超过内联上限的图写成 new URL(`file.png`, import.meta.url).href。
+  // 换成 data URL 时必须连同 .href 一起换掉，否则读到的是字符串的 href，图一直是空的。
+  js = js.replace(/new URL\(`(?:assets\/)?([^`]+\.(?:png|webp))`,\s*import\.meta\.url\)(?:\.href)?/g, (_, name) => `\`${embed(name)}\``)
   js = js.replace(/(?:\.\.\/|\.\/|\/)?assets\/[A-Za-z0-9._-]+\.png/g, (match) => {
     const rel = match.replace(/^\.\.\//, '').replace(/^\.\//, '').replace(/^\//, '')
     return embed(rel.split('/').pop())

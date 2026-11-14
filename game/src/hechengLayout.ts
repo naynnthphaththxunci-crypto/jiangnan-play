@@ -17,10 +17,15 @@ const CELL_TABLE = cells as number[][]
 
 const PITCH = 313
 
-const GUESTS: Box[] = [
-  { x: 373, y: 321, w: 242, h: 278 },
-  { x: 664, y: 335, w: 286, h: 283 },
-  { x: 1009, y: 321, w: 241, h: 273 },
+/** 客人原画是 1024 的整张画布，按这个比例缩到 1080 宽的设计稿上。 */
+export const GUEST_CANVAS = 1024
+export const GUEST_SCALE = 0.29
+
+/** 画布左上角。顶部对齐在 y≈305，水平落在各自托盘中间。 */
+const GUEST_ANCHOR: { x: number; y: number }[] = [
+  { x: 338, y: 307 },
+  { x: 632, y: 303 },
+  { x: 975, y: 303 },
 ]
 const PLATES: Box[] = [
   { x: 354, y: 568, w: 294, h: 112 },
@@ -47,6 +52,8 @@ export interface HechengInput {
   orderSlots: number[]
   orderScroll: number
   showRush?: boolean
+  /** 1024 画布相对设计稿宽度的缩放，默认 0.29。 */
+  guestCanvasScale?: number
 }
 
 export interface HechengScene {
@@ -99,6 +106,16 @@ function slotAt(list: Box[], index: number): Box {
   return { ...last, x: last.x + (index - (list.length - 1)) * PITCH }
 }
 
+/** 整张 1024 画布的设计坐标。默认比例下左上角就是锚点；改比例时绕画布中心缩放。 */
+export function guestCanvasBox(index: number, guestScale = GUEST_SCALE): Box {
+  const anchor = index < GUEST_ANCHOR.length
+    ? GUEST_ANCHOR[index]!
+    : { x: GUEST_ANCHOR[2]!.x + (index - 2) * PITCH, y: GUEST_ANCHOR[2]!.y }
+  const nominal = GUEST_CANVAS * GUEST_SCALE
+  const size = GUEST_CANVAS * guestScale
+  return { x: anchor.x + nominal / 2 - size / 2, y: anchor.y, w: size, h: size }
+}
+
 export function designCell(row: number, col: number): Box | null {
   const entry = CELL_TABLE[row * 7 + col]
   if (!entry) return null
@@ -144,13 +161,15 @@ export function hechengParts(input: HechengInput): HechengScene {
     w: box.w * scale,
     h: box.h * scale,
   })
+  const guestScale = input.guestCanvasScale && input.guestCanvasScale > 0 ? input.guestCanvasScale : GUEST_SCALE
   const n = Math.max(0, input.orderCount)
   let right = 0
   for (let i = 0; i < n; i++) {
-    for (const box of [slotAt(GUESTS, i), slotAt(PLATES, i), slotAt(REWARDS, i), slotAt(COMPLETES, i)]) {
+    for (const box of [guestCanvasBox(i, guestScale), slotAt(PLATES, i), slotAt(REWARDS, i), slotAt(COMPLETES, i)]) {
       right = Math.max(right, (box.x + box.w) * scale)
     }
   }
+  right += 16 * scale
   const orderMaxScroll = Math.max(0, right - input.w)
   const scroll = clamp(input.orderScroll, 0, orderMaxScroll)
   const orders: Box[] = []
@@ -161,7 +180,7 @@ export function hechengParts(input: HechengInput): HechengScene {
   const orderIcons: { order: number; slot: number; rect: Box }[] = []
   for (let i = 0; i < n; i++) {
     const plate = place(slotAt(PLATES, i), 'top', scroll)
-    const guest = place(slotAt(GUESTS, i), 'top', scroll)
+    const guest = place(guestCanvasBox(i, guestScale), 'top', scroll)
     const reward = place(slotAt(REWARDS, i), 'top', scroll)
     const button = place(slotAt(COMPLETES, i), 'top', scroll)
     orders.push(plate)
@@ -236,18 +255,18 @@ export function hechengParts(input: HechengInput): HechengScene {
     rushBtn,
     adBtn,
     energyPlus: place({ x: 342, y: 169, w: 40, h: 71 }, 'top'),
-    chestBtn: place({ x: 29, y: 529, w: 113, h: 115 }, 'top'),
-    storyBtn: place({ x: 29, y: 406, w: 113, h: 115 }, 'top'),
-    taskBtn: place({ x: 178, y: 463, w: 148, h: 184 }, 'top'),
+    chestBtn: place({ x: 29, y: 529, w: 113, h: 115 }, 'top', scroll),
+    storyBtn: place({ x: 29, y: 406, w: 113, h: 115 }, 'top', scroll),
+    taskBtn: place({ x: 178, y: 463, w: 148, h: 184 }, 'top', scroll),
     hud: place({ x: 0, y: 140, w: DESIGN_W, h: 220 }, 'top'),
-    counter: place({ x: 0, y: 598, w: DESIGN_W, h: 324 }, 'top'),
+    counter: place({ x: 0, y: 598, w: DESIGN_W, h: 324 }, 'top', scroll),
     boardArt,
-    taskIcon: place({ x: 206, y: 482, w: 89, h: 103 }, 'top'),
-    bookIcon: place({ x: 40, y: 421, w: 91, h: 85 }, 'top'),
-    chestIcon: place({ x: 43, y: 548, w: 85, h: 81 }, 'top'),
-    badgeStory: place({ x: 114, y: 399, w: 36, h: 36 }, 'top'),
-    badgeChest: place({ x: 114, y: 521, w: 36, h: 36 }, 'top'),
-    badgeTask: place({ x: 292, y: 452, w: 44, h: 45 }, 'top'),
+    taskIcon: place({ x: 206, y: 482, w: 89, h: 103 }, 'top', scroll),
+    bookIcon: place({ x: 40, y: 421, w: 91, h: 85 }, 'top', scroll),
+    chestIcon: place({ x: 43, y: 548, w: 85, h: 81 }, 'top', scroll),
+    badgeStory: place({ x: 114, y: 399, w: 36, h: 36 }, 'top', scroll),
+    badgeChest: place({ x: 114, y: 521, w: 36, h: 36 }, 'top', scroll),
+    badgeTask: place({ x: 292, y: 452, w: 44, h: 45 }, 'top', scroll),
     badgeShop: place({ x: 1020, y: 246, w: 38, h: 38 }, 'top'),
   }
 }

@@ -113,6 +113,23 @@ describe('订单卡', () => {
     }
   })
 
+  it('客人按 1024 画布的 0.29 倍摆，左侧按钮跟着订单一起滑', () => {
+    const view = frame({ w: 1080, h: 2340 })
+    const guest = view.orderGuests[0]!
+    expect(guest.x).toBeCloseTo(338, 0)
+    expect(guest.y).toBeCloseTo(307, 0)
+    expect(guest.w).toBeCloseTo(1024 * 0.29, 0)
+    expect(view.storyBtn.x).toBeCloseTo(29, 0)
+    const scrolled = frame({ w: 1080, h: 2340, orderScroll: view.orderMaxScroll })
+    const moved = view.storyBtn.x - scrolled.storyBtn.x
+    expect(moved).toBeCloseTo(view.orderMaxScroll, 0)
+    expect(scrolled.orderPlates[0]!.x - view.orderPlates[0]!.x).toBeCloseTo(-view.orderMaxScroll, 0)
+    expect(scrolled.chestBtn.x - view.chestBtn.x).toBeCloseTo(-view.orderMaxScroll, 0)
+    const lastPay = scrolled.orderRewards[2]!
+    expect(lastPay.x).toBeGreaterThanOrEqual(-1)
+    expect(lastPay.x + lastPay.w).toBeLessThanOrEqual(1080 + 1)
+  })
+
   it('棋盘格子用排版表的坐标，点在格子中心能点中', () => {
     const view = frame()
     const scale = view.w / 1080

@@ -28,10 +28,11 @@ export function drawCharacter(
   image: object | null,
   dest: SpriteDest,
   now: number,
+  fit: 'fill' | 'contain-bottom' = 'fill',
 ): boolean {
   const sheet = characterSheet(id)
   if (!sheet || !image) return false
-  drawSprite(ctx, image, sheet, dest, now, 'contain-bottom')
+  drawSprite(ctx, image, sheet, dest, now, fit)
   return true
 }
 

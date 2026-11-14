@@ -362,6 +362,18 @@ export const SLIDERS: SliderSpec[] = [
     text: (v) => v.toFixed(2),
   },
   {
+    id: 'guestCanvas',
+    label: '客人画布比例',
+    min: 0.2,
+    max: 0.45,
+    step: 0.01,
+    get: (c) => c.economy.guestCanvasScale ?? 0.29,
+    set: (c, v) => {
+      c.economy.guestCanvasScale = Math.round(v * 100) / 100
+    },
+    text: (v) => v.toFixed(2),
+  },
+  {
     id: 'speed4Level',
     label: 'x4解锁等级',
     min: 1,
