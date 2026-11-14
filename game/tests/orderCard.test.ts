@@ -150,10 +150,10 @@ describe('订单卡', () => {
     }
     expect(cfg.characters.find((entry) => entry.id === 'embroider')?.name).toBe('晴娘')
     expect(cfg.characters.find((entry) => entry.id === 'embroider')?.portrait).toBe('embroider')
-    expect(PORTRAITS.embroider).toContain('embroider')
-    expect(PORTRAITS.xiaotao).toBe(PORTRAITS.bossDaughter)
+    expect(PORTRAITS.embroider).toBe(PORTRAITS.bossDaughter)
     expect(cfg.characters.find((entry) => entry.id === 'raccoon')?.portrait).toBeUndefined()
     expect(PORTRAITS.ruyue).toContain('ruyue')
+    expect(PORTRAITS.xiaotao).toContain('xiaotao')
     expect(PORTRAITS.zhao).toContain('zhao')
     expect(PORTRAITS.liu).toContain('liu')
     expect(cfg.boardTheme.cellLight).not.toBe(cfg.boardTheme.cellDark)

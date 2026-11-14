@@ -4,9 +4,10 @@ import boatman from './assets/guests/boatman.webp'
 import squire from './assets/guests/squire.webp'
 import fisherman from './assets/guests/fisherman.webp'
 import siamese from './assets/guests/siamese.png'
-import embroider from './assets/guests/embroider.webp'
 import bossDaughter from './assets/guests/bossDaughter.webp'
 import ruyue from './assets/guests/ruyue.png'
+import xiaotao from './assets/guests/xiaotao.png'
+import xiaotaoFirst from './assets/guests/xiaotaoFirst.webp'
 import zhao from './assets/guests/zhao.png'
 import liu from './assets/guests/liu.png'
 import portraitsJson from './data/portraits.json'
@@ -15,15 +16,15 @@ import type { NormBox } from './types'
 export const PORTRAITS: Record<string, string> = {
   teaGuest,
   scholar,
-  embroider,
+  /** 晴娘订单立绘用老板女儿的 1024 原画，名字仍是晴娘。 */
+  embroider: bossDaughter,
   boatman,
   squire,
   fisherman,
   siamese,
-  /** 老板女儿和小桃的订单立绘是同一张半身像。开场漫画用整页，不走这张。 */
   bossDaughter,
   ruyue,
-  xiaotao: bossDaughter,
+  xiaotao,
   zhao,
   liu,
 }
@@ -111,6 +112,18 @@ function createImage(): GuestImage | null {
   return null
 }
 
+/** 新手第一单的小桃半身像。只给这一单的订单立绘，不进客人图集。 */
+export function firstOrderGuestPortrait(): GuestImage | null {
+  const cached = cache.get(xiaotaoFirst)
+  if (cached) return cached
+  const img = createImage()
+  if (!img) return null
+  const host = globalThis as { wx?: unknown }
+  img.src = host.wx && xiaotaoFirst.startsWith('./') ? xiaotaoFirst.slice(2) : xiaotaoFirst
+  cache.set(xiaotaoFirst, img)
+  return img
+}
+
 export function guestPortrait(key: string | undefined): GuestImage | null {
   if (!key) return null
   const src = PORTRAITS[key]
@@ -133,6 +146,8 @@ export function guestImageElements(): HTMLImageElement[] {
     const img = guestPortrait(key)
     if (img instanceof Ctor) out.push(img)
   }
+  const first = firstOrderGuestPortrait()
+  if (first instanceof Ctor) out.push(first)
   return out
 }
 

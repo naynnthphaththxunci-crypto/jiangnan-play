@@ -45,7 +45,7 @@ import {
 import { itemSprite, producerBoltPlace, producerPieceName, producerPlace, producerSprite, PRODUCER_CELL_W, spriteContent, type ArtBox } from './itemArt'
 import tutorialHandUrl from './assets/ui/tutorial_hand.png'
 import iconBoltUrl from './assets/ui/stamina_bolt.webp'
-import { guestPortrait, portraitReady } from './portraits'
+import { firstOrderGuestPortrait, guestPortrait, portraitReady } from './portraits'
 import { drawAvatar, drawCharacter } from './cast'
 import { hechengImage, speedArtId } from './hechengArt'
 import { designToScreen } from './hechengLayout'
@@ -734,10 +734,11 @@ function drawHecheng(model: RenderModel): void {
     const guest = frame.orderGuests[index]
     if (!guest) return
     const who = cfg.characters.find((entry) => entry.id === order.customerId)
-    const portrait = guestPortrait(who?.portrait)
+    const firstOrder = order.scripted === true
+    const portrait = firstOrder ? firstOrderGuestPortrait() : guestPortrait(who?.portrait)
     if (!guestSeen.has(order.id)) guestSeen.set(order.id, realNow)
-    if (who && portrait && portraitReady(portrait)) {
-      drawCharacter(ctx, who.portrait, portrait, guest, realNow, 'contain', {
+    if ((who || firstOrder) && portrait && portraitReady(portrait)) {
+      drawCharacter(ctx, firstOrder ? 'xiaotao' : who?.portrait, portrait, guest, realNow, 'contain', {
         startedAt: guestSeen.get(order.id),
         frameMs: cfg.economy.ajiangFrameMs,
         zeroFrameMs: cfg.economy.baoZeroFrameMs,
