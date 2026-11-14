@@ -13,6 +13,11 @@ export interface SpriteSheet {
   columns: number
   /** 0 或 frames<=1 时不播，永远画第 0 帧。 */
   fps: number
+  /** 出场先播这一段，再进循环。不填就整段按 fps 循环。 */
+  introStart?: number
+  introEnd?: number
+  loopStart?: number
+  loopEnd?: number
 }
 
 export interface SpriteDest {
@@ -26,20 +31,34 @@ export function staticSheet(id: string, src: string): SpriteSheet {
   return { id, src, frameWidth: 0, frameHeight: 0, frames: 1, columns: 1, fps: 0 }
 }
 
-export function spriteFrameIndex(sheet: SpriteSheet, now: number): number {
+export function spriteFrameIndex(sheet: SpriteSheet, now: number, startedAt = 0): number {
   const frames = Math.max(1, sheet.frames)
   if (frames <= 1 || sheet.fps <= 0) return 0
-  return Math.floor(Math.max(0, now) / (1000 / sheet.fps)) % frames
+  const frameMs = 1000 / sheet.fps
+  if (sheet.loopStart == null || sheet.loopEnd == null) {
+    return Math.floor(Math.max(0, now) / frameMs) % frames
+  }
+  const introStart = sheet.introStart ?? 0
+  const introEnd = sheet.introEnd ?? frames - 1
+  const loopStart = sheet.loopStart
+  const loopEnd = sheet.loopEnd
+  const introCount = Math.max(1, introEnd - introStart + 1)
+  const age = Math.max(0, now - startedAt)
+  const introMs = introCount * frameMs
+  if (age < introMs) return introStart + Math.min(introCount - 1, Math.floor(age / frameMs))
+  const loopCount = Math.max(1, loopEnd - loopStart + 1)
+  return loopStart + (Math.floor((age - introMs) / frameMs) % loopCount)
 }
 
-/** fill 拉满目标框；contain-bottom 按比例放进框里，脚对齐下沿。 */
+/** fill 拉满目标框；contain 保持宽高比并居中；contain-bottom 等比后脚对齐下沿。 */
 export function drawSprite(
   ctx: CanvasRenderingContext2D,
   image: object,
   sheet: SpriteSheet,
   dest: SpriteDest,
   now: number,
-  fit: 'fill' | 'contain-bottom' = 'fill',
+  fit: 'fill' | 'contain' | 'contain-bottom' = 'fill',
+  startedAt = 0,
 ): void {
   const sized = image as { naturalWidth?: number; naturalHeight?: number; width?: number }
   const imageW = (typeof sized.naturalWidth === 'number' && sized.naturalWidth) || (typeof sized.width === 'number' ? sized.width : 0)
@@ -47,7 +66,7 @@ export function drawSprite(
   if (imageW <= 0 || imageH <= 0 || dest.w <= 0 || dest.h <= 0) return
   const frames = Math.max(1, sheet.frames)
   const cols = Math.max(1, sheet.columns || frames)
-  const index = spriteFrameIndex(sheet, now)
+  const index = spriteFrameIndex(sheet, now, startedAt)
   const col = index % cols
   const row = Math.floor(index / cols)
   const sw = sheet.frameWidth > 0 ? sheet.frameWidth : imageW
@@ -56,7 +75,7 @@ export function drawSprite(
   let dy = dest.y
   let dw = dest.w
   let dh = dest.h
-  if (fit === 'contain-bottom') {
+  if (fit === 'contain' || fit === 'contain-bottom') {
     const aspect = sw / Math.max(1, sh)
     dw = dest.w
     dh = dw / aspect
@@ -65,7 +84,9 @@ export function drawSprite(
       dw = dh * aspect
     }
     dx = dest.x + (dest.w - dw) / 2
-    dy = dest.y + dest.h - dh
+    dy = fit === 'contain-bottom' ? dest.y + dest.h - dh : dest.y + (dest.h - dh) / 2
   }
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = 'high'
   ctx.drawImage(image as CanvasImageSource, col * sw, row * sh, sw, sh, dx, dy, dw, dh)
 }

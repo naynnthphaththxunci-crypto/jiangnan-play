@@ -1236,6 +1236,8 @@ export function startGame(platform: Platform): void {
     if (ctx) {
       const dpr = platform.dpr || 1
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = 'high'
       render({
         ctx,
         frame,

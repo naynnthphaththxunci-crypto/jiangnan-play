@@ -10,4 +10,21 @@ describe('角色序列帧接口', () => {
     expect(spriteFrameIndex(sheet, 125)).toBe(1)
     expect(spriteFrameIndex(sheet, 500)).toBe(0)
   })
+
+  it('有出场段时先播完，再在循环段里转', () => {
+    const sheet = {
+      ...staticSheet('ajiang', 'frame.webp'),
+      frames: 29,
+      fps: 12,
+      introStart: 0,
+      introEnd: 28,
+      loopStart: 20,
+      loopEnd: 28,
+    }
+    const frameMs = 1000 / 12
+    expect(spriteFrameIndex(sheet, 0, 0)).toBe(0)
+    expect(spriteFrameIndex(sheet, frameMs * 5, 0)).toBe(5)
+    expect(spriteFrameIndex(sheet, frameMs * 29, 0)).toBe(20)
+    expect(spriteFrameIndex(sheet, frameMs * 29 + frameMs * 9, 0)).toBe(20)
+  })
 })

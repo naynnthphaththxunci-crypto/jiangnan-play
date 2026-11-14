@@ -111,6 +111,8 @@ export interface ComicPanel {
   y: number
   w: number
   h: number
+  /** 页内叠放，小的在下面。 */
+  z?: number
 }
 
 export interface ComicBeat {
@@ -228,6 +230,11 @@ export interface Economy {
   speed4Level: number
   /** 客人 1024 画布缩到设计稿上的比例。0.29 时宽约 297。 */
   guestCanvasScale: number
+  ajiangFps: number
+  ajiangIntroStart: number
+  ajiangIntroEnd: number
+  ajiangLoopStart: number
+  ajiangLoopEnd: number
   spawn1High: number
   spawn2Mid: number
   spawnTable: { mult: 1 | 2 | 4 | 8; cost: number; enabled: boolean; weights: { level: number; p: number }[] }[]

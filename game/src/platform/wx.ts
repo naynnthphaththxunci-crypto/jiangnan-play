@@ -47,13 +47,13 @@ export function createWxPlatform(): Platform {
   const wx = getWx()
   const info = wx.getSystemInfoSync()
   const canvas = wx.createCanvas()
-  let dpr = Math.min(2, info.pixelRatio || 1)
+  let dpr = Math.min(3, info.pixelRatio || 1)
   let logical = { w: info.windowWidth, h: info.windowHeight }
   let resizeCb: (() => void) | null = null
   let audio: AudioContextLike | null = null
 
   const apply = (w: number, h: number, ratio?: number) => {
-    dpr = Math.min(2, ratio || dpr || 1)
+    dpr = Math.min(3, ratio || dpr || 1)
     logical = { w: Math.max(1, w), h: Math.max(1, h) }
     canvas.width = Math.round(logical.w * dpr)
     canvas.height = Math.round(logical.h * dpr)

@@ -6,10 +6,10 @@ import p2_1 from './assets/comic/p2_1.webp'
 import p2_2 from './assets/comic/p2_2.webp'
 import p2_3 from './assets/comic/p2_3.webp'
 import p2_4 from './assets/comic/p2_4.webp'
-import p3_1 from './assets/comic/p3_1.webp'
-import p3_2 from './assets/comic/p3_2.webp'
+import p4_1 from './assets/comic/p4_1.webp'
+import p4_2 from './assets/comic/p4_2.webp'
 import p2b from './assets/comic/p2b.webp'
-import p3_3 from './assets/comic/p3_3.webp'
+import p4_3 from './assets/comic/p4_3.webp'
 import silaUrl from './assets/comic/sila.webp'
 import regularUrl from './assets/comic/comic-regular.woff2'
 import boldUrl from './assets/comic/comic-bold.woff2'
@@ -20,7 +20,7 @@ export const COMIC_FONT = 'JiangnanComic'
 const PANEL_URLS: Record<string, string> = {
   p1_1, p1_2, p1_3, p1_4,
   p2_1, p2_2, p2_3, p2_4, p2b,
-  p3_1, p3_2, p3_3,
+  p4_1, p4_2, p4_3,
 }
 
 type ComicImage = CanvasImageSource & { complete?: boolean; naturalWidth?: number; naturalHeight?: number }

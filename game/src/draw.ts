@@ -411,6 +411,7 @@ function paintComicPanels(
   const current = page.beats[beatIndex]
   const order: string[] = []
   for (const beat of shown) if (!order.includes(beat.panel)) order.push(beat.panel)
+  order.sort((a, b) => (page.panels.find((item) => item.id === a)?.z ?? 0) - (page.panels.find((item) => item.id === b)?.z ?? 0))
   const fresh = shown.filter((beat) => beat.panel === current?.panel).length === 1
   for (const id of order) {
     const panel = page.panels.find((item) => item.id === id)
@@ -423,15 +424,19 @@ function paintComicPanels(
       : posing
         ? enterPose(current?.enter, now - beatAt, current?.ms ?? 450)
         : { alpha: 1, dx: 0, dy: 0, scale: 1, fx: 0.5, fy: 0.5 }
+    const fullPage = (img.naturalWidth || 0) >= script.width - 2 && (img.naturalHeight || 0) >= script.height - 2
     const cx = panel.x + panel.w * pose.fx
     const cy = panel.y + panel.h * pose.fy
     ctx.save()
+    ctx.imageSmoothingEnabled = true
+    ctx.imageSmoothingQuality = 'high'
     ctx.globalAlpha *= Math.max(0, Math.min(1, pose.alpha))
     ctx.translate(pose.dx, pose.dy)
     ctx.translate(cx, cy)
     ctx.scale(pose.scale, pose.scale)
     ctx.translate(-cx, -cy)
-    ctx.drawImage(img as CanvasImageSource, panel.x, panel.y, panel.w, panel.h)
+    if (fullPage) ctx.drawImage(img as CanvasImageSource, 0, 0, script.width, script.height)
+    else ctx.drawImage(img as CanvasImageSource, panel.x, panel.y, panel.w, panel.h)
     ctx.restore()
   }
   if (!shown.some((beat) => beat.kind === 'sila')) return
@@ -667,6 +672,8 @@ function resourcePill(ctx: CanvasRenderingContext2D, rect: Rect, mark: string, m
   text(ctx, value, rect.x + rect.w - rect.h * 0.28, cy, Math.max(15, rect.h * 0.52), valueColor, 'right', 'middle', 700)
 }
 
+const guestSeen = new Map<string, number>()
+
 function blit(ctx: CanvasRenderingContext2D, id: Parameters<typeof hechengImage>[0], rect: Rect): void {
   if (rect.w <= 0 || rect.h <= 0) return
   const img = hechengImage(id)
@@ -707,7 +714,17 @@ function drawHecheng(model: RenderModel): void {
     if (!guest) return
     const who = cfg.characters.find((entry) => entry.id === order.customerId)
     const portrait = guestPortrait(who?.portrait)
-    if (who && portrait && portraitReady(portrait)) drawCharacter(ctx, who.portrait, portrait, guest, realNow, 'fill')
+    if (!guestSeen.has(order.id)) guestSeen.set(order.id, realNow)
+    if (who && portrait && portraitReady(portrait)) {
+      drawCharacter(ctx, who.portrait, portrait, guest, realNow, 'contain', {
+        startedAt: guestSeen.get(order.id),
+        fps: cfg.economy.ajiangFps,
+        introStart: cfg.economy.ajiangIntroStart,
+        introEnd: cfg.economy.ajiangIntroEnd,
+        loopStart: cfg.economy.ajiangLoopStart,
+        loopEnd: cfg.economy.ajiangLoopEnd,
+      })
+    }
   })
   ctx.restore()
   const counterImg = hechengImage('counter')
