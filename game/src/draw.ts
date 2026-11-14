@@ -48,6 +48,7 @@ import iconBoltUrl from './assets/ui/stamina_bolt.webp'
 import { firstOrderGuestPortrait, guestPortrait, portraitReady } from './portraits'
 import { drawAvatar, drawCharacter } from './cast'
 import { hechengImage, speedArtId } from './hechengArt'
+import { curtainBitmaps, curtainDrop, curtainPlace } from './curtain'
 import { designToScreen } from './hechengLayout'
 import { COMIC_FONT, comicCursor, comicFontReady, comicPanelImage, comicPrompt, comicSilaImage, wrapComicText } from './comic'
 import { SLIDERS } from './tuner'
@@ -87,6 +88,8 @@ export interface RenderModel {
   showHand: boolean
   chain: { line: string; level: number; source: 'order' | 'producer' } | null
   comicHand: 'first' | 'idle' | 'off'
+  /** 合成页和建造页之间的竹帘。progress 0 在屏幕外，1 盖满并停住。 */
+  curtain: { progress: number } | null
 }
 
 export function render(model: RenderModel): void {
@@ -127,6 +130,34 @@ export function render(model: RenderModel): void {
   if (frame.showTuner) drawTuner(model)
   drawHudTools(model)
   drawToasts(model)
+  drawCurtain(model)
+}
+
+function drawCurtain(model: RenderModel): void {
+  const job = model.curtain
+  if (!job) return
+  const { ctx, frame, cfg } = model
+  const place = curtainPlace(frame.w, frame.h)
+  const travel = Math.max(0, place.y + place.h)
+  const bounce = Math.max(0, cfg.economy.curtainBounce ?? 0) * frame.h
+  const drop = job.progress >= 1 ? 0 : curtainDrop(job.progress, travel, bounce)
+  const { curtain, front } = curtainBitmaps()
+  ctx.save()
+  ctx.beginPath()
+  ctx.rect(0, 0, frame.w, frame.h)
+  ctx.clip()
+  const curtainReady = (curtain?.naturalWidth || 0) > 0
+  if (curtainReady && curtain) {
+    ctx.drawImage(curtain as CanvasImageSource, place.x, place.y + drop, place.w, place.h)
+  } else {
+    const top = place.y + drop
+    ctx.fillStyle = '#c79a62'
+    ctx.fillRect(0, top, frame.w, frame.h - top)
+  }
+  if ((front?.naturalWidth || 0) > 0 && front) {
+    ctx.drawImage(front as CanvasImageSource, place.x, place.y, place.w, place.h)
+  }
+  ctx.restore()
 }
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {

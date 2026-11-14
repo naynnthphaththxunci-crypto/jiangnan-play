@@ -5,6 +5,7 @@ import { createComicAudio } from './comicAudio'
 import { createSfx, type Sfx } from './audio'
 import { defaultConfig, resetEconomy } from './config'
 import { partAt, render } from './draw'
+import { curtainReady as curtainImagesReady } from './curtain'
 import { createFx, type Fx } from './fx'
 import { clamp } from './format'
 import {
@@ -146,6 +147,7 @@ export function startGame(platform: Platform): void {
   comicAudio.setMuted(state.soundMuted)
   sfx.setMuted(state.soundMuted)
   let view: 'board' | 'house' = 'board'
+  let curtain: { to: 'board' | 'house'; started: number; freeze: number | null } | null = null
   let modal: 'energy' | null = null
   let tuner = false
   let tunerScroll = 0
@@ -528,13 +530,7 @@ export function startGame(platform: Platform): void {
       return
     }
     if (hit.kind === 'house') {
-      clearSale(state)
-      if (atStep(state, cfg, 'build')) finishTutorial(state, cfg, rng)
-      view = 'house'
-      frame = makeFrame()
-      ensureCam()
-      sfx.ui()
-      mark()
+      beginCurtain('house')
       return
     }
     if (hit.kind === 'complete') {
@@ -691,8 +687,7 @@ export function startGame(platform: Platform): void {
       return
     }
     if (hit.kind === 'back') {
-      view = 'board'
-      sfx.ui()
+      beginCurtain('board')
       return
     }
     if (hit.kind === 'zoom') {
@@ -885,9 +880,29 @@ export function startGame(platform: Platform): void {
     comicAudio.sync(cfg.opening, state.storyStep, state.phase === 'story')
   }
 
+  function beginCurtain(to: 'board' | 'house'): void {
+    if (curtain) return
+    if (to === view) return
+    if (to === 'house') {
+      clearSale(state)
+      if (atStep(state, cfg, 'build')) finishTutorial(state, cfg, rng)
+    }
+    curtain = { to, started: platform.now(), freeze: null }
+    sfx.ui()
+    mark()
+  }
+
+  function curtainProgress(now: number): number {
+    if (!curtain) return 0
+    if (curtain.freeze != null) return curtain.freeze
+    const pull = Math.max(1, cfg.economy.curtainPullMs ?? 300)
+    return (now - curtain.started) / pull
+  }
+
   function onDown(x: number, y: number, id: number): void {
     sfx.unlock()
     lastInput = platform.now()
+    if (curtain) return
     if (guideSpot(state, cfg) === 'reward') orderScroll = 0
     frame = makeFrame()
     if (view === 'house' && state.decorate) {
@@ -1166,7 +1181,7 @@ export function startGame(platform: Platform): void {
       else if (state.showHelp) {
         state.showHelp = false
         mark()
-      } else if (view === 'house') view = 'board'
+      } else if (view === 'house') beginCurtain('board')
       return
     }
     if ((key === 't' || key === 'T') && !modal) tuner = !tuner
@@ -1236,6 +1251,14 @@ export function startGame(platform: Platform): void {
     fx.floaters = fx.floaters.filter((floater) => anim - floater.birth < floater.dur)
     fx.toasts = fx.toasts.filter((entry) => real - entry.birth < entry.dur)
     if (fx.banner && real > fx.banner.until) fx.banner = null
+    if (curtain && curtain.freeze == null) {
+      const pull = Math.max(1, cfg.economy.curtainPullMs ?? 300)
+      const hold = Math.max(0, cfg.economy.curtainHoldMs ?? 0)
+      if (real - curtain.started >= pull + hold) {
+        view = curtain.to
+        curtain = null
+      }
+    }
     frame = makeFrame()
     if (view === 'house') ensureCam()
     const ctx = platform.canvas.getContext('2d')
@@ -1266,6 +1289,7 @@ export function startGame(platform: Platform): void {
           real - lastInput > cfg.economy.idleHintMs,
         comicHand:
           state.phase !== 'story' ? 'off' : state.storyStep === 0 ? 'first' : real - lastInput >= 3000 ? 'idle' : 'off',
+        curtain: curtain ? { progress: curtainProgress(real) } : null,
       })
     }
     if (dirty && real - lastSave > 500) saveNow()
@@ -1336,6 +1360,22 @@ export function startGame(platform: Platform): void {
         tune: frame.tuneBtn,
         pending: frame.pendingBtn,
       }
+    },
+    curtainReady() {
+      return curtainImagesReady()
+    },
+    curtainAt(progress: number | null) {
+      if (progress == null) {
+        curtain = null
+        return
+      }
+      curtain = { to: view === 'board' ? 'house' : 'board', started: platform.now(), freeze: progress }
+    },
+    startCurtain(to: 'board' | 'house') {
+      beginCurtain(to)
+    },
+    get curtain() {
+      return curtain
     },
   }
   ;(globalThis as { __JIANGNAN__?: typeof debug }).__JIANGNAN__ = debug

@@ -40,6 +40,42 @@ export const SLIDERS: SliderSpec[] = [
     text: (v) => `${Math.round(v)} 毫秒`,
   },
   {
+    id: 'curtainPull',
+    label: '竹帘下拉时长',
+    min: 80,
+    max: 800,
+    step: 10,
+    get: (c) => c.economy.curtainPullMs ?? 300,
+    set: (c, v) => {
+      c.economy.curtainPullMs = v
+    },
+    text: (v) => `${Math.round(v)} 毫秒`,
+  },
+  {
+    id: 'curtainBounce',
+    label: '竹帘回弹幅度',
+    min: 0,
+    max: 0.1,
+    step: 0.005,
+    get: (c) => c.economy.curtainBounce ?? 0.02,
+    set: (c, v) => {
+      c.economy.curtainBounce = Math.round(v * 1000) / 1000
+    },
+    text: (v) => `${Math.round(v * 1000) / 10}%`,
+  },
+  {
+    id: 'curtainHold',
+    label: '竹帘盖满后停留',
+    min: 0,
+    max: 400,
+    step: 10,
+    get: (c) => c.economy.curtainHoldMs ?? 0,
+    set: (c, v) => {
+      c.economy.curtainHoldMs = v
+    },
+    text: (v) => `${Math.round(v)} 毫秒`,
+  },
+  {
     id: 'hit',
     label: '卡帧',
     min: 0,
