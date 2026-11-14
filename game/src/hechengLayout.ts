@@ -43,6 +43,20 @@ const COMPLETES: Box[] = [
   { x: 1029, y: 624, w: 182, h: 94 },
 ]
 
+/** 绿书和任务板从这一级起才出现。 */
+export const SIDE_ICON_LEVEL = 5
+
+const STORY_BTN: Box = { x: 29, y: 406, w: 113, h: 115 }
+const CHEST_BTN: Box = { x: 29, y: 529, w: 113, h: 115 }
+const TASK_BTN: Box = { x: 178, y: 463, w: 148, h: 184 }
+const BOOK_ICON: Box = { x: 40, y: 421, w: 91, h: 85 }
+const CHEST_ICON: Box = { x: 43, y: 548, w: 85, h: 81 }
+const TASK_ICON: Box = { x: 206, y: 482, w: 89, h: 103 }
+const BADGE_STORY: Box = { x: 114, y: 399, w: 36, h: 36 }
+const BADGE_CHEST: Box = { x: 114, y: 521, w: 36, h: 36 }
+const BADGE_TASK: Box = { x: 292, y: 452, w: 44, h: 45 }
+const ZERO_BOX: Box = { x: 0, y: 0, w: 0, h: 0 }
+
 export interface HechengInput {
   w: number
   h: number
@@ -54,6 +68,10 @@ export interface HechengInput {
   showRush?: boolean
   /** 1024 画布相对设计稿宽度的缩放，默认 0.29。 */
   guestCanvasScale?: number
+  /** 缺省为显示，方便旧调用。合成页会按等级和奖励显式关掉。 */
+  showStory?: boolean
+  showTask?: boolean
+  showChest?: boolean
 }
 
 export interface HechengScene {
@@ -98,6 +116,18 @@ export interface HechengScene {
   badgeChest: Box
   badgeTask: Box
   badgeShop: Box
+}
+
+function childOf(button: Box, designButton: Box, designChild: Box): Box {
+  if (button.w <= 0 || button.h <= 0) return ZERO_BOX
+  const sx = button.w / designButton.w
+  const sy = button.h / designButton.h
+  return {
+    x: button.x + (designChild.x - designButton.x) * sx,
+    y: button.y + (designChild.y - designButton.y) * sy,
+    w: designChild.w * sx,
+    h: designChild.h * sy,
+  }
 }
 
 function slotAt(list: Box[], index: number): Box {
@@ -226,6 +256,14 @@ export function hechengParts(input: HechengInput): HechengScene {
   }
   const build = place({ x: 912, y: 2112, w: 153, h: 163 }, 'bottom')
   const dockTop = build.y
+  const storyOn = input.showStory !== false
+  const taskOn = input.showTask !== false
+  const chestOn = input.showChest !== false
+  // 只剩宝箱时收到绿书的位置，避免书藏起来后宝箱悬在半空。
+  const chestDesign = chestOn ? (storyOn ? CHEST_BTN : STORY_BTN) : null
+  const storyBtn = storyOn ? place(STORY_BTN, 'top', scroll) : ZERO_BOX
+  const taskBtn = taskOn ? place(TASK_BTN, 'top', scroll) : ZERO_BOX
+  const chestBtn = chestDesign ? place(chestDesign, 'top', scroll) : ZERO_BOX
   return {
     scale,
     top,
@@ -238,7 +276,7 @@ export function hechengParts(input: HechengInput): HechengScene {
     orderIcons,
     orderMaxScroll,
     board: { x: boardArt.x, y: boardArt.y, cell: (first?.w ?? 139) * scale },
-    rewardTray: place({ x: 18, y: 470, w: 108, h: 108 }, 'top'),
+    rewardTray: chestBtn,
     dock: { x: 0, y: dockTop, w: input.w, h: Math.max(0, input.h - bottom - dockTop) },
     pendingBtn: place({ x: 14, y: 2113, w: 143, h: 160 }, 'bottom'),
     houseBtn: build,
@@ -255,18 +293,18 @@ export function hechengParts(input: HechengInput): HechengScene {
     rushBtn,
     adBtn,
     energyPlus: place({ x: 342, y: 169, w: 40, h: 71 }, 'top'),
-    chestBtn: place({ x: 29, y: 529, w: 113, h: 115 }, 'top', scroll),
-    storyBtn: place({ x: 29, y: 406, w: 113, h: 115 }, 'top', scroll),
-    taskBtn: place({ x: 178, y: 463, w: 148, h: 184 }, 'top', scroll),
+    chestBtn,
+    storyBtn,
+    taskBtn,
     hud: place({ x: 0, y: 140, w: DESIGN_W, h: 220 }, 'top'),
     counter: place({ x: 0, y: 598, w: DESIGN_W, h: 324 }, 'top', scroll),
     boardArt,
-    taskIcon: place({ x: 206, y: 482, w: 89, h: 103 }, 'top', scroll),
-    bookIcon: place({ x: 40, y: 421, w: 91, h: 85 }, 'top', scroll),
-    chestIcon: place({ x: 43, y: 548, w: 85, h: 81 }, 'top', scroll),
-    badgeStory: place({ x: 114, y: 399, w: 36, h: 36 }, 'top', scroll),
-    badgeChest: place({ x: 114, y: 521, w: 36, h: 36 }, 'top', scroll),
-    badgeTask: place({ x: 292, y: 452, w: 44, h: 45 }, 'top', scroll),
+    taskIcon: childOf(taskBtn, TASK_BTN, TASK_ICON),
+    bookIcon: childOf(storyBtn, STORY_BTN, BOOK_ICON),
+    chestIcon: childOf(chestBtn, CHEST_BTN, CHEST_ICON),
+    badgeStory: childOf(storyBtn, STORY_BTN, BADGE_STORY),
+    badgeChest: childOf(chestBtn, CHEST_BTN, BADGE_CHEST),
+    badgeTask: childOf(taskBtn, TASK_BTN, BADGE_TASK),
     badgeShop: place({ x: 1020, y: 246, w: 38, h: 38 }, 'top'),
   }
 }

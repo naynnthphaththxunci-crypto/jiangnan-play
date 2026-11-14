@@ -706,7 +706,7 @@ function drawHecheng(model: RenderModel): void {
     ctx.rect(frame.orderClip.x, frame.orderClip.y, frame.orderClip.w, frame.orderClip.h)
     ctx.clip()
   }
-  const stripScroll = 29 * scale - frame.storyBtn.x
+  const stripScroll = frame.orderPlates[0] ? 354 * scale - frame.orderPlates[0].x : 0
   ctx.save()
   clipOrders()
   state.orders.forEach((order, index) => {
@@ -780,13 +780,6 @@ function drawHecheng(model: RenderModel): void {
       if (btn) blit(ctx, 'complete', btn)
     }
   })
-  if (state.rewards.length > 0 && frame.rewardTray.w > 0) {
-    const loot = state.rewards[0]
-    if (loot) drawItem(ctx, cfg, loot, frame.rewardTray, 1, 1, realNow)
-    if (state.rewards.length > 1) {
-      text(ctx, String(state.rewards.length), frame.rewardTray.x + frame.rewardTray.w * 0.82, frame.rewardTray.y + frame.rewardTray.h * 0.2, 12, '#fffaf3')
-    }
-  }
   ctx.restore()
   blit(ctx, 'board', at({ x: 7, y: 714, w: 1071, h: 1370 }))
   blit(ctx, 'stash', frame.pendingBtn)
@@ -794,16 +787,31 @@ function drawHecheng(model: RenderModel): void {
   blit(ctx, 'build', frame.houseBtn)
   const task = nextTask(state, cfg)
   const buildHot = state.phase === 'play' && state.guide === 'none' && task && state.coins >= taskPrice(task, cfg)
-  const slide = (rect: Rect): Rect => ({ ...rect, x: rect.x - stripScroll })
-  blit(ctx, 'taskFrame', frame.taskBtn)
-  blit(ctx, 'taskIcon', slide(at({ x: 206, y: 482, w: 89, h: 103 })))
-  if (buildHot) blit(ctx, 'badgeTask', slide(at({ x: 292, y: 452, w: 44, h: 45 })))
-  blit(ctx, 'chestFrame', frame.chestBtn)
-  blit(ctx, 'chestIcon', slide(at({ x: 43, y: 548, w: 85, h: 81 })))
-  if (!state.freeRefillUsed) blit(ctx, 'badgeSmall', slide(at({ x: 114, y: 521, w: 36, h: 36 })))
-  blit(ctx, 'chestFrame', frame.storyBtn)
-  blit(ctx, 'book', slide(at({ x: 40, y: 421, w: 91, h: 85 })))
-  if (!state.storySeen) blit(ctx, 'badgeSmall', slide(at({ x: 114, y: 399, w: 36, h: 36 })))
+  if (frame.taskBtn.w > 0) {
+    blit(ctx, 'taskFrame', frame.taskBtn)
+    blit(ctx, 'taskIcon', frame.taskIcon)
+    if (buildHot) blit(ctx, 'badgeTask', frame.badgeTask)
+  }
+  if (frame.chestBtn.w > 0) {
+    blit(ctx, 'chestFrame', frame.chestBtn)
+    blit(ctx, 'chestIcon', frame.chestIcon)
+    blit(ctx, 'badgeSmall', frame.badgeChest)
+    if (state.rewards.length > 1) {
+      text(
+        ctx,
+        String(state.rewards.length),
+        frame.badgeChest.x + frame.badgeChest.w / 2,
+        frame.badgeChest.y + frame.badgeChest.h / 2,
+        Math.max(9, frame.badgeChest.h * 0.46),
+        '#fffaf3',
+      )
+    }
+  }
+  if (frame.storyBtn.w > 0) {
+    blit(ctx, 'chestFrame', frame.storyBtn)
+    blit(ctx, 'book', frame.bookIcon)
+    if (!state.storySeen) blit(ctx, 'badgeSmall', frame.badgeStory)
+  }
   blit(ctx, 'energy', frame.energySlot)
   blit(ctx, 'coin', frame.coinSlot)
   blit(ctx, 'gem', frame.gemSlot)

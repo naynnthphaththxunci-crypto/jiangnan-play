@@ -1,4 +1,5 @@
 import { tutorialHand } from './coach'
+import { SIDE_ICON_LEVEL } from './hechengLayout'
 import { comicCursor, silaJustShown } from './comic'
 import { createComicAudio } from './comicAudio'
 import { createSfx, type Sfx } from './audio'
@@ -260,6 +261,9 @@ export function startGame(platform: Platform): void {
       showEnter: atStep(state, cfg, 'enter'),
       showInfo: false,
       showShop: state.level >= 3,
+      showStory: state.level >= SIDE_ICON_LEVEL,
+      showTask: state.level >= SIDE_ICON_LEVEL,
+      showChest: state.rewards.length > 0,
       shop: activeOverlay(state) === 'shop',
       detail: activeOverlay(state) === 'detail',
     })

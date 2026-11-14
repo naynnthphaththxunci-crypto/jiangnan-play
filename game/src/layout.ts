@@ -113,6 +113,12 @@ export interface Frame {
   chestBtn: Rect
   storyBtn: Rect
   taskBtn: Rect
+  bookIcon: Rect
+  chestIcon: Rect
+  taskIcon: Rect
+  badgeStory: Rect
+  badgeChest: Rect
+  badgeTask: Rect
   showStorage: boolean
   storageHot: boolean
   showTuner: boolean
@@ -151,6 +157,12 @@ export interface LayoutInput {
   showShop?: boolean
   shop?: boolean
   detail?: boolean
+  /** 绿书。缺省显示。 */
+  showStory?: boolean
+  /** 任务板。缺省显示。 */
+  showTask?: boolean
+  /** 奖励宝箱。缺省显示。 */
+  showChest?: boolean
 }
 
 const Z: Rect = { x: 0, y: 0, w: 0, h: 0 }
@@ -224,7 +236,7 @@ export function guideHole(frame: Frame, state: GameState, cfg?: GameConfig): Rec
   const spot = guideSpot(state, cfg)
   if (!spot) return null
   const live = (rect: Rect) => (rect.w > 0 && rect.h > 0 ? rect : null)
-  if (spot === 'reward') return live(frame.rewardTray)
+  if (spot === 'reward') return live(frame.chestBtn.w > 0 ? frame.chestBtn : frame.rewardTray)
   if (spot === 'chest' && state.chestCell) return cellRect(frame, state.chestCell.row, state.chestCell.col)
   if (spot === 'producer') {
     for (let row = 0; row < state.board.length; row++) {
@@ -233,7 +245,7 @@ export function guideHole(frame: Frame, state: GameState, cfg?: GameConfig): Rec
         if (item?.kind === 'producer' && item.producerId === state.producerLesson) return cellRect(frame, row, col)
       }
     }
-    return live(frame.rewardTray)
+    return live(frame.chestBtn.w > 0 ? frame.chestBtn : frame.rewardTray)
   }
   if (spot === 'build') return live(frame.houseBtn)
   if (spot === 'repair') return live(frame.buildBtn)
@@ -573,6 +585,9 @@ export function layout(input: LayoutInput): Frame {
         orderScroll: input.orderScroll,
         showRush: input.showRush,
         guestCanvasScale: input.guestCanvasScale,
+        showStory: input.showStory,
+        showTask: input.showTask,
+        showChest: input.showChest,
       })
     : null
 
@@ -650,6 +665,12 @@ export function layout(input: LayoutInput): Frame {
     chestBtn: scene?.chestBtn ?? Z,
     storyBtn: scene?.storyBtn ?? Z,
     taskBtn: scene?.taskBtn ?? Z,
+    bookIcon: scene?.bookIcon ?? Z,
+    chestIcon: scene?.chestIcon ?? Z,
+    taskIcon: scene?.taskIcon ?? Z,
+    badgeStory: scene?.badgeStory ?? Z,
+    badgeChest: scene?.badgeChest ?? Z,
+    badgeTask: scene?.badgeTask ?? Z,
     showStorage: input.showStorage,
     storageHot: input.storageHot ?? input.showStorage,
     showTuner: input.tuner,
@@ -719,7 +740,8 @@ export function hitTest(frame: Frame, x: number, y: number): Hit | null {
     return { kind: 'swallow' }
   }
   if (contains(frame.tuneBtn, x, y)) return { kind: 'tune' }
-  if (contains(frame.energyPlus, x, y) || contains(frame.chestBtn, x, y)) return { kind: 'refill' }
+  if (contains(frame.energyPlus, x, y)) return { kind: 'refill' }
+  if (contains(frame.chestBtn, x, y)) return { kind: 'reward' }
   if (contains(frame.storyBtn, x, y) || contains(frame.taskBtn, x, y)) return { kind: 'swallow' }
   if (contains(frame.multBtn, x, y)) return { kind: 'mult' }
   if (contains(frame.shopBtn, x, y)) return { kind: 'shop' }

@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { defaultConfig } from '../src/config'
 import { cellRect, contains, guideHole, hitTest, layout, type LayoutInput } from '../src/layout'
+import { SIDE_ICON_LEVEL } from '../src/hechengLayout'
 import type { GameState } from '../src/types'
 import {
   advanceGuide,
   createGame,
+  skipStory,
   currentTutorial,
   dismissStuckGuide,
   guideIsLocking,
@@ -72,6 +74,52 @@ function frame(partial: Partial<LayoutInput> = {}) {
 }
 
 describe('强制引导', () => {
+  it('新玩家开局奖励框是空的，绿书和任务板要到五级，宝箱高亮贴着按钮', () => {
+    const cfg = defaultConfig()
+    const state = createGame(1, cfg)
+    skipStory(state)
+    resolveGuides(state, cfg)
+    expect(state.rewards).toEqual([])
+    expect(state.chestLesson).toBe(0)
+    expect(state.level).toBeLessThan(SIDE_ICON_LEVEL)
+    expect(guideSpot(state, cfg)).toBeNull()
+
+    const hidden = frame({ showStory: false, showTask: false, showChest: false })
+    expect(hidden.storyBtn.w).toBe(0)
+    expect(hidden.taskBtn.w).toBe(0)
+    expect(hidden.chestBtn.w).toBe(0)
+    expect(hidden.rewardTray.w).toBe(0)
+
+    const book = frame({ showStory: true, showTask: true, showChest: false })
+    expect(book.storyBtn.w).toBeGreaterThan(0)
+    expect(book.taskBtn.w).toBeGreaterThan(0)
+    expect(book.chestBtn.w).toBe(0)
+
+    const onlyChest = frame({ showStory: false, showTask: false, showChest: true })
+    expect(onlyChest.chestBtn.x).toBeCloseTo(book.storyBtn.x, 3)
+    expect(onlyChest.chestBtn.y).toBeCloseTo(book.storyBtn.y, 3)
+    expect(onlyChest.chestBtn.w).toBeCloseTo(book.storyBtn.w, 3)
+    expect(onlyChest.rewardTray).toBe(onlyChest.chestBtn)
+    expect(onlyChest.chestIcon.x).toBeGreaterThan(onlyChest.chestBtn.x)
+    expect(onlyChest.chestIcon.y).toBeGreaterThan(onlyChest.chestBtn.y)
+    expect(onlyChest.chestIcon.x + onlyChest.chestIcon.w).toBeLessThan(onlyChest.chestBtn.x + onlyChest.chestBtn.w + 1)
+
+    state.phase = 'play'
+    state.chestLesson = 1
+    expect(guideHole(onlyChest, state, cfg)).toBe(onlyChest.chestBtn)
+    const spot = {
+      x: onlyChest.chestBtn.x + onlyChest.chestBtn.w / 2,
+      y: onlyChest.chestBtn.y + onlyChest.chestBtn.h / 2,
+    }
+    expect(hitTest(onlyChest, spot.x, spot.y)?.kind).toBe('reward')
+    expect(hitTest(onlyChest, onlyChest.energyPlus.x + 2, onlyChest.energyPlus.y + 2)?.kind).toBe('refill')
+
+    const both = frame({ showStory: true, showTask: true, showChest: true })
+    expect(both.chestBtn.y).toBeGreaterThan(both.storyBtn.y + both.storyBtn.h * 0.6)
+    expect(guideHole(both, state, cfg)).toBe(both.chestBtn)
+    expect(both.rewardTray).toBe(both.chestBtn)
+  })
+
   it('手指和点击用同一个矩形', () => {
     const cfg = defaultConfig()
     const board = frame({ showRush: true })
