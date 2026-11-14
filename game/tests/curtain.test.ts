@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { curtainDrop, curtainPlace, CURTAIN_H, CURTAIN_W } from '../src/curtain'
+import { curtainBambooPlace, curtainDrop, curtainPlace, CURTAIN_BOUNCE_MAX, CURTAIN_H, CURTAIN_W } from '../src/curtain'
+import { canvasFit } from '../src/viewport'
 import economy from '../src/data/economy.json'
 
 describe('竹帘切换', () => {
@@ -29,6 +30,26 @@ describe('竹帘切换', () => {
     expect(short.y).toBeLessThan(0)
     expect(short.y + short.h).toBeCloseTo(600, 4)
     expect(short.w / short.h).toBeCloseTo(CURTAIN_W / CURTAIN_H, 4)
+  })
+
+  it('竹帘顶部余量大于最大回弹，前景不跟着放大', () => {
+    const views = [
+      [390, 844],
+      [canvasFit(390, 664).w, canvasFit(390, 664).h],
+      [canvasFit(768, 1024).w, canvasFit(768, 1024).h],
+    ] as const
+    for (const [w, h] of views) {
+      const front = curtainPlace(w, h)
+      const bamboo = curtainBambooPlace(w, h)
+      const maxBounce = h * CURTAIN_BOUNCE_MAX
+      const drop = curtainDrop(0.78, Math.max(0, bamboo.y + bamboo.h), maxBounce)
+      expect(bamboo.w / bamboo.h).toBeCloseTo(CURTAIN_W / CURTAIN_H, 4)
+      expect(front.w / front.h).toBeCloseTo(CURTAIN_W / CURTAIN_H, 4)
+      expect(bamboo.h).toBeGreaterThan(front.h)
+      expect(bamboo.y + drop).toBeLessThan(0)
+      expect(bamboo.y + bamboo.h + drop).toBeGreaterThanOrEqual(h - 0.5)
+      expect(front.y).toBeGreaterThanOrEqual(bamboo.y)
+    }
   })
 
   it('下拉到底会轻轻超出再回到盖满', () => {

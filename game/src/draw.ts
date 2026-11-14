@@ -48,7 +48,7 @@ import iconBoltUrl from './assets/ui/stamina_bolt.webp'
 import { firstOrderGuestPortrait, guestPortrait, portraitReady } from './portraits'
 import { drawAvatar, drawCharacter } from './cast'
 import { hechengImage, speedArtId } from './hechengArt'
-import { curtainBitmaps, curtainDrop, curtainPlace } from './curtain'
+import { curtainBambooPlace, curtainBitmaps, curtainDrop, curtainPlace } from './curtain'
 import { designToScreen } from './hechengLayout'
 import { COMIC_FONT, comicCursor, comicFontReady, comicPanelImage, comicPrompt, comicSilaImage, wrapComicText } from './comic'
 import { SLIDERS } from './tuner'
@@ -138,7 +138,8 @@ function drawCurtain(model: RenderModel): void {
   if (!job) return
   const { ctx, frame, cfg } = model
   const place = curtainPlace(frame.w, frame.h)
-  const travel = Math.max(0, place.y + place.h)
+  const bamboo = curtainBambooPlace(frame.w, frame.h)
+  const travel = Math.max(0, bamboo.y + bamboo.h)
   const bounce = Math.max(0, cfg.economy.curtainBounce ?? 0) * frame.h
   const drop = job.progress >= 1 ? 0 : curtainDrop(job.progress, travel, bounce)
   const { curtain, front } = curtainBitmaps()
@@ -146,13 +147,17 @@ function drawCurtain(model: RenderModel): void {
   ctx.beginPath()
   ctx.rect(0, 0, frame.w, frame.h)
   ctx.clip()
+  const top = bamboo.y + drop
+  ctx.fillStyle = '#000'
+  if (top > 0) ctx.fillRect(0, 0, frame.w, top)
+  if (bamboo.x > 0) ctx.fillRect(0, 0, bamboo.x, frame.h)
+  if (bamboo.x + bamboo.w < frame.w) ctx.fillRect(bamboo.x + bamboo.w, 0, frame.w - (bamboo.x + bamboo.w), frame.h)
   const curtainReady = (curtain?.naturalWidth || 0) > 0
   if (curtainReady && curtain) {
-    ctx.drawImage(curtain as CanvasImageSource, place.x, place.y + drop, place.w, place.h)
-  } else {
-    const top = place.y + drop
+    ctx.drawImage(curtain as CanvasImageSource, bamboo.x, bamboo.y + drop, bamboo.w, bamboo.h)
+  } else if (top < frame.h) {
     ctx.fillStyle = '#c79a62'
-    ctx.fillRect(0, top, frame.w, frame.h - top)
+    ctx.fillRect(0, Math.max(0, top), frame.w, frame.h - Math.max(0, top))
   }
   if ((front?.naturalWidth || 0) > 0 && front) {
     ctx.drawImage(front as CanvasImageSource, place.x, place.y, place.w, place.h)

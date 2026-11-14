@@ -1,3 +1,4 @@
+import { CURTAIN_BOUNCE_MAX } from './curtain'
 import economySeed from './data/economy.json'
 import type { GameConfig } from './types'
 
@@ -55,7 +56,7 @@ export const SLIDERS: SliderSpec[] = [
     id: 'curtainBounce',
     label: '竹帘回弹幅度',
     min: 0,
-    max: 0.1,
+    max: CURTAIN_BOUNCE_MAX,
     step: 0.005,
     get: (c) => c.economy.curtainBounce ?? 0.02,
     set: (c, v) => {

@@ -6,6 +6,9 @@ import { easeOutCubic } from './fx'
 export const CURTAIN_W = 1440
 export const CURTAIN_H = 2560
 
+/** 调参里回弹幅度的上限，相对画布高度。竹帘顶部留白必须比它更大。 */
+export const CURTAIN_BOUNCE_MAX = 0.1
+
 export interface CurtainPlace {
   x: number
   y: number
@@ -30,6 +33,23 @@ export function curtainPlace(viewW: number, viewH: number): CurtainPlace {
   const scale = height / CURTAIN_H
   const w = CURTAIN_W * scale
   return { x: (width - w) / 2, y: 0, w, h: height }
+}
+
+/**
+ * 只放大竹帘。宽高同一比例，顶上多出一截藏在屏幕外面，
+ * 高度大于最大回弹，盖满和弹到最低时顶部都不露底。
+ * 前景仍用 curtainPlace，不跟着放大。
+ */
+export function curtainBambooPlace(viewW: number, viewH: number): CurtainPlace {
+  const base = curtainPlace(viewW, viewH)
+  const height = Math.max(1, viewH)
+  const pad = height * CURTAIN_BOUNCE_MAX + 1
+  const hidden = Math.max(0, -base.y)
+  if (hidden >= pad && base.y + base.h >= height - 0.5) return base
+  const s = (height + pad) / Math.max(1, base.h)
+  const w = base.w * s
+  const h = base.h * s
+  return { x: base.x + (base.w - w) / 2, y: height - h, w, h }
 }
 
 /**
