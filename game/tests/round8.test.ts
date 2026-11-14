@@ -15,7 +15,6 @@ import {
   findProducer,
   mulberry32,
   orderCraftable,
-  refreshProducers,
   skipOpening,
   tapProducer,
   tryAdvanceStory,
@@ -26,28 +25,30 @@ describe('第八轮猫猫合成', () => {
     const cfg = defaultConfig()
     const state = createGame(1_700_000_000_000, cfg)
     state.phase = 'play'
+    state.locks = []
     state.playedMs = cfg.economy.producerGraceMs + 1
     const spot = findProducer(state, 'food')
     expect(spot).toBeTruthy()
-    if (!spot) return
+    if (!spot || spot.item.kind !== 'producer') return
+    spot.item.level = 4
+    spot.item.charges = 200
     const now = 5_000
-    const first = tapProducer(state, spot, cfg, () => 0, now)
+    const first = tapProducer(state, spot, cfg, () => 0.9, now)
     expect(first.ok).toBe(true)
-    const spawned = state.board.flat().find((item) => item?.kind === 'product' && item.line === 'food' && item.level === 1)
+    const spawned = state.board.flat().find((item) => item?.kind === 'product' && item.line === 'food' && item.level === 2)
     expect(spawned).toBeTruthy()
     const producer = state.board[spot.row]?.[spot.col]
-    expect(producer?.kind === 'producer' && producer.cooldownUntil).toBe(now + 45_000)
+    expect(producer?.kind === 'producer' && producer.cooldownUntil).toBe(0)
+    expect(producer?.kind === 'producer' && producer.charges).toBeLessThan(200)
+    if (producer?.kind === 'producer') {
+      producer.level = 4
+      producer.charges = 1
+    }
     const blocked = tapProducer(state, spot, cfg, () => 0, now + 1)
-    expect(blocked.ok).toBe(false)
-    expect(blocked.reason).toBe('cooldown')
-    state.playedMs += 50_000
-    refreshProducers(state, now + 45_000, cfg)
-    const higher = state.board[spot.row]?.[spot.col]
-    if (higher?.kind === 'producer') higher.level = 7
-    const again = tapProducer(state, spot, cfg, () => 0.99, now + 46_000)
-    expect(again.ok).toBe(true)
-    const event = again.events.find((entry) => entry.type === 'spawn')
-    expect(event?.type === 'spawn' && state.board[event.row]?.[event.col]).toMatchObject({ kind: 'product', line: 'food', level: 2 })
+    expect(blocked.ok).toBe(true)
+    expect(producer?.kind === 'producer' && producer.cooldownUntil).toBe(now + 1 + cfg.economy.producerRoundCooldownMs)
+    const cooling = tapProducer(state, spot, cfg, () => 0, now + 2)
+    expect(cooling.reason).toBe('cooldown')
   })
 
   it('两条 5 级合成出 6 级母棋', () => {
@@ -58,12 +59,14 @@ describe('第八轮猫猫合成', () => {
     state.board[0][0] = { uid: 'a', kind: 'product', line: 'food', level: 5 }
     state.board[0][1] = { uid: 'b', kind: 'product', line: 'food', level: 5 }
     expect(dropItem(state, { row: 0, col: 0 }, { row: 0, col: 1 }, cfg).ok).toBe(true)
-    expect(state.board[0][1]).toMatchObject({ kind: 'producer', line: 'food', level: 6 })
+    expect(state.board[0][1]).toMatchObject({ kind: 'product', line: 'food', level: 6 })
   })
 
   it('配置里不再有蒸笼、旧茶炉、竹编篓', () => {
     const ids = defaultConfig().items.lines.map((line) => line.id)
-    expect(ids).toEqual(['food', 'toy', 'plant', 'boat', 'bed', 'bev'])
+    expect(ids).toContain('food')
+    expect(ids).toContain('bed')
+    expect(ids.find((id) => id === 'bed') && defaultConfig().items.lines.find((line) => line.id === 'bed')?.levels).toHaveLength(10)
     const banned = ['"steamer"', '"bamboo"']
     const blob = JSON.stringify({ items, producers, orders, economy, board, copy, opening })
     for (const word of banned) expect(blob.includes(word), word).toBe(false)
@@ -74,7 +77,9 @@ describe('第八轮猫猫合成', () => {
     const state = createGame(1_700_000_000_000, cfg)
     while (state.phase === 'story') tryAdvanceStory(state, cfg, true)
     enterKitchen(state, cfg)
-    dropItem(state, { row: 3, col: 2 }, { row: 3, col: 3 }, cfg)
+    dropItem(state, { row: 3, col: 1 }, { row: 4, col: 1 }, cfg)
+    dropItem(state, { row: 4, col: 1 }, { row: 4, col: 2 }, cfg)
+    dropItem(state, { row: 4, col: 2 }, { row: 4, col: 3 }, cfg)
     const producer = findProducer(state, 'food')
     expect(producer).toBeTruthy()
     if (producer) {

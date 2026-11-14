@@ -1,14 +1,12 @@
 import { hostessCostume } from './config'
-import orderLayout from './data/orderLayout.json'
-import { formatDuration, formatMs, orderItemLabel } from './format'
+import { formatDuration, formatMs } from './format'
 import { easeInOut, easeOutBack, easeOutCubic, popScale, type Flyer, type Fx } from './fx'
 import { hintHand, storageLessonHand, tutorialHand } from './coach'
-import { cellRect, chainCardRect, chainCloseRect, chainPopRect, decorPopupRects, guestFaceBox, guideHole, levelClaimRect, smileDismissRect, talkRect, trackRatio, type Frame, type Rect } from './layout'
+import { cellRect, chainCardRect, chainCloseRect, chainPopRect, decorPopupRects, detailCard, guideHole, levelClaimRect, shopRects, smileDismissRect, talkRect, trackRatio, type Frame, type Rect } from './layout'
 import {
   allTasks,
   atStep,
   canSell,
-  characterName,
   cnLevel,
   currentTutorial,
   gemAmount,
@@ -16,6 +14,7 @@ import {
   gemName,
   glowingLocks,
   INFO_EMPTY,
+  activeOverlay,
   inProducerGrace,
   infoCaption,
   lineChain,
@@ -29,6 +28,8 @@ import {
   orderSatisfied,
   slotChecked,
   pickHint,
+  producerCanSpawn,
+  producerCooldown,
   producerName,
   producerChain,
   producerOfLine,
@@ -40,11 +41,16 @@ import {
   taskStep,
   tutorialLine,
 } from './logic/sim'
-import { itemSprite } from './itemArt'
-import { orderTrayImage } from './orderTray'
-import { guestPortrait, measurePortrait, portraitReady } from './portraits'
+import { itemSprite, spriteContent } from './itemArt'
+import tutorialHandUrl from './assets/ui/tutorial_hand.png'
+import iconBoltUrl from './assets/ui/icon_bolt.png'
+import { guestPortrait, portraitReady } from './portraits'
+import { drawAvatar, drawCharacter } from './cast'
+import { hechengImage, speedArtId } from './hechengArt'
+import { designToScreen } from './hechengLayout'
+import { COMIC_FONT, comicCursor, comicFontReady, comicPanelImage, comicPrompt, comicSilaImage, wrapComicText } from './comic'
 import { SLIDERS } from './tuner'
-import { COLS, ROWS, type GameConfig, type GameState, type Item, type NormBox } from './types'
+import { COLS, ROWS, type ComicEnter, type GameConfig, type GameState, type Item, type OpeningScript } from './types'
 
 export const FONT = '"WenQuanYi Micro Hei", "Noto Sans CJK SC", "Droid Sans Fallback", sans-serif'
 
@@ -76,8 +82,10 @@ export interface RenderModel {
   modal: 'energy' | null
   hintText: string
   selected: { row: number; col: number } | null
+  orderFocus: { line: string; level: number } | null
   showHand: boolean
   chain: { line: string; level: number; source: 'order' | 'producer' } | null
+  comicHand: 'first' | 'idle' | 'off'
 }
 
 export function render(model: RenderModel): void {
@@ -86,32 +94,37 @@ export function render(model: RenderModel): void {
   ctx.fillStyle = PAL.paper
   ctx.fillRect(0, 0, frame.w, frame.h)
   if (frame.mode === 'story') drawStory(model)
-  else {
+  else if (frame.mode === 'house') {
     drawHud(model)
-    if (frame.mode === 'house') drawHouse(model)
-    else {
-      drawOrders(model)
-      drawHint(model)
-      drawBoard(model)
-      drawChainPop(model)
-      drawBottom(model)
-      drawFx(model)
-      drawInfo(model)
-      drawSheet(model)
-      drawTutorial(model)
-      drawStorageLesson(model)
-      drawHand(model)
-    }
+    drawHouse(model)
+  } else {
+    drawHecheng(model)
+    drawHint(model)
+    drawBoard(model)
+    drawChainPop(model)
+    drawFx(model)
+    drawInfo(model)
+    drawSheet(model)
+    drawTutorial(model)
+    drawStorageLesson(model)
+    drawHand(model)
   }
   if (frame.showHelp) drawHelp(model)
-  if (model.state.levelModal) drawLevelModal(model)
-  if (model.state.smileModal) drawSmileModal(model)
-  drawGuide(model)
+  const overlay = activeOverlay(model.state)
+  if (overlay === 'level') drawLevelModal(model)
+  else if (overlay === 'smile') drawSmileModal(model)
+  else if (overlay === 'shop') drawShop(model)
+  else if (overlay === 'detail') drawDetail(model)
+  else if (overlay === 'talk') {
+    if (model.state.notice) drawNotice(model)
+    else drawGuide(model)
+  } else if (overlay === 'mint') drawMintGuide(model)
+  else drawGuide(model)
   drawBuildStory(model)
-  drawNotice(model)
   if (frame.showModal && model.modal) drawEnergyModal(model)
   if (model.chain) drawChain(model)
   if (frame.showTuner) drawTuner(model)
+  drawHudTools(model)
   drawToasts(model)
 }
 
@@ -207,6 +220,22 @@ function drawLevelShape(ctx: CanvasRenderingContext2D, level: number, x: number,
   ctx.fill()
 }
 
+function drawFittedSprite(
+  ctx: CanvasRenderingContext2D,
+  sprite: CanvasImageSource & { complete?: boolean; naturalWidth?: number; naturalHeight?: number; src?: string },
+  box: Rect,
+  fill: number,
+): void {
+  const content = spriteContent(sprite)
+  const fit = fill * Math.min(box.w, box.h)
+  const longSide = Math.max(content.w, content.h)
+  const drawW = fit / longSide
+  const drawH = drawW
+  const contentCx = (content.x + content.w / 2) * drawW
+  const contentCy = (content.y + content.h / 2) * drawH
+  ctx.drawImage(sprite, box.x + box.w / 2 - contentCx, box.y + box.h / 2 - contentCy, drawW, drawH)
+}
+
 function drawItem(
   ctx: CanvasRenderingContext2D,
   cfg: GameConfig,
@@ -227,38 +256,30 @@ function drawItem(
   const piece = item.kind === 'product' || item.kind === 'producer' ? item : null
   const sprite = piece ? itemSprite(piece.line, piece.level) : null
   if (sprite && piece) {
-    const pad = box.w * 0.08
-    ctx.drawImage(sprite, box.x + pad, box.y + pad * 0.4, box.w - pad * 2, box.h * 0.72)
-    text(ctx, piece.kind === 'product' && piece.tag === 'bag' ? '购物袋' : productName(cfg, piece.line, piece.level), cx, box.y + box.h * 0.9, Math.max(9, box.w * 0.13), PAL.ink)
+    drawFittedSprite(ctx, sprite, box, 0.85)
+    const badge = Math.max(12, box.w * 0.28)
+    roundRect(ctx, box.x + box.w - badge - 2, box.y + 2, badge, badge * 0.72, 4)
+    ctx.fillStyle = 'rgba(42,33,24,0.82)'
+    ctx.fill()
+    text(ctx, String(piece.level), box.x + box.w - badge / 2 - 2, box.y + badge * 0.36 + 2, badge * 0.5, '#fff6e4')
   } else if (item.kind === 'product') {
     const r = box.w * (0.16 + item.level * 0.045)
     ctx.fillStyle = lineColor(cfg, item.line)
-    drawLevelShape(ctx, item.level, cx, cy, r)
-    drawNum(ctx, String(item.level), cx, cy, r * 0.92)
-    text(ctx, item.tag === 'bag' ? '购物袋' : productName(cfg, item.line, item.level), cx, box.y + box.h * 0.84, Math.max(10, box.w * 0.15), PAL.ink)
+    drawLevelShape(ctx, item.level, cx, cy + box.h * 0.08, r)
+    drawNum(ctx, String(item.level), cx, cy + box.h * 0.08, r * 0.92)
   } else if (item.kind === 'producer') {
-    const inset = box.w * 0.1
-    const body = { x: box.x + inset, y: box.y + box.h * 0.08, w: box.w - inset * 2, h: box.h * 0.7 }
+    const inset = box.w * 0.12
+    const body = { x: box.x + inset, y: box.y + inset, w: box.w - inset * 2, h: box.h - inset * 2 }
     roundRect(ctx, body.x, body.y, body.w, body.h, 8)
-    ctx.fillStyle = PAL.white
+    ctx.fillStyle = '#d9d3cc'
     ctx.fill()
     ctx.lineWidth = 3
     ctx.strokeStyle = lineColor(cfg, item.line)
     ctx.stroke()
-    roundRect(ctx, body.x + 4, body.y + 4, body.w - 8, body.h - 8, 6)
-    ctx.lineWidth = 1.25
-    ctx.stroke()
-    drawNum(ctx, String(item.level), cx, body.y + body.h * 0.42, Math.max(16, box.w * 0.28))
-    text(ctx, producerName(cfg, item.producerId), cx, body.y + body.h * 0.78, Math.max(10, box.w * 0.14), PAL.ink)
-    const cooling = !unlimited && item.charges <= 0 && item.cooldownUntil > now
-    text(
-      ctx,
-      cooling ? formatMs(item.cooldownUntil - now) : unlimited ? '不限' : `×${item.charges}`,
-      cx,
-      box.y + box.h * 0.84,
-      Math.max(10, box.w * 0.15),
-      cooling ? PAL.danger : PAL.soft,
-    )
+    drawNum(ctx, String(item.level), cx, cy + box.h * 0.05, Math.max(16, box.w * 0.32))
+    if (!unlimited && item.charges <= 0 && item.cooldownUntil > now) {
+      text(ctx, formatMs(item.cooldownUntil - now), cx, box.y + box.h * 0.82, Math.max(9, box.w * 0.14), PAL.danger)
+    }
   } else if (item.kind === 'potion') {
     const energy = cfg.items.potions.find((p) => p.tier === item.tier)?.energy ?? 0
     const r = box.w * (0.18 + item.tier * 0.035)
@@ -296,52 +317,328 @@ function drawItem(
   ctx.restore()
 }
 
-const STORY_BG = ['#1c2433', '#2a2118', '#3a2430', '#241c18', '#2c241c', '#3a2a28', '#1a2830', '#3d3428']
-
-const STORY_PORTRAIT: Record<string, string> = {
-  温如月: 'ruyue',
-  小桃: 'xiaotao',
-  赵文轩: 'zhao',
-  柳姑娘: 'liu',
-  柳氏: 'liu',
+function drawStory(model: RenderModel): void {
+  const { ctx, frame, state, cfg, realNow, fx } = model
+  ctx.fillStyle = '#000'
+  ctx.fillRect(0, 0, frame.w, frame.h)
+  const cursor = comicCursor(cfg.opening, state.storyStep)
+  const script = cfg.opening
+  if (cursor) {
+    if (fx.comicFadeAt === 0) fx.comicFadeAt = realNow
+    const pageBeats = script.pages[cursor.page]?.beats ?? []
+    if (pageBeats.some((beat) => beat.enter === 'slow-push') && fx.pagePushAt === 0) fx.pagePushAt = realNow
+    const pageW = script.width
+    const pageH = script.height
+    const scale = Math.min(frame.w / pageW, frame.h / pageH)
+    let ox = (frame.w - pageW * scale) / 2
+    let oy = (frame.h - pageH * scale) / 2
+    const shakeStart = fx.shakeUntil - 460
+    if (fx.shakeUntil > realNow && realNow >= shakeStart) {
+      const t = 1 - (fx.shakeUntil - realNow) / 460
+      const amp = (1 - t) * 8 * scale
+      ox += Math.sin(t * 26) * amp
+      oy += Math.cos(t * 21) * amp * 0.65
+    }
+    const prev = fx.comicFrom >= 0 ? comicCursor(script, fx.comicFrom) : null
+    const turnMs = 350
+    const turnAge = realNow - fx.comicFadeAt
+    const turning = !!prev && prev.page !== cursor.page && turnAge >= 0 && turnAge < turnMs
+    const turnT = turning ? easeOutCubic(turnAge / turnMs) : 1
+    const arrivedByTurn = !!prev && prev.page !== cursor.page
+    ctx.save()
+    ctx.translate(ox, oy)
+    ctx.scale(scale, scale)
+    if (turning && prev) {
+      ctx.save()
+      ctx.translate(-turnT * pageW, 0)
+      paintComicPanels(ctx, script, prev.page, prev.index, realNow, fx.comicFadeAt, fx.silaAt, false, realNow - 10000)
+      ctx.restore()
+      ctx.save()
+      ctx.translate((1 - turnT) * pageW, 0)
+      paintComicPanels(ctx, script, cursor.page, cursor.index, realNow, fx.comicFadeAt, fx.silaAt, false, fx.pagePushAt)
+      paintStoryBubble(ctx, script, state.storyStep, fx.comicFrom, fx.comicFadeAt, realNow)
+      ctx.restore()
+    } else {
+      paintComicPanels(ctx, script, cursor.page, cursor.index, realNow, fx.comicFadeAt, fx.silaAt, !arrivedByTurn, fx.pagePushAt)
+      paintStoryBubble(ctx, script, state.storyStep, fx.comicFrom, fx.comicFadeAt, realNow)
+    }
+    ctx.restore()
+  }
+  if (model.comicHand !== 'off') paintComicHand(ctx, frame, model.comicHand === 'first')
+  paintMute(ctx, frame.muteBtn, state.soundMuted)
+  button(ctx, frame.skip, '跳过', 'ghost')
 }
 
-function drawStory(model: RenderModel): void {
-  const { ctx, frame, state, cfg } = model
-  const step = cfg.opening[state.storyStep]
-  if (!step) return
-  ctx.fillStyle = STORY_BG[state.storyStep % STORY_BG.length] ?? '#241c18'
-  ctx.fillRect(0, 0, frame.w, frame.h)
-  const portraitKey = STORY_PORTRAIT[step.speaker]
-  const portrait = guestPortrait(portraitKey)
-  if (portraitKey && portrait && portraitReady(portrait)) {
-    measurePortrait(portraitKey, portrait)
-    const cardTop = frame.h * 0.58
-    const height = frame.h * 0.5
-    const width = height
-    const x = frame.w - width * 0.78
-    const y = cardTop - height * 0.62
-    ctx.drawImage(portrait as CanvasImageSource, x, y, width, height)
+function paintStoryBubble(
+  ctx: CanvasRenderingContext2D,
+  script: OpeningScript,
+  step: number,
+  fromStep: number,
+  fadeAt: number,
+  now: number,
+): void {
+  if (!comicFontReady()) return
+  const fadeMs = 240
+  const age = fadeAt > 0 ? now - fadeAt : fadeMs
+  const fade = Math.max(0, Math.min(1, age / fadeMs))
+  const current = comicPrompt(script, step)
+  const previous = fromStep >= 0 ? comicPrompt(script, fromStep) : null
+  const cursor = comicCursor(script, step)
+  if (fade < 1 && previous && cursor && previous.page === cursor.page && previous.beat?.text) {
+    paintComicBubble(ctx, script, previous.beat, false, 1 - fade, now)
   }
-  button(ctx, frame.skip, '跳过', 'ghost')
-  const scene = wrap(ctx, step.scene, frame.w - 48, 22, 700)
-  scene.forEach((line, i) => text(ctx, line, frame.w / 2, frame.h * 0.28 + i * 32, 22, '#fffaf3'))
-  const card = { x: 16, y: frame.h * 0.58, w: frame.w - 32, h: frame.h * 0.28 }
-  roundRect(ctx, card.x, card.y, card.w, card.h, 14)
+  if ((current.prompt === 'line' || current.prompt === 'start') && current.beat?.text) {
+    paintComicBubble(ctx, script, current.beat, current.prompt === 'start', fade < 1 && previous ? fade : 1, now)
+  }
+}
+
+function paintComicPanels(
+  ctx: CanvasRenderingContext2D,
+  script: OpeningScript,
+  pageIndex: number,
+  beatIndex: number,
+  now: number,
+  beatAt: number,
+  silaAt: number,
+  animate: boolean,
+  pushAt = 0,
+): void {
+  const page = script.pages[pageIndex]
+  if (!page) return
+  ctx.fillStyle = '#14110e'
+  ctx.fillRect(0, 0, script.width, script.height)
+  const shown = page.beats.slice(0, beatIndex + 1)
+  const current = page.beats[beatIndex]
+  const order: string[] = []
+  for (const beat of shown) if (!order.includes(beat.panel)) order.push(beat.panel)
+  order.sort((a, b) => (page.panels.find((item) => item.id === a)?.z ?? 0) - (page.panels.find((item) => item.id === b)?.z ?? 0))
+  const fresh = shown.filter((beat) => beat.panel === current?.panel).length === 1
+  for (const id of order) {
+    const panel = page.panels.find((item) => item.id === id)
+    const img = comicPanelImage(id)
+    if (!panel || !img || (img.naturalWidth || 0) <= 0) continue
+    const slow = page.beats.some((beat) => beat.enter === 'slow-push' && beat.panel === id)
+    const posing = animate && current?.panel === id && (fresh || current.enter === 'push')
+    const pose = slow
+      ? enterPose('slow-push', pushAt > 0 ? now - pushAt : 0, 3000)
+      : posing
+        ? enterPose(current?.enter, now - beatAt, current?.ms ?? 450)
+        : { alpha: 1, dx: 0, dy: 0, scale: 1, fx: 0.5, fy: 0.5 }
+    const fullPage = (img.naturalWidth || 0) >= script.width - 2 && (img.naturalHeight || 0) >= script.height - 2
+    const cx = panel.x + panel.w * pose.fx
+    const cy = panel.y + panel.h * pose.fy
+    ctx.save()
+    ctx.imageSmoothingEnabled = true
+    ctx.imageSmoothingQuality = 'high'
+    ctx.globalAlpha *= Math.max(0, Math.min(1, pose.alpha))
+    ctx.translate(pose.dx, pose.dy)
+    ctx.translate(cx, cy)
+    ctx.scale(pose.scale, pose.scale)
+    ctx.translate(-cx, -cy)
+    if (fullPage) ctx.drawImage(img as CanvasImageSource, 0, 0, script.width, script.height)
+    else ctx.drawImage(img as CanvasImageSource, panel.x, panel.y, panel.w, panel.h)
+    ctx.restore()
+  }
+  if (!shown.some((beat) => beat.kind === 'sila')) return
+  const sila = comicSilaImage()
+  if (!sila || (sila.naturalWidth || 0) <= 0) return
+  const popAge = silaAt > 0 ? now - silaAt : 999
+  if (popAge < 0) return
+  const sw = script.width * 0.7
+  const sh = sw * ((sila.naturalHeight || 1) / (sila.naturalWidth || 1))
+  const pop = popScale(popAge, 280)
+  ctx.save()
+  ctx.translate(384, 680)
+  ctx.scale(pop, pop)
+  ctx.drawImage(sila as CanvasImageSource, -sw / 2, -sh / 2, sw, sh)
+  ctx.restore()
+}
+
+function enterPose(enter: ComicEnter | undefined, age: number, ms: number): { alpha: number; dx: number; dy: number; scale: number; fx: number; fy: number } {
+  const dur = Math.max(280, ms)
+  const t = Math.max(0, Math.min(1, age / dur))
+  const ease = 1 - (1 - t) ** 3
+  const overshoot = (from: number, peak: number) => {
+    if (t < 0.7) return from + (peak - from) * (1 - (1 - t / 0.7) ** 3)
+    const k = (t - 0.7) / 0.3
+    return peak + (1 - peak) * (1 - (1 - k) ** 2)
+  }
+  const rest = { alpha: 1, dx: 0, dy: 0, scale: 1, fx: 0.5, fy: 0.5 }
+  if (enter === 'slow-push') {
+    const z = Math.max(0, Math.min(1, age / 3000))
+    const ease = 1 - (1 - z) ** 3
+    return { alpha: 1, dx: 0, dy: 0, scale: 1 + 0.08 * ease, fx: 0.3, fy: 0.55 }
+  }
+  if (enter === 'fade-push') {
+    const z = Math.min(1, age / 500)
+    return { alpha: Math.min(1, age / 400), dx: 0, dy: 0, scale: 1 + 0.07 * (1 - (1 - z) ** 3), fx: 0.82, fy: 0.42 }
+  }
+  if (enter === 'fade-face') {
+    const z = Math.max(0, Math.min(1, (age - 180) / 500))
+    return { alpha: Math.min(1, age / 300), dx: 0, dy: 0, scale: 1 + 0.09 * (1 - (1 - z) ** 3), fx: 0.78, fy: 0.42 }
+  }
+  if (enter === 'push') {
+    const z = Math.min(1, age / dur)
+    return { alpha: 1, dx: 0, dy: 0, scale: 1 + 0.06 * (1 - (1 - z) ** 3), fx: 0.55, fy: 0.28 }
+  }
+  if (age >= dur) return rest
+  if (enter === 'pop') return { alpha: Math.min(1, age / 120), dx: 0, dy: 0, scale: overshoot(0.62, 1.06), fx: 0.5, fy: 0.55 }
+  if (enter === 'slide-right') return { alpha: 1, dx: (1 - ease) * 240, dy: 0, scale: 1, fx: 0.5, fy: 0.5 }
+  if (enter === 'slide-left') return { alpha: 1, dx: -(1 - ease) * 240, dy: 0, scale: 1, fx: 0.5, fy: 0.5 }
+  if (enter === 'pop-right') return { alpha: Math.min(1, age / 100), dx: (1 - ease) * 170, dy: 0, scale: overshoot(0.78, 1.05), fx: 0.55, fy: 0.45 }
+  if (enter === 'pop-big') return { alpha: Math.min(1, age / 80), dx: 0, dy: 0, scale: overshoot(0.7, 1.08), fx: 0.5, fy: 0.5 }
+  if (enter === 'rise') return { alpha: Math.min(1, age / 280), dx: 0, dy: (1 - ease) * 170, scale: 1, fx: 0.5, fy: 0.35 }
+  if (enter === 'fade') return { alpha: Math.min(1, age / dur), dx: 0, dy: 0, scale: 1, fx: 0.5, fy: 0.5 }
+  if (enter === 'slide-slant') return { alpha: 1, dx: (1 - ease) * 260, dy: -(1 - ease) * 36, scale: 1, fx: 0.5, fy: 0.5 }
+  return rest
+}
+
+function paintMute(ctx: CanvasRenderingContext2D, rect: Rect, muted: boolean): void {
+  if (rect.w <= 0) return
+  roundRect(ctx, rect.x, rect.y, rect.w, rect.h, 10)
   ctx.fillStyle = PAL.white
   ctx.fill()
-  text(ctx, step.speaker, card.x + 18, card.y + 28, 16, PAL.danger, 'left')
-  const lines = wrap(ctx, step.text, card.w - 36, 18, 600)
-  lines.forEach((line, i) => text(ctx, line, card.x + 18, card.y + 64 + i * 28, 18, PAL.ink, 'left'))
-  const pulse = 0.45 + 0.55 * (0.5 + 0.5 * Math.sin(model.realNow / 180))
-  roundRect(ctx, frame.hotspot.x, frame.hotspot.y, frame.hotspot.w, frame.hotspot.h, 12)
-  ctx.fillStyle = '#fffaf3'
-  ctx.fill()
-  ctx.lineWidth = 4
-  ctx.strokeStyle = `rgba(184, 67, 47, ${pulse})`
+  ctx.lineWidth = 1.5
+  ctx.strokeStyle = PAL.ink
   ctx.stroke()
-  text(ctx, step.hotspot, frame.hotspot.x + frame.hotspot.w / 2, frame.hotspot.y + frame.hotspot.h / 2 - 8, 22, PAL.ink)
-  text(ctx, '点这里', frame.hotspot.x + frame.hotspot.w / 2, frame.hotspot.y + frame.hotspot.h - 28, 14, PAL.soft)
+  const cx = rect.x + rect.w * 0.38
+  const cy = rect.y + rect.h / 2
+  const s = Math.min(rect.w, rect.h) * 0.22
+  ctx.fillStyle = '#2a2118'
+  ctx.beginPath()
+  ctx.rect(cx - s * 0.35, cy - s * 0.45, s * 0.7, s * 0.9)
+  ctx.fill()
+  ctx.beginPath()
+  ctx.moveTo(cx + s * 0.2, cy - s * 0.45)
+  ctx.lineTo(cx + s * 1.15, cy - s * 1.15)
+  ctx.lineTo(cx + s * 1.15, cy + s * 1.15)
+  ctx.lineTo(cx + s * 0.2, cy + s * 0.45)
+  ctx.closePath()
+  ctx.fill()
+  ctx.lineWidth = Math.max(1.4, s * 0.28)
+  ctx.lineCap = 'round'
+  if (muted) {
+    ctx.strokeStyle = '#9c2f2f'
+    ctx.beginPath()
+    ctx.moveTo(cx + s * 1.5, cy - s * 1.05)
+    ctx.lineTo(cx + s * 2.7, cy + s * 1.05)
+    ctx.moveTo(cx + s * 2.7, cy - s * 1.05)
+    ctx.lineTo(cx + s * 1.5, cy + s * 1.05)
+    ctx.stroke()
+  } else {
+    ctx.strokeStyle = '#2a2118'
+    ctx.beginPath()
+    ctx.arc(cx + s * 1.35, cy, s * 0.85, -0.8, 0.8)
+    ctx.stroke()
+    ctx.beginPath()
+    ctx.arc(cx + s * 1.35, cy, s * 1.45, -0.7, 0.7)
+    ctx.stroke()
+  }
+}
+
+function paintComicBubble(
+  ctx: CanvasRenderingContext2D,
+  script: { width: number; height: number },
+  beat: { speaker?: string; text?: string; x?: number; y?: number; w?: number },
+  start: boolean,
+  alpha: number,
+  now: number,
+): void {
+  const line = beat.text
+  if (!line || alpha <= 0.02) return
+  const body = 27
+  const lineH = body + 6
+  const nameSize = 18
+  const padX = 12
+  const padY = 7
+  ctx.save()
+  ctx.globalAlpha *= alpha
+  ctx.font = `400 ${body}px ${COMIC_FONT}`
+  const maxW = Math.max(80, Math.min(beat.w ?? 420, script.width - 24))
+  const lines = wrapComicText(line, maxW, (value) => ctx.measureText(value).width).slice(0, 3)
+  const textW = Math.max(48, ...lines.map((row) => ctx.measureText(row).width))
+  ctx.font = `700 ${nameSize}px ${COMIC_FONT}`
+  const nameW = beat.speaker ? ctx.measureText(beat.speaker).width : 0
+  const innerW = Math.max(textW, nameW)
+  const nameH = beat.speaker ? nameSize + 2 : 0
+  const foot = start ? 36 : 14
+  const boxW = innerW + padX * 2
+  const boxH = padY + nameH + lines.length * lineH + foot + padY
+  let x = beat.x ?? 24
+  let y = (beat.y ?? 24) - padY - nameH
+  if (x < 8) x = 8
+  if (y < 8) y = 8
+  if (x + boxW > script.width - 8) x = Math.max(8, script.width - 8 - boxW)
+  if (y + boxH > script.height - 8) y = Math.max(8, script.height - 8 - boxH)
+  roundRect(ctx, x, y, boxW, boxH, 12)
+  ctx.fillStyle = 'rgba(0,0,0,0.7)'
+  ctx.fill()
+  let textY = y + padY
+  if (beat.speaker) {
+    ctx.font = `700 ${nameSize}px ${COMIC_FONT}`
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'top'
+    ctx.fillStyle = '#f3d48a'
+    ctx.fillText(beat.speaker, x + padX, textY)
+    textY += nameH
+  }
+  ctx.font = `400 ${body}px ${COMIC_FONT}`
+  ctx.fillStyle = '#ffffff'
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'top'
+  for (const row of lines) {
+    ctx.fillText(row, x + padX, textY + (lineH - body) / 2)
+    textY += lineH
+  }
+  if (start) {
+    const label = '开始营业'
+    ctx.font = `700 22px ${COMIC_FONT}`
+    const tw = ctx.measureText(label).width
+    const bw = tw + 22
+    const bh = 30
+    const bx = x + boxW - bw - 8
+    const by = y + boxH - bh - 8
+    roundRect(ctx, bx, by, bw, bh, bh / 2)
+    ctx.fillStyle = '#f3d48a'
+    ctx.fill()
+    ctx.fillStyle = '#2a2118'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(label, bx + bw / 2, by + bh / 2)
+  } else {
+    const blink = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(now / 160))
+    const ax = x + boxW - 16
+    const ay = y + boxH - 16
+    ctx.globalAlpha *= blink
+    ctx.fillStyle = '#ffffff'
+    ctx.beginPath()
+    ctx.moveTo(ax, ay + 6)
+    ctx.lineTo(ax - 5.5, ay - 2)
+    ctx.lineTo(ax + 5.5, ay - 2)
+    ctx.closePath()
+    ctx.fill()
+  }
+  ctx.restore()
+}
+
+function paintComicHand(ctx: CanvasRenderingContext2D, frame: Frame, caption: boolean): void {
+  const x = frame.w / 2
+  const y = frame.h * 0.42
+  const hand = Math.max(54, frame.w * 0.16)
+  paintHand(ctx, x, y, hand)
+  if (!caption || !comicFontReady()) return
+  const size = Math.max(16, frame.w * 0.046)
+  const label = '点击屏幕继续'
+  const textY = y + hand + size * 0.55
+  ctx.font = `400 ${size}px ${COMIC_FONT}`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'top'
+  ctx.lineJoin = 'round'
+  ctx.lineWidth = Math.max(3, size * 0.16)
+  ctx.strokeStyle = 'rgba(0,0,0,0.85)'
+  ctx.strokeText(label, x, textY)
+  ctx.fillStyle = '#ffffff'
+  ctx.fillText(label, x, textY)
 }
 
 function pill(ctx: CanvasRenderingContext2D, rect: Rect, label: string, value: string, color: string): void {
@@ -373,6 +670,202 @@ function resourcePill(ctx: CanvasRenderingContext2D, rect: Rect, mark: string, m
   ctx.fill()
   text(ctx, mark, cx, cy, r * 1.15, PAL.white, 'center', 'middle', 700)
   text(ctx, value, rect.x + rect.w - rect.h * 0.28, cy, Math.max(15, rect.h * 0.52), valueColor, 'right', 'middle', 700)
+}
+
+const guestSeen = new Map<string, number>()
+
+function blit(ctx: CanvasRenderingContext2D, id: Parameters<typeof hechengImage>[0], rect: Rect): void {
+  if (rect.w <= 0 || rect.h <= 0) return
+  const img = hechengImage(id)
+  if (!img || (img.naturalWidth || 0) <= 0) return
+  ctx.drawImage(img as CanvasImageSource, rect.x, rect.y, rect.w, rect.h)
+}
+
+function drawHecheng(model: RenderModel): void {
+  const { ctx, frame, state, cfg, realNow } = model
+  const scale = frame.w / 1080
+  const top = frame.board.y - 714 * scale
+  const bg = hechengImage('bg')
+  if (bg && (bg.naturalWidth || 0) > 0) {
+    const x = -324 * scale
+    const y = top - 178 * scale
+    const w = 1725 * scale
+    const h = 2627 * scale
+    ctx.drawImage(bg as CanvasImageSource, x, y, w, h)
+    if (y + h < frame.h) {
+      ctx.fillStyle = '#8a5a32'
+      ctx.fillRect(0, y + h - 1, frame.w, frame.h - (y + h) + 1)
+    }
+  } else {
+    ctx.fillStyle = '#1a1410'
+    ctx.fillRect(0, 0, frame.w, frame.h)
+  }
+  const at = (box: Rect, anchor: 'top' | 'bottom' = 'top') => designToScreen(frame, box, anchor)
+  const clipOrders = () => {
+    ctx.beginPath()
+    ctx.rect(frame.orderClip.x, frame.orderClip.y, frame.orderClip.w, frame.orderClip.h)
+    ctx.clip()
+  }
+  const stripScroll = 29 * scale - frame.storyBtn.x
+  ctx.save()
+  clipOrders()
+  state.orders.forEach((order, index) => {
+    const guest = frame.orderGuests[index]
+    if (!guest) return
+    const who = cfg.characters.find((entry) => entry.id === order.customerId)
+    const portrait = guestPortrait(who?.portrait)
+    if (!guestSeen.has(order.id)) guestSeen.set(order.id, realNow)
+    if (who && portrait && portraitReady(portrait)) {
+      drawCharacter(ctx, who.portrait, portrait, guest, realNow, 'contain', {
+        startedAt: guestSeen.get(order.id),
+        frameMs: cfg.economy.ajiangFrameMs,
+        zeroFrameMs: cfg.economy.baoZeroFrameMs,
+      })
+    }
+  })
+  ctx.restore()
+  const counterImg = hechengImage('counter')
+  if (counterImg && (counterImg.naturalWidth || 0) > 0) {
+    const tileW = 1080 * scale
+    const counterY = top + 598 * scale
+    const counterH = 324 * scale
+    const cover = Math.max(
+      frame.w,
+      ...frame.orderGuests.map((rect) => rect.x + rect.w),
+      ...frame.orderPlates.map((rect) => rect.x + rect.w),
+      ...frame.orderRewards.map((rect) => rect.x + rect.w),
+      ...frame.completes.map((rect) => rect.x + rect.w),
+    ) + 8
+    for (let x = -stripScroll; x < cover; x += tileW) {
+      ctx.drawImage(counterImg as CanvasImageSource, x, counterY, tileW, counterH)
+    }
+  }
+  ctx.save()
+  clipOrders()
+  frame.orderPlates.forEach((plate) => blit(ctx, 'plate', plate))
+  state.orders.forEach((order, index) => {
+    order.slots.forEach((slot, slotIndex) => {
+      const icon = frame.orderIcons.find((entry) => entry.order === index && entry.slot === slotIndex)
+      if (!icon) return
+      const sprite = itemSprite(slot.line, slot.level)
+      if (sprite) drawFittedSprite(ctx, sprite, icon.rect, 1)
+      else {
+        roundRect(ctx, icon.rect.x, icon.rect.y, icon.rect.w, icon.rect.h, 6)
+        ctx.fillStyle = lineColor(cfg, slot.line)
+        ctx.fill()
+      }
+      if (slotChecked(state, order, slotIndex)) {
+        const r = Math.max(4, Math.min(7, icon.rect.h * 0.22))
+        ctx.beginPath()
+        ctx.fillStyle = '#fffaf3'
+        ctx.arc(icon.rect.x + icon.rect.w - r - 1, icon.rect.y + icon.rect.h - r - 1, r, 0, Math.PI * 2)
+        ctx.fill()
+        text(ctx, '✓', icon.rect.x + icon.rect.w - r - 1, icon.rect.y + icon.rect.h - r - 1, r * 1.15, '#2c7a58')
+      }
+    })
+    const payRect = frame.orderRewards[index]
+    if (payRect) {
+      blit(ctx, 'bubble', payRect)
+      const pay = orderPayout(order, cfg)
+      const cover = { x: payRect.x + payRect.w * 0.4, y: payRect.y + payRect.h * 0.16, w: payRect.w * 0.5, h: payRect.h * 0.62 }
+      roundRect(ctx, cover.x, cover.y, cover.w, cover.h, 8)
+      ctx.fillStyle = '#f6e4c4'
+      ctx.fill()
+      const rewardSize = Math.max(8, payRect.h * 0.22)
+      text(ctx, `+${pay.smiles}`, payRect.x + payRect.w * 0.78, payRect.y + payRect.h * 0.34, rewardSize, '#6a3a22', 'right', 'middle', 700)
+      text(ctx, `+${pay.coins}`, payRect.x + payRect.w * 0.78, payRect.y + payRect.h * 0.62, rewardSize, '#6a3a22', 'right', 'middle', 700)
+    }
+    if (orderSatisfied(state, order)) {
+      const btn = frame.completes[index]
+      if (btn) blit(ctx, 'complete', btn)
+    }
+  })
+  if (state.rewards.length > 0 && frame.rewardTray.w > 0) {
+    const loot = state.rewards[0]
+    if (loot) drawItem(ctx, cfg, loot, frame.rewardTray, 1, 1, realNow)
+    if (state.rewards.length > 1) {
+      text(ctx, String(state.rewards.length), frame.rewardTray.x + frame.rewardTray.w * 0.82, frame.rewardTray.y + frame.rewardTray.h * 0.2, 12, '#fffaf3')
+    }
+  }
+  ctx.restore()
+  blit(ctx, 'board', at({ x: 7, y: 714, w: 1071, h: 1370 }))
+  blit(ctx, 'stash', frame.pendingBtn)
+  blit(ctx, 'info', frame.infoBar)
+  blit(ctx, 'build', frame.houseBtn)
+  const task = nextTask(state, cfg)
+  const buildHot = state.phase === 'play' && state.guide === 'none' && task && state.coins >= taskPrice(task, cfg)
+  const slide = (rect: Rect): Rect => ({ ...rect, x: rect.x - stripScroll })
+  blit(ctx, 'taskFrame', frame.taskBtn)
+  blit(ctx, 'taskIcon', slide(at({ x: 206, y: 482, w: 89, h: 103 })))
+  if (buildHot) blit(ctx, 'badgeTask', slide(at({ x: 292, y: 452, w: 44, h: 45 })))
+  blit(ctx, 'chestFrame', frame.chestBtn)
+  blit(ctx, 'chestIcon', slide(at({ x: 43, y: 548, w: 85, h: 81 })))
+  if (!state.freeRefillUsed) blit(ctx, 'badgeSmall', slide(at({ x: 114, y: 521, w: 36, h: 36 })))
+  blit(ctx, 'chestFrame', frame.storyBtn)
+  blit(ctx, 'book', slide(at({ x: 40, y: 421, w: 91, h: 85 })))
+  if (!state.storySeen) blit(ctx, 'badgeSmall', slide(at({ x: 114, y: 399, w: 36, h: 36 })))
+  blit(ctx, 'energy', frame.energySlot)
+  blit(ctx, 'coin', frame.coinSlot)
+  blit(ctx, 'gem', frame.gemSlot)
+  const num = (rect: Rect, value: string, flash = false) => {
+    text(ctx, value, rect.x + rect.w * 0.58 + 1, rect.y + rect.h / 2 + 1, rect.h * 0.42, 'rgba(40,24,12,0.45)', 'center', 'middle', 700)
+    text(ctx, value, rect.x + rect.w * 0.58, rect.y + rect.h / 2, rect.h * 0.42, flash ? '#ffd0c8' : '#fffaf2', 'center', 'middle', 700)
+  }
+  num(frame.energySlot, String(state.energy), realNow < model.fx.energyFlash)
+  const shown = Math.max(0, state.coins - model.fx.incoming)
+  num(frame.coinSlot, String(shown))
+  num(frame.gemSlot, String(state.gems))
+  const avatar = frame.avatarSlot
+  const avatarArt = {
+    x: avatar.x + (12 / 149) * avatar.w,
+    y: avatar.y + (15 / 149) * avatar.h,
+    w: (125 / 149) * avatar.w,
+    h: (126 / 149) * avatar.h,
+  }
+  const badge = {
+    x: avatar.x + (102 / 149) * avatar.w,
+    y: avatar.y + (100 / 149) * avatar.h,
+    w: (47 / 149) * avatar.w,
+    h: (47 / 149) * avatar.h,
+  }
+  const portrait = hechengImage('avatar')
+  if (portrait) drawAvatar(ctx, portrait, avatarArt, realNow)
+  blit(ctx, 'avatarFrame', avatar)
+  blit(ctx, 'levelBadge', badge)
+  const levelText = String(state.level)
+  const levelSize = badge.w * (levelText.length >= 3 ? 0.34 : 0.46)
+  ctx.lineWidth = Math.max(2, levelSize * 0.16)
+  ctx.strokeStyle = '#6a3a22'
+  ctx.font = `700 ${Math.round(levelSize)}px ${FONT}`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.strokeText(levelText, badge.x + badge.w / 2, badge.y + badge.h / 2)
+  ctx.fillStyle = '#fffaf2'
+  ctx.fillText(levelText, badge.x + badge.w / 2, badge.y + badge.h / 2)
+  const goal = Math.max(1, cfg.economy.smileGoal)
+  const ratio = Math.max(0, Math.min(1, state.smiles / goal))
+  const full = state.smiles >= goal
+  blit(ctx, full ? 'smileFull' : 'smile', frame.smileSlot)
+  if (!full && ratio > 0) {
+    const cx = frame.smileSlot.x + frame.smileSlot.w / 2
+    const cy = frame.smileSlot.y + frame.smileSlot.h / 2
+    ctx.beginPath()
+    ctx.strokeStyle = '#3cca5f'
+    ctx.lineWidth = Math.max(3, frame.smileSlot.w * 0.12)
+    ctx.lineCap = 'round'
+    ctx.arc(cx, cy, frame.smileSlot.w * 0.445, -Math.PI / 2, -Math.PI / 2 + ratio * Math.PI * 2)
+    ctx.stroke()
+  }
+  if (full) blit(ctx, 'badgeSmall', at({ x: 776, y: 248, w: 36, h: 36 }))
+  blit(ctx, speedArtId(state.spawnMult ?? 1), frame.multBtn)
+  blit(ctx, 'shop', frame.shopBtn)
+  if (!state.shopPackClaimed || !state.shopClaimDate) blit(ctx, 'badgeShop', at({ x: 1020, y: 246, w: 38, h: 38 }))
+  if (buildHot) {
+    ctx.beginPath()
+    ctx.fillStyle = '#c4552a'
+    ctx.arc(frame.houseBtn.x + frame.houseBtn.w - 16 * scale, frame.houseBtn.y + 16 * scale, 7 * scale, 0, Math.PI * 2)
+    ctx.fill()
+  }
 }
 
 function drawHud(model: RenderModel): void {
@@ -452,189 +945,81 @@ function drawHud(model: RenderModel): void {
   if (frame.skip.w > 0) button(ctx, frame.skip, '跳过', 'ghost')
 }
 
-const orderSlide = new Map<string, number>()
 
-function drawOrders(model: RenderModel): void {
-  const { ctx, frame, state, cfg } = model
-  const spots = state.orders.flatMap((order, index) => {
-    const rect = frame.orders[index]
-    const plate0 = frame.orderPlates[index]
-    const pay0 = frame.orderRewards[index]
-    const guest0 = frame.orderGuests[index]
-    const charm0 = frame.orderCharms[index]
-    if (!rect || !plate0 || !pay0 || !guest0 || !charm0) return []
-    const prev = orderSlide.get(order.id) ?? rect.x
-    const x = prev + (rect.x - prev) * 0.35
-    orderSlide.set(order.id, Math.abs(x - rect.x) < 0.5 ? rect.x : x)
-    const dx = (orderSlide.get(order.id) ?? rect.x) - rect.x
-    const move = (r: Rect) => ({ ...r, x: r.x + dx })
-    return [{ order, index, dx, rect: move(rect), plate: move(plate0), pay: move(pay0), guest: move(guest0), charm: move(charm0) }]
-  })
-  spots.forEach((spot) => {
-    const who = cfg.characters.find((entry) => entry.id === spot.order.customerId)
-    const portrait = guestPortrait(who?.portrait)
-    ctx.save()
-    ctx.beginPath()
-    ctx.rect(spot.guest.x - frame.w, spot.guest.y, frame.w * 3, Math.max(1, spot.plate.y + spot.plate.h - spot.guest.y))
-    ctx.clip()
-    if (who?.portrait && portrait && portraitReady(portrait)) {
-      measurePortrait(who.portrait, portrait)
-      ctx.drawImage(portrait as CanvasImageSource, spot.guest.x, spot.guest.y, spot.guest.w, spot.guest.h)
-    } else {
-      paintStandIn(ctx, characterName(cfg, spot.order.customerId), SILHOUETTE[spot.order.customerId] ?? '#8a6a4a', spot.guest, who?.face ?? { x: 0.18, y: 0.08, w: 0.64, h: 0.42 })
-    }
-    ctx.restore()
-  })
-  ctx.save()
-  ctx.beginPath()
-  ctx.rect(frame.orderClip.x, frame.orderClip.y, frame.orderClip.w, frame.orderClip.h)
-  ctx.clip()
-  const tray = frame.rewardTray
-  if (tray.w > 0) {
-    roundRect(ctx, tray.x, tray.y, tray.w, tray.h, 12)
-    ctx.fillStyle = '#f8efdf'
+function drawHudTools(model: RenderModel): void {
+  const { ctx, frame, state } = model
+  if (frame.mode !== 'board' && frame.multBtn.w > 0) {
+    roundRect(ctx, frame.multBtn.x, frame.multBtn.y, frame.multBtn.w, frame.multBtn.h, 6)
+    ctx.fillStyle = '#3a342e'
     ctx.fill()
-    ctx.lineWidth = Math.max(1.5, tray.w * 0.025)
-    ctx.strokeStyle = '#d7b88a'
-    ctx.stroke()
-    const chest = { x: tray.x + tray.w * 0.16, y: tray.y + tray.h * 0.06, w: tray.w * 0.68, h: tray.h * 0.42 }
-    const lidH = chest.h * 0.42
-    roundRect(ctx, chest.x - chest.w * 0.06, chest.y, chest.w * 1.12, lidH, 4)
-    ctx.fillStyle = '#e2b15a'
-    ctx.fill()
-    ctx.strokeStyle = '#8a5a28'
-    ctx.lineWidth = Math.max(1, chest.w * 0.04)
-    ctx.stroke()
-    roundRect(ctx, chest.x, chest.y + lidH * 0.72, chest.w, chest.h - lidH * 0.72, 4)
-    ctx.fillStyle = '#c47a32'
-    ctx.fill()
-    ctx.strokeStyle = '#8a5a28'
-    ctx.stroke()
-    const claspR = Math.max(2.5, chest.w * 0.09)
-    ctx.beginPath()
-    ctx.fillStyle = '#f4e2b0'
-    ctx.arc(chest.x + chest.w / 2, chest.y + lidH, claspR, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.strokeStyle = '#6a3e22'
-    ctx.lineWidth = 1
-    ctx.stroke()
-    text(ctx, '奖励', tray.x + tray.w / 2, tray.y + tray.h * 0.58, Math.max(12, tray.w * 0.2), PAL.ink, 'center', 'middle', 700)
-    const goal = Math.max(1, cfg.economy.smileGoal)
-    const ratio = Math.max(0, Math.min(1, state.smiles / goal))
-    const bar = { x: tray.x + tray.w * 0.12, y: tray.y + tray.h * 0.7, w: tray.w * 0.76, h: Math.max(6, tray.h * 0.07) }
-    roundRect(ctx, bar.x, bar.y, bar.w, bar.h, bar.h / 2)
-    ctx.fillStyle = '#e4d3bc'
-    ctx.fill()
-    roundRect(ctx, bar.x, bar.y, Math.max(bar.h, bar.w * ratio), bar.h, bar.h / 2)
-    ctx.fillStyle = '#e0568a'
-    ctx.fill()
-    text(ctx, `${state.smiles}/${goal}`, tray.x + tray.w / 2, tray.y + tray.h * 0.86, Math.max(11, tray.w * 0.16), PAL.ink, 'center', 'middle', 700)
+    text(ctx, `×${state.spawnMult ?? 1}`, frame.multBtn.x + frame.multBtn.w / 2, frame.multBtn.y + frame.multBtn.h / 2, 12, '#fff6e4')
   }
-  spots.forEach(({ order, index, dx, plate, pay: payRect }) => {
-    const tray = orderTrayImage()
-    if (tray && (tray.naturalWidth || 0) > 0) {
-      const aspect = tray.naturalWidth / Math.max(1, tray.naturalHeight)
-      const drawW = plate.w
-      const drawH = drawW / aspect
-      ctx.drawImage(tray, plate.x, plate.y + (plate.h - drawH) / 2, drawW, drawH)
-    } else {
-      roundRect(ctx, plate.x, plate.y, plate.w, plate.h, 8)
-      ctx.fillStyle = '#e4b57a'
-      ctx.fill()
-    }
-    order.slots.forEach((slot, slotIndex) => {
-      const icon = frame.orderIcons.find((entry) => entry.order === index && entry.slot === slotIndex)
-      if (!icon) return
-      const ix = icon.rect.x + dx
-      const iy = icon.rect.y
-      roundRect(ctx, ix, iy, icon.rect.w, icon.rect.h, 6)
-      ctx.fillStyle = lineColor(cfg, slot.line)
-      ctx.fill()
-      if (slotChecked(state, order, slotIndex)) {
-        const r = Math.max(4, Math.min(6, icon.rect.h * 0.28))
-        ctx.beginPath()
-        ctx.fillStyle = '#fffaf3'
-        ctx.arc(ix + icon.rect.w - r - 1, iy + icon.rect.h - r - 1, r, 0, Math.PI * 2)
-        ctx.fill()
-        text(ctx, '✓', ix + icon.rect.w - r - 1, iy + icon.rect.h - r - 1, r * 1.15, '#2c7a58')
-      }
-    })
-    roundRect(ctx, payRect.x, payRect.y, payRect.w, payRect.h, 8)
-    ctx.fillStyle = 'rgba(36,28,22,0.62)'
+  if (frame.mode !== 'board' && frame.shopBtn.w > 0) {
+    roundRect(ctx, frame.shopBtn.x, frame.shopBtn.y, frame.shopBtn.w, frame.shopBtn.h, 6)
+    ctx.fillStyle = '#8a6a4a'
     ctx.fill()
-    const pay = orderPayout(order, cfg)
-    const rows: { mark: string; value: string; color: string }[] = [
-      { mark: '笑', value: `+${pay.smiles}`, color: '#e0568a' },
-      { mark: '经', value: `+${pay.xp}`, color: '#3d8fd4' },
-      { mark: '钱', value: `+${pay.coins}`, color: '#e0a23a' },
-    ]
-    const rewardSize = Math.max(11, frame.w * (orderLayout.rewardFont ?? 0.03))
-    rows.forEach((row, rowIndex) => {
-      const cy = payRect.y + ((rowIndex + 0.5) * payRect.h) / rows.length
-      const r = Math.max(5, Math.min(rewardSize * 0.48, payRect.h / rows.length * 0.42))
-      ctx.beginPath()
-      ctx.fillStyle = row.color
-      ctx.arc(payRect.x + r + 3, cy, r, 0, Math.PI * 2)
-      ctx.fill()
-      text(ctx, row.mark, payRect.x + r + 3, cy, r * 1.05, PAL.white, 'center', 'middle', 700)
-      text(ctx, row.value, payRect.x + payRect.w - 3, cy, rewardSize, PAL.white, 'right', 'middle', 700)
-    })
-    order.slots.forEach((slot, slotIndex) => {
-      const name = frame.orderNames.find((entry) => entry.order === index && entry.slot === slotIndex)
-      if (!name) return
-      const box = { ...name.rect, x: name.rect.x + dx }
-      const label = orderItemLabel(productName(cfg, slot.line, slot.level), slot.level, order.slots.length === 1)
-      roundRect(ctx, box.x, box.y, box.w, box.h, 4)
-      ctx.fillStyle = '#fff8ec'
-      ctx.fill()
-      ctx.lineWidth = 1
-      ctx.strokeStyle = '#6a4328'
-      ctx.stroke()
-      const fit = (box.w - 6) / Math.max(1, label.length)
-      const font = Math.max(11, Math.min(box.h - 4, frame.w * 0.034, fit))
-      text(ctx, label, box.x + box.w / 2, box.y + box.h / 2, font, '#2a160c', 'center', 'middle', 700)
-    })
-    if (orderSatisfied(state, order)) {
-      const btn = frame.completes[index]
-      if (btn) {
-        const bx = btn.x + dx
-        const by = btn.y
-        roundRect(ctx, bx, by, btn.w, btn.h, 8)
-        ctx.fillStyle = '#2c7a58'
-        ctx.fill()
-        text(ctx, '完成', bx + btn.w / 2, by + btn.h / 2, Math.max(11, btn.h * 0.62), PAL.white, 'center', 'middle', 700)
-      }
-    }
+    text(ctx, '店', frame.shopBtn.x + frame.shopBtn.w / 2, frame.shopBtn.y + frame.shopBtn.h / 2, 13, '#fff6e4')
+  }
+  if (frame.tuneBtn.w > 0 && frame.mode === 'board') {
+    roundRect(ctx, frame.tuneBtn.x, frame.tuneBtn.y, frame.tuneBtn.w, frame.tuneBtn.h, 6)
+    ctx.fillStyle = 'rgba(255,250,243,0.72)'
+    ctx.fill()
+    text(ctx, '调', frame.tuneBtn.x + frame.tuneBtn.w / 2, frame.tuneBtn.y + frame.tuneBtn.h / 2, 11, PAL.soft)
+  }
+}
+
+function drawShop(model: RenderModel): void {
+  const { ctx, frame } = model
+  const shop = shopRects(frame)
+  ctx.fillStyle = 'rgba(28,22,16,0.45)'
+  ctx.fillRect(0, 0, frame.w, frame.h)
+  roundRect(ctx, shop.card.x, shop.card.y, shop.card.w, shop.card.h, 14)
+  ctx.fillStyle = '#d9d3cc'
+  ctx.fill()
+  text(ctx, '商城', shop.card.x + 18, shop.card.y + 28, 18, '#2a2118', 'left')
+  text(ctx, '×', shop.close.x + shop.close.w / 2, shop.close.y + shop.close.h / 2, 16, '#2a2118')
+  for (const [rect, title, sub] of [
+    [shop.daily, '每日免费', '50 体力'],
+    [shop.pack, '新手大礼包', '10 钻石 · 50 体力'],
+  ] as const) {
+    roundRect(ctx, rect.x, rect.y, rect.w, rect.h, 8)
+    ctx.fillStyle = '#eee8e0'
+    ctx.fill()
+    ctx.strokeStyle = '#8a7b6a'
+    ctx.stroke()
+    text(ctx, title, rect.x + 12, rect.y + 16, 14, '#2a2118', 'left')
+    text(ctx, sub, rect.x + 12, rect.y + 34, 12, '#6f6254', 'left')
+  }
+}
+
+function drawDetail(model: RenderModel): void {
+  const { ctx, frame, cfg, state } = model
+  const card = detailCard(frame)
+  const lineId = state.detailLine
+  const line = cfg.items.lines.find((entry) => entry.id === lineId)
+  ctx.fillStyle = 'rgba(28,22,16,0.45)'
+  ctx.fillRect(0, 0, frame.w, frame.h)
+  roundRect(ctx, card.x, card.y, card.w, card.h, 14)
+  ctx.fillStyle = '#fff8ec'
+  ctx.fill()
+  text(ctx, '哇！新的饮料机！', card.x + card.w / 2, card.y + 28, 18, '#9c2f2f')
+  text(ctx, '看看里面有什么吧', card.x + card.w / 2, card.y + 52, 13, '#6f6254')
+  const levels = line?.levels ?? []
+  levels.forEach((level, index) => {
+    const y = card.y + 78 + index * 28
+    if (y > card.y + card.h - 24) return
+    text(ctx, `${level.level}  ${level.name}`, card.x + 18, y, 14, '#2a2118', 'left')
   })
-  ctx.restore()
+  text(ctx, '点外面关掉', card.x + card.w / 2, card.y + card.h - 18, 12, '#6f6254')
 }
 
-const SILHOUETTE: Record<string, string> = {
-  xiaotao: '#e07a8a',
-  teaGuest: '#2f8f78',
-  boatman: '#3d6ea8',
-  scholar: '#b08948',
-  embroider: '#a85cad',
-  squire: '#d4652f',
-  fisherman: '#d08a3a',
-  raccoon: '#6e6258',
-}
-
-function paintStandIn(ctx: CanvasRenderingContext2D, name: string, color: string, guest: Rect, face: NormBox): void {
-  const head = guestFaceBox(guest, face)
-  const cx = head.x + head.w / 2
-  const cy = head.y + head.h / 2
-  const radius = Math.min(head.w, head.h) / 2
-  ctx.beginPath()
-  ctx.fillStyle = '#f3d2b0'
-  ctx.arc(cx, cy, radius, 0, Math.PI * 2)
-  ctx.fill()
-  const bodyTop = cy + radius * 0.15
-  const bodyH = Math.max(8, guest.y + guest.h - bodyTop)
-  roundRect(ctx, cx - radius * 1.05, bodyTop, radius * 2.1, bodyH, 8)
-  ctx.fillStyle = color
-  ctx.fill()
-  text(ctx, name, cx, bodyTop + 12, 10, PAL.ink)
+function buriedPreview(lock: { buried: GameState['locks'][number]['buried'] }): Item | null {
+  const buried = lock.buried
+  if (buried.kind === 'product') return { uid: 'buried', kind: 'product', line: buried.line, level: buried.level }
+  if (buried.kind === 'producer') return { uid: 'buried', kind: 'producer', producerId: buried.id, line: buried.id, level: buried.level, charges: 0, cooldownUntil: 0 }
+  if (buried.kind === 'potion') return { uid: 'buried', kind: 'potion', tier: buried.tier }
+  if (buried.kind === 'gem') return { uid: 'buried', kind: 'gem', tier: buried.tier }
+  return null
 }
 
 function drawHint(model: RenderModel): void {
@@ -664,22 +1049,32 @@ function drawBoard(model: RenderModel): void {
   const checks = new Set(marks.check)
   const readyCells = new Set(marks.ready)
   const glow = new Set(glowingLocks(state).map((pos) => `${pos.row},${pos.col}`))
-  const matTop = frame.orderClip.h > 0 ? frame.orderClip.y + frame.orderClip.h : frame.hud.y + frame.hud.h
-  const matBottom = frame.dock.h > 0 ? frame.dock.y : frame.h
-  ctx.fillStyle = theme.mat
-  ctx.fillRect(0, matTop, frame.w, Math.max(0, matBottom - matTop))
+  const wood = frame.mode === 'board'
+  if (!wood) {
+    const matTop = frame.orderClip.h > 0 ? frame.orderClip.y + frame.orderClip.h : frame.hud.y + frame.hud.h
+    const matBottom = frame.dock.h > 0 ? frame.dock.y : frame.h
+    ctx.fillStyle = theme.mat
+    ctx.fillRect(0, matTop, frame.w, Math.max(0, matBottom - matTop))
+  }
   for (let row = 0; row < ROWS; row++) {
     for (let col = 0; col < COLS; col++) {
       const box = cellBox(frame, row, col)
       const pad = 2
       const key = `${row},${col}`
       const radius = Math.max(6, (box.w - pad * 2) * 0.18)
-      roundRect(ctx, box.x + pad, box.y + pad, box.w - pad * 2, box.h - pad * 2, radius)
-      ctx.fillStyle = readyCells.has(key) ? theme.ready : (row + col) % 2 === 0 ? theme.cellLight : theme.cellDark
-      ctx.fill()
-      ctx.lineWidth = 1
-      ctx.strokeStyle = theme.cellLine
-      ctx.stroke()
+      if (!wood) {
+        roundRect(ctx, box.x + pad, box.y + pad, box.w - pad * 2, box.h - pad * 2, radius)
+        ctx.fillStyle = readyCells.has(key) ? theme.ready : (row + col) % 2 === 0 ? theme.cellLight : theme.cellDark
+        ctx.fill()
+        ctx.lineWidth = 1
+        ctx.strokeStyle = theme.cellLine
+        ctx.stroke()
+      } else if (readyCells.has(key)) {
+        roundRect(ctx, box.x + pad, box.y + pad, box.w - pad * 2, box.h - pad * 2, radius)
+        ctx.lineWidth = 2
+        ctx.strokeStyle = theme.ready
+        ctx.stroke()
+      }
       const hover = fx.hover?.kind === 'cell' && fx.hover.row === row && fx.hover.col === col
       if (highlights.has(key) || hover) {
         ctx.lineWidth = 2.5
@@ -693,6 +1088,25 @@ function drawBoard(model: RenderModel): void {
         const covered = lock.veil === 'full' && lock.cover !== 'gift'
         if (!covered && lock.buried.kind === 'product') {
           drawItem(ctx, cfg, { uid: 'buried', kind: 'product', line: lock.buried.line, level: lock.buried.level }, box, 1, 0.45, realNow)
+        } else if (!covered && lock.buried.kind === 'producer') {
+          const buried = lock.buried
+          drawItem(
+            ctx,
+            cfg,
+            {
+              uid: 'buried',
+              kind: 'producer',
+              producerId: buried.id,
+              line: cfg.producers.find((entry) => entry.id === buried.id)?.line ?? buried.id,
+              level: buried.level,
+              charges: 0,
+              cooldownUntil: 0,
+            },
+            box,
+            1,
+            0.55,
+            realNow,
+          )
         } else if (!covered && lock.buried.kind === 'potion') {
           drawItem(ctx, cfg, { uid: 'buried', kind: 'potion', tier: lock.buried.tier }, box, 1, 0.45, realNow)
         } else if (!covered && lock.buried.kind === 'gem') {
@@ -701,25 +1115,25 @@ function drawBoard(model: RenderModel): void {
           text(ctx, String(lock.buried.amount), box.x + box.w / 2, box.y + box.h * 0.4, Math.max(12, box.w * 0.22), PAL.coin)
         }
         ctx.fillStyle = covered
-          ? theme.covered
+          ? '#c4ae86'
           : lock.cover === 'web'
             ? 'rgba(90,90,90,0.45)'
             : lock.cover === 'gift'
               ? 'rgba(180,140,60,0.45)'
-              : theme.half
+              : 'rgba(255,248,236,0.42)'
         roundRect(ctx, box.x + 3, box.y + 3, box.w - 6, box.h - 6, 6)
         ctx.fill()
         const giftLeft = lock.cover === 'gift' && lock.giftUntil != null ? lock.giftUntil - realNow : 0
-        const lockLabel = covered
-          ? '全遮'
-          : lock.cover === 'gift'
-            ? lock.giftUntil == null
-              ? '礼物'
-              : giftLeft > 0
-                ? formatMs(giftLeft)
-                : '可开'
-            : '半开'
-        text(ctx, lockLabel, box.x + box.w / 2, box.y + box.h * 0.72, Math.max(9, box.w * 0.16), covered ? '#6a4e32' : PAL.ink)
+        if (lock.cover === 'gift') {
+          const lockLabel = lock.giftUntil == null ? '礼物' : giftLeft > 0 ? formatMs(giftLeft) : '可开'
+          text(ctx, lockLabel, box.x + box.w / 2, box.y + box.h * 0.72, Math.max(9, box.w * 0.16), PAL.ink)
+        }
+        if (model.selected && model.selected.row === row && model.selected.col === col) {
+          ctx.lineWidth = 3
+          ctx.strokeStyle = '#3d6ea8'
+          roundRect(ctx, box.x + 1, box.y + 1, box.w - 2, box.h - 2, 6)
+          ctx.stroke()
+        }
         if (glow.has(key)) {
           const amp = Math.max(0, Math.min(1, cfg.economy.lockPulse || 0))
           const wave = 0.5 + 0.5 * Math.sin(realNow / 540)
@@ -744,6 +1158,11 @@ function drawBoard(model: RenderModel): void {
         }
       }
       drawItem(ctx, cfg, item, box, scale, 1, realNow, unlimited && item.kind === 'producer')
+      if (item.kind === 'producer') {
+        const cooling = producerCooldown(cfg, item, realNow)
+        if (producerCanSpawn(cfg, item, realNow)) drawSpawnBolt(ctx, box, realNow)
+        else if (cooling) drawSpawnClock(ctx, box, cooling.left, cooling.total)
+      }
       if (checks.has(key)) {
         const r = Math.max(5, box.w * 0.16)
         const cx = box.x + box.w - r - 1
@@ -783,7 +1202,103 @@ function drawBoard(model: RenderModel): void {
   }
 }
 
-function paintHand(ctx: CanvasRenderingContext2D, x: number, y: number): void {
+let tutorialHandImg: HTMLImageElement | null = null
+
+function tutorialHandImage(): HTMLImageElement | null {
+  const host = globalThis as { Image?: new () => HTMLImageElement; document?: Document }
+  if (!host.document || typeof host.Image !== 'function') return null
+  if (!tutorialHandImg) {
+    tutorialHandImg = new host.Image()
+    tutorialHandImg.src = tutorialHandUrl
+  }
+  return tutorialHandImg
+}
+
+const HAND_TIP = { x: 8 / 284, y: 14 / 310 }
+const HAND_ASPECT = 284 / 310
+
+function drawSpark(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, alpha: number): void {
+  if (alpha <= 0.05) return
+  ctx.save()
+  ctx.globalAlpha *= alpha
+  ctx.fillStyle = '#fffaf0'
+  ctx.beginPath()
+  ctx.moveTo(x, y - r)
+  ctx.lineTo(x + r * 0.28, y - r * 0.28)
+  ctx.lineTo(x + r, y)
+  ctx.lineTo(x + r * 0.28, y + r * 0.28)
+  ctx.lineTo(x, y + r)
+  ctx.lineTo(x - r * 0.28, y + r * 0.28)
+  ctx.lineTo(x - r, y)
+  ctx.lineTo(x - r * 0.28, y - r * 0.28)
+  ctx.closePath()
+  ctx.fill()
+  ctx.restore()
+}
+
+function spawnMarkBox(box: Rect): { x: number; y: number; size: number } {
+  const size = Math.max(14, box.w * 0.3)
+  return { size, x: box.x + box.w - size * 0.78, y: box.y + box.h - size * 0.82 }
+}
+
+function drawSpawnClock(ctx: CanvasRenderingContext2D, box: Rect, left: number, total: number): void {
+  const { x, y, size } = spawnMarkBox(box)
+  const cx = x + size * 0.5
+  const cy = y + size * 0.5
+  const r = size * 0.42
+  const ratio = Math.max(0, Math.min(1, left / Math.max(1, total)))
+  ctx.save()
+  ctx.beginPath()
+  ctx.fillStyle = '#fffaf3'
+  ctx.arc(cx, cy, r + size * 0.06, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.beginPath()
+  ctx.strokeStyle = '#e4d3bc'
+  ctx.lineWidth = Math.max(2, size * 0.14)
+  ctx.arc(cx, cy, r, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.beginPath()
+  ctx.strokeStyle = '#e08a14'
+  ctx.lineCap = 'round'
+  ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * ratio)
+  ctx.stroke()
+  ctx.restore()
+}
+
+let iconBoltImg: HTMLImageElement | null = null
+
+function iconBoltImage(): HTMLImageElement | null {
+  const host = globalThis as { Image?: new () => HTMLImageElement; document?: Document }
+  if (!host.document || typeof host.Image !== 'function') return null
+  if (!iconBoltImg) {
+    iconBoltImg = new host.Image()
+    iconBoltImg.src = iconBoltUrl
+  }
+  return iconBoltImg
+}
+
+function drawSpawnBolt(ctx: CanvasRenderingContext2D, box: Rect, now: number): void {
+  const { x, y, size } = spawnMarkBox(box)
+  const flicker = 0.86 + 0.14 * (0.5 + 0.5 * Math.sin(now / 170))
+  const img = iconBoltImage()
+  ctx.save()
+  ctx.globalAlpha *= flicker
+  if (img && (img.naturalWidth || 0) > 0) ctx.drawImage(img, x, y, size, size)
+  const spark = (phase: number) => 0.25 + 0.75 * (0.5 + 0.5 * Math.sin(now / 220 + phase))
+  drawSpark(ctx, x + size * 0.08, y + size * 0.18, size * 0.16, spark(0))
+  drawSpark(ctx, x + size * 0.92, y + size * 0.12, size * 0.12, spark(2.1))
+  drawSpark(ctx, x + size * 0.16, y + size * 0.86, size * 0.1, spark(4.2))
+  ctx.restore()
+}
+
+function paintHand(ctx: CanvasRenderingContext2D, x: number, y: number, cell = 0): void {
+  const h = Math.max(44, cell || 54)
+  const w = h * HAND_ASPECT
+  const img = tutorialHandImage()
+  if (img && (img.naturalWidth || 0) > 0) {
+    ctx.drawImage(img, x - HAND_TIP.x * w, y - HAND_TIP.y * h, w, h)
+    return
+  }
   ctx.save()
   ctx.translate(x, y)
   ctx.fillStyle = '#fffaf3'
@@ -804,11 +1319,13 @@ function drawInfo(model: RenderModel): void {
   const { ctx, frame, state, cfg, selected } = model
   if (frame.infoBar.h <= 0) return
   const bar = frame.infoBar
-  roundRect(ctx, bar.x, bar.y, bar.w, bar.h, 10)
-  ctx.fillStyle = '#fff6e8'
-  ctx.fill()
-  ctx.strokeStyle = '#e0c8a0'
-  ctx.stroke()
+  if (frame.mode !== 'board') {
+    roundRect(ctx, bar.x, bar.y, bar.w, bar.h, 10)
+    ctx.fillStyle = '#fff6e8'
+    ctx.fill()
+    ctx.strokeStyle = '#e0c8a0'
+    ctx.stroke()
+  }
   const sale = state.sale
   if (sale) {
     text(ctx, cfg.copy.infoSold, bar.x + 12, bar.y + bar.h / 2, 14, PAL.ink, 'left')
@@ -820,19 +1337,33 @@ function drawInfo(model: RenderModel): void {
     return
   }
   const item = selected ? state.board[selected.row]?.[selected.col] : null
-  const gift = selected ? state.locks.find((entry) => entry.row === selected.row && entry.col === selected.col && entry.cover === 'gift') : undefined
-  if (!item && !gift) {
-    text(ctx, INFO_EMPTY, bar.x + 12, bar.y + bar.h / 2, 13, PAL.soft, 'left')
+  const lock = selected ? state.locks.find((entry) => entry.row === selected.row && entry.col === selected.col) : undefined
+  const gift = lock?.cover === 'gift' ? lock : undefined
+  if (!item && !lock && model.orderFocus) {
+    const focus = model.orderFocus
+    text(ctx, productName(cfg, focus.line, focus.level), bar.x + 12, bar.y + bar.h * 0.38, 16, PAL.ink, 'left')
+    text(ctx, cnLevel(focus.level), bar.x + 12, bar.y + bar.h * 0.72, 13, PAL.soft, 'left')
+    return
+  }
+  if (!item && !lock) {
+    text(ctx, INFO_EMPTY, bar.x + 12, bar.y + bar.h / 2, 14, PAL.soft, 'left')
     return
   }
   if (!item && gift) {
     const cooling = gift.giftUntil != null && gift.giftUntil > model.realNow
-    text(ctx, '礼物', bar.x + 12, bar.y + bar.h * 0.34, 13, PAL.ink, 'left')
-    text(ctx, cooling ? '冷却中' : '点一下开始冷却', bar.x + 12, bar.y + bar.h * 0.7, 12, PAL.soft, 'left')
+    text(ctx, '礼物', bar.x + 12, bar.y + bar.h * 0.38, 16, PAL.ink, 'left')
+    text(ctx, cooling ? '冷却中' : '点一下开始冷却', bar.x + 12, bar.y + bar.h * 0.72, 12, PAL.soft, 'left')
+  } else if (!item && lock && lock.veil !== 'full') {
+    const buried = buriedPreview(lock)
+    if (buried) {
+      const info = infoCaption(cfg, buried, model.realNow)
+      text(ctx, info.title, bar.x + 12, bar.y + bar.h * 0.38, 16, PAL.ink, 'left')
+      text(ctx, `半遮掩 · ${info.usage}`, bar.x + 12, bar.y + bar.h * 0.72, 12, PAL.soft, 'left')
+    }
   } else if (item) {
-    const info = infoCaption(cfg, item)
-    text(ctx, info.title, bar.x + 12, bar.y + bar.h * 0.34, 13, PAL.ink, 'left')
-    text(ctx, info.usage, bar.x + 12, bar.y + bar.h * 0.7, 12, PAL.soft, 'left')
+    const info = infoCaption(cfg, item, model.realNow)
+    text(ctx, info.title, bar.x + 12, bar.y + bar.h * 0.38, 16, PAL.ink, 'left')
+    text(ctx, info.usage, bar.x + 12, bar.y + bar.h * 0.72, 12, PAL.soft, 'left')
   }
   if (frame.rushBtn.w > 0) {
     const free = atStep(state, cfg, 'giftRush')
@@ -892,7 +1423,7 @@ function drawTutorial(model: RenderModel): void {
     ctx.arcTo(hole.x + hole.w, hole.y, hole.x + hole.w, hole.y + hole.h, 8)
     ctx.fill('evenodd')
     ctx.restore()
-    paintHand(ctx, hole.x + hole.w / 2, hole.y + hole.h / 2)
+    paintHand(ctx, hole.x + hole.w / 2, hole.y + hole.h / 2, frame.board.cell)
     return
   }
   const holes = tutorialHoles(model)
@@ -921,7 +1452,7 @@ function drawTutorial(model: RenderModel): void {
   if (dialogue) text(ctx, '点击任意处继续', card.x + card.w / 2, card.y + card.h - 16, 13, PAL.soft)
   if (step?.id === 'enter') button(ctx, frame.enterBtn, '进厨房', 'primary')
   const pose = tutorialHand(cfg, state, frame, realNow)
-  if (pose?.visible) paintHand(ctx, pose.x, pose.y)
+  if (pose?.visible) paintHand(ctx, pose.x, pose.y, frame.board.cell)
 }
 
 function tutorialHoles(model: RenderModel): Rect[] {
@@ -937,14 +1468,23 @@ function tutorialHoles(model: RenderModel): Rect[] {
     spot(cfg.board.roles.mergeA.row, cfg.board.roles.mergeA.col)
     spot(cfg.board.roles.mergeB.row, cfg.board.roles.mergeB.col)
   }
-  if (step?.id === 'unlock') {
+  if (step?.id === 'mergeC' || step?.id === 'unlock') {
     for (let row = 0; row < ROWS; row++) {
       for (let col = 0; col < COLS; col++) {
         const item = state.board[row]?.[col]
-        if (item?.kind === 'product' && item.line === 'food' && item.level === 2) spot(row, col)
+        if (item?.kind === 'producer' && item.producerId === 'food' && item.level === 2) spot(row, col)
       }
     }
     spot(cfg.board.roles.unlock.row, cfg.board.roles.unlock.col)
+  }
+  if (step?.id === 'mergeD' && cfg.board.roles.mergeD) {
+    for (let row = 0; row < ROWS; row++) {
+      for (let col = 0; col < COLS; col++) {
+        const item = state.board[row]?.[col]
+        if (item?.kind === 'producer' && item.producerId === 'food' && item.level === 3) spot(row, col)
+      }
+    }
+    spot(cfg.board.roles.mergeD.row, cfg.board.roles.mergeD.col)
   }
   if (step?.id === 'producerL2' || step?.id === 'producerL3') {
     let level2 = 0
@@ -1004,6 +1544,7 @@ function drawStorageLesson(model: RenderModel): void {
   const { ctx, frame, state, cfg, realNow } = model
   const lesson = state.storageLesson
   if (state.phase !== 'play' || lesson < 1 || lesson > 3) return
+  if (guideHole(frame, state, cfg)) return
   const step = cfg.copy.storageLesson[lesson - 1] ?? ''
   ctx.save()
   ctx.fillStyle = 'rgba(12,10,8,0.72)'
@@ -1040,16 +1581,19 @@ function drawStorageLesson(model: RenderModel): void {
   lines.slice(0, 3).forEach((line, i) => text(ctx, line, card.x + 12, card.y + 22 + i * 20, 15, PAL.ink, 'left'))
   if (lesson === 1) text(ctx, '点击任意处继续', card.x + card.w / 2, card.y + card.h - 16, 13, PAL.soft)
   const pose = storageLessonHand(state, frame, realNow)
-  if (pose?.visible) paintHand(ctx, pose.x, pose.y)
+  if (pose?.visible) paintHand(ctx, pose.x, pose.y, frame.board.cell)
 }
 
 function drawHand(model: RenderModel): void {
   if (!model.showHand || model.state.phase !== 'play' || model.chain) return
+  if (model.state.storageLesson > 0 && model.state.storageLesson < 4) return
+  if (model.state.mintStep === 'select' || model.state.mintStep === 'produce' || model.state.mintStep === 'merge' || model.state.mintStep === 'deliver') return
+  if (guideHole(model.frame, model.state, model.cfg)) return
   const hint = pickHint(model.state, model.realNow)
   if (!hint) return
   const pose = hintHand(hint, model.frame, model.realNow)
   if (!pose?.visible) return
-  paintHand(model.ctx, pose.x, pose.y)
+  paintHand(model.ctx, pose.x, pose.y, model.frame.board.cell)
 }
 
 function drawLevelModal(model: RenderModel): void {
@@ -1086,23 +1630,6 @@ function drawSmileModal(model: RenderModel): void {
   button(ctx, smileDismissRect(frame), '放进奖励栏', 'primary')
 }
 
-function drawBottom(model: RenderModel): void {
-  const { ctx, frame, state, cfg } = model
-  if (frame.dock.h <= 0) return
-  if (frame.pendingBtn.w > 0) {
-    const count = state.pending.length
-    button(ctx, frame.pendingBtn, count ? `仓库 ${count}` : '仓库', count ? 'gold' : 'ghost')
-  }
-  button(ctx, frame.houseBtn, '建造', 'ghost')
-  const task = nextTask(state, cfg)
-  const dot = state.phase === 'play' && state.guide === 'none' && task && state.coins >= taskPrice(task, cfg)
-  if (dot) {
-    ctx.beginPath()
-    ctx.fillStyle = '#c4552a'
-    ctx.arc(frame.houseBtn.x + frame.houseBtn.w - 6, frame.houseBtn.y + 6, 6, 0, Math.PI * 2)
-    ctx.fill()
-  }
-}
 
 function drawChain(model: RenderModel): void {
   const chain = model.chain
@@ -1192,7 +1719,6 @@ function drawChain(model: RenderModel): void {
 function drawSheet(model: RenderModel): void {
   if (model.frame.sheet.h <= 0) return
   const { ctx, frame, cfg, state } = model
-  const step = cfg.opening[9]
   const task = cfg.buildings.steps[0]?.tasks[0]
   roundRect(ctx, frame.sheet.x, frame.sheet.y, frame.sheet.w, frame.sheet.h, 14)
   ctx.fillStyle = PAL.white
@@ -1201,11 +1727,6 @@ function drawSheet(model: RenderModel): void {
   ctx.lineWidth = 1.5
   ctx.stroke()
   button(ctx, frame.sheetSkip, '跳过', 'ghost')
-  if (step) {
-    text(ctx, step.speaker, frame.sheet.x + 16, frame.sheet.y + 22, 13, PAL.danger, 'left')
-    const lines = wrap(ctx, step.text, frame.sheet.w - 100, 16)
-    lines.forEach((line, i) => text(ctx, line, frame.sheet.x + 16, frame.sheet.y + 48 + i * 22, 16, PAL.ink, 'left'))
-  }
   const price = task ? taskPrice(task, cfg) : 0
   const afford = state.coins >= price
   button(ctx, frame.sheetBtn, `${task?.name ?? '挂招牌'} · ${price} 铜钱`, afford ? 'primary' : 'ghost')
@@ -1333,7 +1854,7 @@ function drawHouse(model: RenderModel): void {
 
   button(ctx, frame.backBtn, '返回', 'ghost')
   const short = upcoming && state.coins < taskPrice(upcoming, cfg) && !state.decorate
-  if (short) paintHand(ctx, frame.backBtn.x + frame.backBtn.w * 0.7, frame.backBtn.y + frame.backBtn.h * 0.75)
+  if (short) paintHand(ctx, frame.backBtn.x + frame.backBtn.w * 0.7, frame.backBtn.y + frame.backBtn.h * 0.75, frame.board.cell || Math.round(frame.w / 7))
   button(ctx, frame.zoomIn, '＋', 'ghost')
   button(ctx, frame.zoomOut, '－', 'ghost')
   button(ctx, frame.zoomReset, '复位', 'ghost')
@@ -1578,8 +2099,43 @@ function drawBuildStory(model: RenderModel): void {
   })
 }
 
+function drawMintGuide(model: RenderModel): void {
+  const { ctx, frame, state, realNow } = model
+  const holes: Rect[] = []
+  if (state.mintStep === 'deliver' && frame.completes[0]) holes.push(frame.completes[0])
+  else {
+    for (let row = 0; row < ROWS; row++) {
+      for (let col = 0; col < COLS; col++) {
+        const item = state.board[row]?.[col]
+        const producer = item?.kind === 'producer' && item.producerId === 'bev' && item.level >= 5
+        const piece = item?.kind === 'product' && item.line === 'mint'
+        if ((state.mintStep === 'select' || state.mintStep === 'produce') && producer) holes.push(cellBox(frame, row, col))
+        if (state.mintStep === 'merge' && piece) holes.push(cellBox(frame, row, col))
+      }
+    }
+  }
+  ctx.save()
+  ctx.fillStyle = 'rgba(12,10,8,0.72)'
+  ctx.beginPath()
+  ctx.rect(0, 0, frame.w, frame.h)
+  for (const hole of holes) {
+    ctx.moveTo(hole.x + hole.w, hole.y)
+    ctx.arcTo(hole.x, hole.y, hole.x, hole.y + hole.h, 8)
+    ctx.arcTo(hole.x, hole.y + hole.h, hole.x + hole.w, hole.y + hole.h, 8)
+    ctx.arcTo(hole.x + hole.w, hole.y + hole.h, hole.x + hole.w, hole.y, 8)
+    ctx.arcTo(hole.x + hole.w, hole.y, hole.x + hole.w, hole.y + hole.h, 8)
+  }
+  ctx.fill('evenodd')
+  ctx.restore()
+  const hand = holes[0]
+  if (hand) paintHand(ctx, hand.x + hand.w / 2, hand.y + hand.h / 2 + Math.sin(realNow / 280) * 3, frame.board.cell)
+  const tip = state.mintStep === 'select' ? '先点一下，选中饮料母棋' : state.mintStep === 'produce' ? '再点一次，产出猫薄荷' : state.mintStep === 'merge' ? '把两份猫薄荷拖到一起' : '交给客人'
+  text(ctx, tip, frame.w / 2, frame.dock.y - 16, 14, PAL.white)
+}
+
 function drawGuide(model: RenderModel): void {
   const { ctx, frame, state, cfg, realNow } = model
+  if (state.phase === 'opening') return
   const forced = guideHole(frame, state, cfg)
   const guide = state.guide
   if (!forced && (!guide || guide === 'none')) return
@@ -1616,7 +2172,7 @@ function drawGuide(model: RenderModel): void {
   }
   ctx.fill('evenodd')
   ctx.restore()
-  if (hole.w > 0) paintHand(ctx, hole.x + hole.w / 2, hole.y + hole.h / 2 + Math.sin(realNow / 280) * 3)
+  if (hole.w > 0) paintHand(ctx, hole.x + hole.w / 2, hole.y + hole.h / 2 + Math.sin(realNow / 280) * 3, frame.board.cell)
   if (guide === 'smile') text(ctx, '笑脸满了', frame.w / 2, hole.y + hole.h + 18, 14, PAL.white)
 }
 
@@ -1667,7 +2223,7 @@ function drawTuner(model: RenderModel): void {
     ctx.arc(row.trackX + row.trackW * ratio, trackY, 7, 0, Math.PI * 2)
     ctx.fillStyle = PAL.ink
     ctx.fill()
-    text(ctx, spec.text(value), row.trackX + row.trackW + 8, trackY, 11, PAL.soft, 'left')
+    text(ctx, spec.text(value), frame.tunerView.x + frame.tunerView.w - 2, trackY, 11, PAL.ink, 'right')
   }
   const scroll = frame.sliders[0] ? frame.tunerView.y - frame.sliders[0].y : 0
   const statsY = frame.tunerView.y + SLIDERS.length * 40 + 8 - scroll

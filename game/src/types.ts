@@ -17,6 +17,8 @@ export interface LineDef {
   name: string
   color: string
   levels: LevelDef[]
+  /** 点一下收进账户，不进订单。 */
+  collect?: 'coin' | 'gem'
 }
 
 export interface PotionDef {
@@ -36,6 +38,9 @@ export interface ProducerDef {
   name: string
   line: string
   grant: string
+  /** normal 花体力；netSource 出渔网；plant 不花体力；consumable 点完消失。 */
+  kind?: 'normal' | 'netSource' | 'plant' | 'consumable'
+  side?: string
 }
 
 export interface ChoiceDef {
@@ -86,11 +91,52 @@ export interface BoardTheme {
   ready: string
 }
 
-export interface OpeningStepDef {
-  scene: string
-  speaker: string
-  text: string
-  hotspot: string
+export type ComicEnter =
+  | 'fade-push'
+  | 'pop'
+  | 'slide-right'
+  | 'fade-face'
+  | 'slide-left'
+  | 'pop-right'
+  | 'pop-big'
+  | 'rise'
+  | 'fade'
+  | 'push'
+  | 'slide-slant'
+  | 'slow-push'
+
+export interface ComicPanel {
+  id: string
+  x: number
+  y: number
+  w: number
+  h: number
+  /** 页内叠放，小的在下面。 */
+  z?: number
+}
+
+export interface ComicBeat {
+  kind: 'line' | 'sila' | 'hold'
+  panel: string
+  enter?: ComicEnter
+  ms?: number
+  speaker?: string
+  text?: string
+  x?: number
+  y?: number
+  w?: number
+  cue?: 'crickets' | 'hmm' | 'snore' | 'hmph' | 'tear'
+}
+
+export interface ComicPage {
+  panels: ComicPanel[]
+  beats: ComicBeat[]
+}
+
+export interface OpeningScript {
+  width: number
+  height: number
+  pages: ComicPage[]
 }
 
 export interface ChestWeight {
@@ -162,6 +208,37 @@ export interface Economy {
   boxCoin: number
   boxGem: number
   giftCooldownMs: number
+  producerRoundBase: number
+  producerRoundStep: number
+  producerRoundCooldownMs: number
+  producerOutputLevel: number
+  producerSideLevel: number
+  producerMainChance: number
+  plantOutputLevel: number
+  plantBurst: number
+  plantCooldownMs: number
+  consumableTaps: number
+  basketLowChance: number
+  netFishCount: number
+  netMaxLevel: number
+  firstProducerLevel: number
+  shopDailyEnergy: number
+  shopPackGems: number
+  shopPackEnergy: number
+  smileUnlockLevel: number
+  /** 达到这个等级，倍速按钮才出现 x4。x8 不进循环。 */
+  speed4Level: number
+  /** 客人 1024 画布缩到设计稿上的比例。0.29 时宽约 297。 */
+  guestCanvasScale: number
+  /** 阿桨每一帧播多久。整段 0→23 按这个时长循环，没有出场段。 */
+  ajiangFrameMs: number
+  /** PS 时间轴里标成 0 秒的帧，实际播放毫秒。鲍大叔眨眼用。 */
+  baoZeroFrameMs: number
+  /** 1 时订单区固定出现阿桨和鲍大叔，方便看序列帧。默认 0。 */
+  testOrderGuests: number
+  spawn1High: number
+  spawn2Mid: number
+  spawnTable: { mult: 1 | 2 | 4 | 8; cost: number; enabled: boolean; weights: { level: number; p: number }[] }[]
   purpleBoxCount: number
   bagBoxCount: number
   blueBoxPotions: number[]
@@ -180,7 +257,7 @@ export interface GameConfig {
   }
   buildings: { steps: StepDef[] }
   characters: CharacterDef[]
-  opening: OpeningStepDef[]
+  opening: OpeningScript
   stories: Record<string, { speaker: string; text: string }[]>
   economy: Economy
   board: BoardFile
@@ -276,8 +353,11 @@ export interface CellLock {
   cover: 'sand' | 'web' | 'gift'
   veil?: 'full' | 'half'
   giftUntil?: number
+  /** 变成半遮掩时立刻发放，并露出下面的物品。 */
+  prize?: { energy?: number; coins?: number; gems?: number; chest?: boolean }
   buried:
     | { kind: 'product'; line: string; level: number }
+    | { kind: 'producer'; id: string; level: number }
     | { kind: 'coin'; amount: number; line?: string; level?: number }
     | { kind: 'gem'; tier: number; line?: string; level?: number }
     | { kind: 'potion'; tier: number; line?: string; level?: number }
@@ -290,6 +370,7 @@ export interface BoardFile {
     mergeA: Pos
     mergeB: Pos
     unlock: Pos
+    mergeD: Pos
     producer: Pos
     gift: Pos
     bagSpot: Pos
@@ -313,8 +394,11 @@ export interface Order {
 }
 
 export interface LevelRewardEntry {
-  id: 'blue' | 'purple' | 'bag' | 'food' | 'toy' | 'plant' | 'boat' | 'bed' | 'bev' | 'chest' | 'gem'
+  id: string
   name: string
+  producerLevel?: number
+  energy?: number
+  gems?: number
 }
 
 export interface LevelModal {
@@ -381,6 +465,7 @@ export interface GameState {
   openingStep: number
   storyStep: number
   storySeen: boolean
+  soundMuted: boolean
   storageOpen: boolean
   bagPhase: 'place' | 'merge'
   smiles: number
@@ -391,6 +476,15 @@ export interface GameState {
   levelQueue: LevelModal[]
   smileModal: { names: string[] } | null
   orderBias: string | null
+  spawnMult: 1 | 2 | 4 | 8
+  mintStep: 'off' | 'talk' | 'wait' | 'select' | 'produce' | 'merge' | 'deliver'
+  shopOpen: boolean
+  shopClaimDate: string | null
+  shopPackClaimed: boolean
+  detailLine: string | null
+  meatGuided: boolean
+  bevGuided: boolean
+  mintGuided: boolean
   idCounter: number
   orderCounter: number
   stats: {

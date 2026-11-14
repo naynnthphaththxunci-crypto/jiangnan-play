@@ -1,0 +1,779 @@
+[
+  {
+    "row": 0,
+    "col": 0,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "producer",
+      "id": "plant",
+      "level": 1
+    },
+    "prize": {
+      "energy": 20
+    }
+  },
+  {
+    "row": 0,
+    "col": 1,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "producer",
+      "id": "net",
+      "level": 1
+    },
+    "prize": null
+  },
+  {
+    "row": 0,
+    "col": 2,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "meat",
+      "level": 5
+    },
+    "prize": null
+  },
+  {
+    "row": 0,
+    "col": 3,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "mint",
+      "level": 3
+    },
+    "prize": {
+      "energy": 10
+    }
+  },
+  {
+    "row": 0,
+    "col": 4,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "producer",
+      "id": "plant",
+      "level": 5
+    },
+    "prize": null
+  },
+  {
+    "row": 0,
+    "col": 5,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "producer",
+      "id": "boat",
+      "level": 4
+    },
+    "prize": null
+  },
+  {
+    "row": 0,
+    "col": 6,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "toy",
+      "level": 4
+    },
+    "prize": {
+      "chest": true
+    }
+  },
+  {
+    "row": 1,
+    "col": 0,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "toy",
+      "level": 1
+    },
+    "prize": null
+  },
+  {
+    "row": 1,
+    "col": 1,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "food",
+      "level": 7
+    },
+    "prize": null
+  },
+  {
+    "row": 1,
+    "col": 2,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "meat",
+      "level": 4
+    },
+    "prize": null
+  },
+  {
+    "row": 1,
+    "col": 3,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "mint",
+      "level": 3
+    },
+    "prize": null
+  },
+  {
+    "row": 1,
+    "col": 4,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "toy",
+      "level": 2
+    },
+    "prize": null
+  },
+  {
+    "row": 1,
+    "col": 5,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "bev",
+      "level": 2
+    },
+    "prize": null
+  },
+  {
+    "row": 1,
+    "col": 6,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "fish",
+      "level": 6
+    },
+    "prize": null
+  },
+  {
+    "row": 2,
+    "col": 0,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "food",
+      "level": 2
+    },
+    "prize": {
+      "coins": 1
+    }
+  },
+  {
+    "row": 2,
+    "col": 1,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "food",
+      "level": 7
+    },
+    "prize": null
+  },
+  {
+    "row": 2,
+    "col": 2,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "food",
+      "level": 6
+    },
+    "prize": null
+  },
+  {
+    "row": 2,
+    "col": 3,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "food",
+      "level": 6
+    },
+    "prize": null
+  },
+  {
+    "row": 2,
+    "col": 4,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "bev",
+      "level": 1
+    },
+    "prize": null
+  },
+  {
+    "row": 2,
+    "col": 5,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "food",
+      "level": 6
+    },
+    "prize": null
+  },
+  {
+    "row": 2,
+    "col": 6,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "toy",
+      "level": 3
+    },
+    "prize": {
+      "coins": 15
+    }
+  },
+  {
+    "row": 3,
+    "col": 0,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "food",
+      "level": 4
+    },
+    "prize": null
+  },
+  {
+    "row": 3,
+    "col": 1,
+    "open": true,
+    "half": false,
+    "item": {
+      "kind": "producer",
+      "id": "food",
+      "level": 1
+    }
+  },
+  {
+    "row": 3,
+    "col": 2,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "food",
+      "level": 2
+    },
+    "prize": null
+  },
+  {
+    "row": 3,
+    "col": 3,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "meat",
+      "level": 2
+    },
+    "prize": null
+  },
+  {
+    "row": 3,
+    "col": 4,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "food",
+      "level": 2
+    },
+    "prize": null
+  },
+  {
+    "row": 3,
+    "col": 5,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "bev",
+      "level": 5
+    },
+    "prize": null
+  },
+  {
+    "row": 3,
+    "col": 6,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "producer",
+      "id": "boat",
+      "level": 2
+    },
+    "prize": {
+      "energy": 30
+    }
+  },
+  {
+    "row": 4,
+    "col": 0,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "food",
+      "level": 3
+    },
+    "prize": null
+  },
+  {
+    "row": 4,
+    "col": 1,
+    "open": true,
+    "half": false,
+    "item": {
+      "kind": "producer",
+      "id": "food",
+      "level": 1
+    }
+  },
+  {
+    "row": 4,
+    "col": 2,
+    "open": false,
+    "half": true,
+    "item": {
+      "kind": "producer",
+      "id": "food",
+      "level": 2
+    }
+  },
+  {
+    "row": 4,
+    "col": 3,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "producer",
+      "id": "food",
+      "level": 3
+    },
+    "prize": null
+  },
+  {
+    "row": 4,
+    "col": 4,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "food",
+      "level": 5
+    },
+    "prize": null
+  },
+  {
+    "row": 4,
+    "col": 5,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "producer",
+      "id": "bev",
+      "level": 3
+    },
+    "prize": null
+  },
+  {
+    "row": 4,
+    "col": 6,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "producer",
+      "id": "boat",
+      "level": 1
+    },
+    "prize": null
+  },
+  {
+    "row": 5,
+    "col": 0,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "producer",
+      "id": "bev",
+      "level": 1
+    },
+    "prize": null
+  },
+  {
+    "row": 5,
+    "col": 1,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "meat",
+      "level": 3
+    },
+    "prize": null
+  },
+  {
+    "row": 5,
+    "col": 2,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "meat",
+      "level": 1
+    },
+    "prize": null
+  },
+  {
+    "row": 5,
+    "col": 3,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "food",
+      "level": 5
+    },
+    "prize": null
+  },
+  {
+    "row": 5,
+    "col": 4,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "food",
+      "level": 3
+    },
+    "prize": null
+  },
+  {
+    "row": 5,
+    "col": 5,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "meat",
+      "level": 3
+    },
+    "prize": null
+  },
+  {
+    "row": 5,
+    "col": 6,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "producer",
+      "id": "net",
+      "level": 3
+    },
+    "prize": null
+  },
+  {
+    "row": 6,
+    "col": 0,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "wand",
+      "level": 2
+    },
+    "prize": null
+  },
+  {
+    "row": 6,
+    "col": 1,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "producer",
+      "id": "toy",
+      "level": 1
+    },
+    "prize": null
+  },
+  {
+    "row": 6,
+    "col": 2,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "producer",
+      "id": "bev",
+      "level": 2
+    },
+    "prize": null
+  },
+  {
+    "row": 6,
+    "col": 3,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "wand",
+      "level": 1
+    },
+    "prize": null
+  },
+  {
+    "row": 6,
+    "col": 4,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "producer",
+      "id": "plant",
+      "level": 1
+    },
+    "prize": null
+  },
+  {
+    "row": 6,
+    "col": 5,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "producer",
+      "id": "toy",
+      "level": 2
+    },
+    "prize": null
+  },
+  {
+    "row": 6,
+    "col": 6,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "mint",
+      "level": 2
+    },
+    "prize": {
+      "gems": 7
+    }
+  },
+  {
+    "row": 7,
+    "col": 0,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "wand",
+      "level": 3
+    },
+    "prize": {
+      "energy": 50
+    }
+  },
+  {
+    "row": 7,
+    "col": 1,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "plant",
+      "level": 2
+    },
+    "prize": null
+  },
+  {
+    "row": 7,
+    "col": 2,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "plant",
+      "level": 4
+    },
+    "prize": null
+  },
+  {
+    "row": 7,
+    "col": 3,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "toy",
+      "level": 1
+    },
+    "prize": null
+  },
+  {
+    "row": 7,
+    "col": 4,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "bev",
+      "level": 4
+    },
+    "prize": {
+      "energy": 100
+    }
+  },
+  {
+    "row": 7,
+    "col": 5,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "bev",
+      "level": 3
+    },
+    "prize": null
+  },
+  {
+    "row": 7,
+    "col": 6,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "fish",
+      "level": 2
+    },
+    "prize": null
+  },
+  {
+    "row": 8,
+    "col": 0,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "toy",
+      "level": 5
+    },
+    "prize": {
+      "chest": true
+    }
+  },
+  {
+    "row": 8,
+    "col": 1,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "plant",
+      "level": 1
+    },
+    "prize": null
+  },
+  {
+    "row": 8,
+    "col": 2,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "mint",
+      "level": 5
+    },
+    "prize": null
+  },
+  {
+    "row": 8,
+    "col": 3,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "fish",
+      "level": 3
+    },
+    "prize": {
+      "chest": true
+    }
+  },
+  {
+    "row": 8,
+    "col": 4,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "fish",
+      "level": 4
+    },
+    "prize": null
+  },
+  {
+    "row": 8,
+    "col": 5,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "product",
+      "line": "bev",
+      "level": 6
+    },
+    "prize": null
+  },
+  {
+    "row": 8,
+    "col": 6,
+    "open": false,
+    "half": false,
+    "item": {
+      "kind": "producer",
+      "id": "bed",
+      "level": 1
+    },
+    "prize": {
+      "chest": true
+    }
+  }
+]

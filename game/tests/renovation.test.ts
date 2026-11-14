@@ -27,15 +27,6 @@ function boot() {
   return { cfg, state, rng }
 }
 
-function boxes(state: GameState): number {
-  const count = (item: { kind: string } | null) => (item?.kind === 'rewardBox' ? 1 : 0)
-  return (
-    state.board.flat().reduce((sum, item) => sum + count(item), 0) +
-    state.pending.reduce((sum, item) => sum + count(item), 0) +
-    state.rewards.reduce((sum, item) => sum + count(item), 0)
-  )
-}
-
 function finish(state: GameState, cfg: ReturnType<typeof defaultConfig>, n: number) {
   const rng = mulberry32(3)
   state.coins = 100_000
@@ -53,9 +44,22 @@ function finish(state: GameState, cfg: ReturnType<typeof defaultConfig>, n: numb
 describe('修缮', () => {
   it('配置表是六条链、十二件小活，女掌柜有当前衣装', () => {
     const { cfg } = boot()
-    expect(cfg.items.lines).toHaveLength(6)
-    expect(cfg.items.lines.find((line) => line.id === 'food')?.levels).toHaveLength(11)
-    expect(cfg.items.lines.find((line) => line.id === 'plant')?.levels).toHaveLength(10)
+    expect(cfg.items.lines.map((line) => line.id)).toEqual([
+      'food',
+      'meat',
+      'bev',
+      'mint',
+      'toy',
+      'wand',
+      'bed',
+      'fish',
+      'plant',
+      'coin',
+      'gemline',
+    ])
+    expect(cfg.items.lines.find((line) => line.id === 'food')?.levels).toHaveLength(10)
+    expect(cfg.items.lines.find((line) => line.id === 'bed')?.levels).toHaveLength(10)
+    expect(cfg.items.lines.find((line) => line.id === 'plant')?.levels).toHaveLength(7)
     expect(allTasks(cfg)).toHaveLength(12)
     expect(cfg.buildings.steps.map((step) => step.tasks.length)).toEqual([4, 4, 4])
     expect(hostessCostume(cfg)).toBe('布衣')
@@ -94,6 +98,8 @@ describe('修缮', () => {
     const { state, cfg, rng } = boot()
     state.phase = 'opening'
     state.locks = []
+    const food = state.board.flat().find((item) => item?.kind === 'producer' && item.producerId === 'food')
+    if (food?.kind === 'producer') food.level = 4
     state.board[0][0] = makeProduct(state, 'food', 3)
     const sold = completeOrder(state, 'tutorial', cfg, rng, 10)
     expect(sold.ok).toBe(true)
@@ -116,19 +122,17 @@ describe('修缮', () => {
     finish(state, cfg, 2)
     expect(state.level).toBe(2)
     expect(state.xp).toBe(30)
-    expect(boxes(state)).toBe(3)
-    const food = findProducer(state, 'food')
-    expect(food?.item.kind === 'producer' && food.item.level).toBe(6)
+    const owned = [...state.board.flat(), ...state.rewards, ...state.pending]
+    expect(owned.some((item) => item?.kind === 'producer' && item.producerId === 'food' && item.level === 4)).toBe(true)
+    expect(owned.some((item) => item?.kind === 'chest')).toBe(true)
     expect(findProducer(state, 'bev')).toBeNull()
-    expect(findProducer(state, 'toy')).toBeNull()
 
     finish(state, cfg, 2)
     expect(state.tasksDone).toHaveLength(4)
     expect(state.level).toBe(3)
-    expect(findProducer(state, 'tea')).toBeNull()
     expect(
-      findProducer(state, 'toy') ||
-        state.rewards.some((item) => item.kind === 'producer' && item.producerId === 'toy'),
+      findProducer(state, 'bev') ||
+        state.rewards.some((item) => item.kind === 'producer' && item.producerId === 'bev'),
     ).toBeTruthy()
 
     const decor = nextTask(state, cfg)
@@ -137,8 +141,8 @@ describe('修缮', () => {
     expect(state.level).toBe(3)
     expect(state.xp).toBe(75)
     expect(
-      findProducer(state, 'toy') ||
-        state.rewards.some((item) => item.kind === 'producer' && item.producerId === 'toy'),
+      findProducer(state, 'bev') ||
+        state.rewards.some((item) => item.kind === 'producer' && item.producerId === 'bev'),
     ).toBeTruthy()
 
     const choiceTask = nextTask(state, cfg)
@@ -171,7 +175,6 @@ describe('修缮', () => {
     expect(state.tasksDone).toHaveLength(12)
     expect(state.level).toBe(8)
     expect(state.xp).toBe(180)
-    expect(boxes(state)).toBe(6)
     expect(
       findProducer(state, 'bev') || state.rewards.some((item) => item.kind === 'producer' && item.producerId === 'bev'),
     ).toBeTruthy()
@@ -184,9 +187,9 @@ describe('修缮', () => {
     state.coins = 8
     buildTask(state, 't1', null, cfg, rng, 1)
     expect(state.level).toBe(2)
-    expect(state.levelModal?.rewards.map((reward) => reward.id)).toEqual(['blue', 'purple', 'bag'])
+    expect(state.levelModal?.rewards.map((reward) => reward.id)).toEqual(['chest', 'food', 'pack'])
     claimLevelModal(state, cfg, rng)
-    expect(boxes(state)).toBe(3)
+    expect(state.gems).toBe(100)
     const raw = serialize(state, cfg)
     const next = defaultConfig()
     next.economy.energyMax = 50

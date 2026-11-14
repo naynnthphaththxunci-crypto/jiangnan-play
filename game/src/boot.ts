@@ -2,6 +2,9 @@ import loadingBg from './assets/ui/loading_bg.jpg'
 import { itemImageElements } from './itemArt'
 import { orderTrayImage } from './orderTray'
 import { guestImageElements } from './portraits'
+import { comicImageElements, loadComicFont } from './comic'
+import { hechengImageElements } from './hechengArt'
+import { castImageElements } from './cast'
 
 function waitImage(img: HTMLImageElement): Promise<void> {
   if (img.complete) return Promise.resolve()
@@ -51,17 +54,18 @@ export async function runBoot(canvas: HTMLCanvasElement): Promise<() => void> {
   paint(0)
 
   const tray = orderTrayImage()
-  const images = [...itemImageElements(), ...guestImageElements(), ...(tray ? [tray] : []), loadUrl(loadingBg)]
-  const total = Math.max(1, images.length)
+  const images = [...itemImageElements(), ...guestImageElements(), ...castImageElements(), ...comicImageElements(), ...hechengImageElements(), ...(tray ? [tray] : []), loadUrl(loadingBg)]
+  const fontReady = loadComicFont()
+  const total = Math.max(1, images.length + 1)
   let done = 0
-  await Promise.all(
-    images.map((img) =>
-      waitImage(img).then(() => {
-        done += 1
-        paint(done / total)
-      }),
-    ),
-  )
+  const tick = () => {
+    done += 1
+    paint(done / total)
+  }
+  await Promise.all([
+    ...images.map((img) => waitImage(img).then(tick)),
+    fontReady.then(tick),
+  ])
   paint(1)
   await new Promise((resolve) => window.setTimeout(resolve, 140))
 

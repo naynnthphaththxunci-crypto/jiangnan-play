@@ -61,6 +61,14 @@
     "fisherman": {
       "normal": "肚皮早咕咕叫啦。",
       "big": "大碗盛满些，吃饱了还要收网。"
+    },
+    "siamese": {
+      "normal": "这个，我要。",
+      "big": "都摆上来吧。"
+    },
+    "bossDaughter": {
+      "normal": "我要这个。",
+      "big": "今天我请。"
     }
   }
 }

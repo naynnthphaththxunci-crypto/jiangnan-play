@@ -34,6 +34,8 @@ describe('订单', () => {
     const { state, cfg, rng } = boot()
     state.locks = []
     state.phase = 'play'
+    const food = state.board.flat().find((item) => item?.kind === 'producer' && item.producerId === 'food')
+    if (food?.kind === 'producer') food.level = 4
     state.orders = [
       {
         id: 'mix',
@@ -66,6 +68,8 @@ describe('订单', () => {
     const { state, cfg, rng } = boot()
     state.phase = 'play'
     state.hasProducer.food = true
+    const food = state.board.flat().find((item) => item?.kind === 'producer' && item.producerId === 'food')
+    if (food?.kind === 'producer') food.level = 4
     state.orders = [
       {
         id: 'big',
@@ -103,6 +107,8 @@ describe('订单', () => {
     state.rewards = []
     state.pending = state.pending.filter((item) => !(item.kind === 'producer' && item.producerId !== 'food'))
     state.unlocked.food = 0
+    const starter = state.board.flat().find((item) => item?.kind === 'producer' && item.producerId === 'food')
+    if (starter?.kind === 'producer') starter.level = 4
     for (let i = 0; i < 24; i++) {
       const order = generateOrder(state, cfg, mulberry32(i + 3))
       if (!order) throw new Error('order')
@@ -119,6 +125,8 @@ describe('订单', () => {
     }
     state.level = 4
     state.unlocked.food = 4
+    const food = state.board.flat().find((item) => item?.kind === 'producer' && item.producerId === 'food')
+    if (food?.kind === 'producer') food.level = 4
     cfg.orders.twoSlotChance = 0
     cfg.orders.bigChance = 0
     const higher = generateOrder(state, cfg, () => 0.99)
@@ -130,15 +138,17 @@ describe('订单', () => {
     expect(big?.slots[0].level).toBe(6)
   })
 
-  it('六位客人轮流下单，同时在场不重复', () => {
+  it('八位客人轮流下单，同时在场不重复', () => {
     const { state, cfg } = boot()
     state.phase = 'play'
     state.level = 5
+    const starter = state.board.flat().find((item) => item?.kind === 'producer' && item.producerId === 'food')
+    if (starter?.kind === 'producer') starter.level = 4
     cfg.economy.chestOrderChance = 0
     state.orders = []
     const seen = new Set<string>()
-    const roster = ['boatman', 'embroider', 'fisherman', 'squire', 'scholar', 'teaGuest']
-    for (let turn = 0; turn < 8; turn++) {
+    const roster = ['boatman', 'embroider', 'fisherman', 'squire', 'scholar', 'teaGuest', 'siamese', 'bossDaughter']
+    for (let turn = 0; turn < roster.length; turn++) {
       const ids = state.orders.map((order) => order.customerId)
       expect(new Set(ids).size, ids.join(',')).toBe(ids.length)
       for (const id of ids) {
@@ -150,6 +160,7 @@ describe('订单', () => {
       if (!order) throw new Error('order')
       state.orders.push(order)
     }
+    for (const order of state.orders) seen.add(order.customerId)
     for (const id of roster) expect(seen.has(id), id).toBe(true)
   })
 
@@ -162,21 +173,16 @@ describe('订单', () => {
     expect(state.board.some((row) => row.some((item) => item?.kind === 'producer'))).toBe(true)
   })
 
-  it('开局单在第四步完成时给出购物袋，不补满三张', () => {
+  it('开局教学没结束前交单不补满三张', () => {
     const { state, cfg, rng } = boot()
     state.phase = 'opening'
-    const deliver = cfg.copy.tutorial.findIndex((step) => step.id === 'deliver')
-    state.openingStep = deliver
-    state.board[4][4] = makeProduct(state, 'food', 3)
+    state.openingStep = 0
+    state.locks = state.locks.filter((lock) => !(lock.row === 0 && lock.col === 0))
+    state.board[0][0] = makeProduct(state, 'food', 3)
     const result = completeOrder(state, 'tutorial', cfg, rng, 20)
     expect(result.ok).toBe(true)
     expect(state.coins).toBe(8)
-    expect(state.smiles).toBe(1)
-    expect(state.energy).toBe(100)
-    expect(state.openingStep).toBe(deliver + 1)
     expect(state.orders).toHaveLength(0)
-    const onBoard = state.board.some((row) => row.some((item) => item?.kind === 'product' && item.tag === 'bag'))
-    const inPending = state.pending.some((item) => item.kind === 'product' && item.tag === 'bag')
-    expect(onBoard || inPending).toBe(true)
+    expect(state.phase).toBe('opening')
   })
 })

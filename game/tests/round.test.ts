@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { comicBed, comicCue, comicCursor, comicPrompt, silaVisible, wrapComicText } from '../src/comic'
 import { defaultConfig } from '../src/config'
 import { layout, type LayoutInput } from '../src/layout'
 import {
@@ -9,6 +10,7 @@ import {
   createGame,
   currentTutorial,
   guardedDrop,
+  hydrate,
   lineChain,
   makeChest,
   makePotion,
@@ -22,6 +24,7 @@ import {
   orderTakeCells,
   pickHint,
   sellItem,
+  serialize,
   skipStory,
   storyLength,
   tutorialAllowsInspect,
@@ -69,11 +72,49 @@ describe('第三轮教学、订单和布局', () => {
     const state = createGame(1_700_000_000_000, cfg)
     expect(state.phase).toBe('story')
     expect(state.storyStep).toBe(0)
-    expect(cfg.opening[storyLength(cfg) - 1]?.scene.includes('小铺')).toBe(true)
+    expect(cfg.opening.pages).toHaveLength(4)
+    expect(storyLength(cfg)).toBe(15)
+    expect(comicCursor(cfg.opening, 0)).toEqual({ page: 0, index: 0 })
+    expect(comicCursor(cfg.opening, 4)).toEqual({ page: 1, index: 0 })
+    expect(silaVisible(cfg.opening, 5)).toBe(false)
+    expect(silaVisible(cfg.opening, 6)).toBe(true)
+    expect(comicPrompt(cfg.opening, 0).beat).toMatchObject({ text: '深夜，赵府书房的灯还亮着。' })
+    expect(comicPrompt(cfg.opening, 0).beat?.speaker).toBeUndefined()
+    expect(comicPrompt(cfg.opening, 5).prompt).toBe('hold')
+    expect(comicPrompt(cfg.opening, 6).prompt).toBe('sila')
+    expect(comicPrompt(cfg.opening, 14).prompt).toBe('start')
+    expect(comicPrompt(cfg.opening, 8).beat).toMatchObject({ speaker: '柳姑娘', text: '文轩哥哥……姐姐好凶。' })
+    expect(comicPrompt(cfg.opening, 3).beat?.speaker).toBe('温如月')
+    expect(comicCue(cfg.opening, 0)).toBe('crickets')
+    expect(comicCue(cfg.opening, 1)).toBe('hmm')
+    expect(comicCue(cfg.opening, 2)).toBe('snore')
+    expect(comicCue(cfg.opening, 3)).toBe('hmph')
+    expect(comicCue(cfg.opening, 6)).toBe('tear')
+    expect(comicCue(cfg.opening, 5)).toBeNull()
+    expect(comicBed(cfg.opening, 0)).toBeNull()
+    expect(comicBed(cfg.opening, 4)).toBe('tense')
+    expect(comicBed(cfg.opening, 8)).toBe('tense')
+    expect(comicBed(cfg.opening, 11)).toBe('gentle')
+    const width = (value: string) => [...value].length * 16
+    expect(wrapComicText('正好，休书我早写好了。丫头你也一并带走。', 240, width)).toEqual([
+      '正好，休书我早写好了。',
+      '丫头你也一并带走。',
+    ])
+    expect(wrapComicText('要走，也是我写和离书。嫁妆单子在我手里，一文不少。', 240, width)).toEqual([
+      '要走，也是我写和离书。',
+      '嫁妆单子在我手里，一文不少。',
+    ])
+    const tight = wrapComicText('嫁妆单子在我手里，一文不少。', 180, width)
+    expect(tight.at(-1)!.replace(/[。！？，、；：]/g, '').length).toBeGreaterThan(1)
+    const quiet = createGame(1, cfg)
+    quiet.soundMuted = true
+    const kept = hydrate(serialize(quiet, cfg), cfg)
+    expect(kept?.soundMuted).toBe(true)
+    expect(comicCursor(cfg.opening, 11)?.page).toBe(3)
     for (let i = 0; i < storyLength(cfg); i++) advanceStory(state, cfg)
     expect(state.phase).toBe('opening')
     expect(state.storySeen).toBe(true)
-    expect(currentTutorial(cfg, state)?.id).toBe('enter')
+    expect(currentTutorial(cfg, state)?.id).toBe('merge')
     const skipped = createGame(1_700_000_000_000, cfg)
     skipStory(skipped)
     expect(skipped.phase).toBe('opening')
@@ -82,27 +123,23 @@ describe('第三轮教学、订单和布局', () => {
 
   it('对话步点任意处能过，操作步点错不过也不给说明', () => {
     const { state, cfg } = boot()
-    const talk = cfg.copy.tutorial.findIndex((step) => step.id === 'giftTalk')
-    state.openingStep = talk
-    expect(advanceDialogue(state, cfg)).toBe(true)
-    expect(cfg.copy.tutorial[state.openingStep]?.id).toBe('giftTap')
     state.openingStep = cfg.copy.tutorial.findIndex((step) => step.id === 'merge')
+    expect(advanceDialogue(state, cfg)).toBe(false)
     expect(advanceDialogue(state, cfg)).toBe(false)
     expect(tutorialAllowsInspect(state)).toBe(false)
     const step = state.openingStep
-    const wrong = guardedDrop(state, { row: 3, col: 2 }, { row: 3, col: 1 }, cfg)
+    const wrong = guardedDrop(state, { row: 3, col: 1 }, { row: 0, col: 0 }, cfg)
     expect(wrong.ok).toBe(false)
     expect(wrong.events).toEqual([])
     expect(state.openingStep).toBe(step)
-    expect(state.board[3]?.[2]).toBeTruthy()
+    expect(state.board[3]?.[1]?.kind).toBe('producer')
   })
 
   it('玩家能看到的文字里没有面包', () => {
     const banned = '面' + '包'
     const cfg = defaultConfig()
     expect(JSON.stringify(cfg).includes(banned)).toBe(false)
-    const deliver = cfg.copy.tutorial.find((step) => step.id === 'deliver')
-    expect(deliver?.text.replace('{daughter}', cfg.copy.daughterName)).toBe('小鱼干好了！端给小桃去。')
+    expect(cfg.copy.tutorial[0]?.text).toContain('猫粮母棋')
   })
 
   it('点订单空白处不交单，只有完成按钮能交', () => {
@@ -111,6 +148,7 @@ describe('第三轮教学、订单和布局', () => {
     if (!order) throw new Error('missing order')
     const button = { x: 10, y: 80, w: 40, h: 24 }
     expect(orderCardAction(state, order, 12, 20, button)).toBe('none')
+    state.locks = state.locks.filter((lock) => !(lock.row === 4 && lock.col === 4))
     state.board[4][4] = makeProduct(state, 'food', 3)
     expect(orderSatisfied(state, order)).toBe(true)
     expect(orderCardAction(state, order, 12, 20, button)).toBe('none')
@@ -123,7 +161,8 @@ describe('第三轮教学、订单和布局', () => {
     expect(orderStripAction({ moved: false, dx: 0, onComplete: false, onIcon: true })).toBe('icon')
     expect(orderStripAction({ moved: false, dx: 0, onComplete: false, onIcon: false })).toBe('none')
     const wide = frame({ orderCount: 4, orderSlots: [1, 1, 1, 1] })
-    expect(wide.orders[0]?.x).toBeGreaterThan(40)
+    expect(wide.orders[0]!.x).toBeGreaterThanOrEqual(0)
+    expect(wide.orders[0]!.x).toBeLessThan(wide.w / 3)
     expect(wide.orderMaxScroll).toBeGreaterThan(0)
     expect(wide.orderIcons[0]?.rect.w).toBeGreaterThan(10)
   })
@@ -205,11 +244,12 @@ describe('第三轮教学、订单和布局', () => {
     state.board[0][1] = null
     state.board[3][2] = null
     state.board[3][3] = null
-    state.board.forEach((row, r) => {
+    state.board.forEach((row) => {
       row.forEach((item, c) => {
-        if (item?.kind === 'producer' && !(r === 4 && c === 3)) state.board[r][c] = null
+        if (item?.kind === 'producer') row[c] = null
       })
     })
+    state.board[3][1] = makeProducer(state, 'food', cfg, 4)
     expect(pickHint(state, 0)?.type).toBe('produce')
     void cfg
   })
@@ -243,14 +283,15 @@ describe('第三轮教学、订单和布局', () => {
 
   it('已见过的等级显示名字，没见过的显示问号', () => {
     const { state, cfg } = boot()
+    state.seen.food = [1]
     const chain = lineChain(cfg, state, 'food', 3)
-    expect(chain.find((slot) => slot.level === 1)?.label).toBe('一撮猫草麦胚')
+    expect(chain.find((slot) => slot.level === 1)?.label).toBe('饱满麦粒')
     expect(chain.find((slot) => slot.level === 2)?.label).toBe('?')
     expect(chain.find((slot) => slot.level === 3)?.current).toBe(true)
     expect(chain.find((slot) => slot.level === 3)?.label).toBe('?')
     state.seen.food = [1, 3]
     const seen = lineChain(cfg, state, 'food', 3)
-    expect(seen.find((slot) => slot.level === 3)?.label).toBe('瓦碟小鱼干')
+    expect(seen.find((slot) => slot.level === 3)?.label).toBe('混合粗粮团')
     expect(seen.find((slot) => slot.level === 4)?.label).toBe('?')
   })
 })

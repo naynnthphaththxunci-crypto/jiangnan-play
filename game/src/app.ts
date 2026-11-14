@@ -1,4 +1,6 @@
 import { tutorialHand } from './coach'
+import { comicCursor, silaJustShown } from './comic'
+import { createComicAudio } from './comicAudio'
 import { createSfx, type Sfx } from './audio'
 import { defaultConfig, resetEconomy } from './config'
 import { partAt, render } from './draw'
@@ -30,17 +32,25 @@ import {
   advanceBuildStory,
   advanceGuide,
   applyFreeRefill,
+  applyTestGuests,
   arrangeOrders,
   buyEnergyWithGems,
   collectLock,
   confirmDecor,
   atStep,
+  guideIsLocking,
+  guideLockKey,
   guideSpot,
   beatVisit,
   buildTask,
   canClaimDaily,
   canMerge,
   lineCap,
+  producerCap,
+  activeOverlay,
+  dismissDetail,
+  dismissNotice,
+  pumpMint,
   canSell,
   claimDailyChest,
   claimLevelModal,
@@ -48,6 +58,7 @@ import {
   completeOrder,
   createGame,
   currentTutorial,
+  dismissStuckGuide,
   enterKitchen,
   finishTutorial,
   guardedDrop,
@@ -85,6 +96,11 @@ import {
   takeReward,
   tapConsumable,
   tapProducer,
+  collectBoardProduct,
+  dropItem,
+  cycleSpawnMult,
+  claimShopDaily,
+  claimShopPack,
   tutorialAllowsInspect,
   tutorialDropOk,
   undoSale,
@@ -124,6 +140,10 @@ export function startGame(platform: Platform): void {
 
   const fx = createFx()
   const sfx = createSfx(() => platform.audio())
+  const comicAudio = createComicAudio(() => platform.audio() as AudioContext | null)
+  comicAudio.preload()
+  comicAudio.setMuted(state.soundMuted)
+  sfx.setMuted(state.soundMuted)
   let view: 'board' | 'house' = 'board'
   let modal: 'energy' | null = null
   let tuner = false
@@ -140,7 +160,11 @@ export function startGame(platform: Platform): void {
   let selected: { row: number; col: number } | null = null
   let orderScroll = 0
   let chain: { line: string; level: number; source: 'order' | 'producer' } | null = null
+  let orderFocus: { line: string; level: number } | null = null
   let lastInput = platform.now()
+  let guideKey = ''
+  let guideSince = platform.now()
+  let guideMisses = 0
   const pointers = new Map<number, Pointer>()
   let pinch: { dist: number; scale: number } | null = null
   let frame = makeFrame()
@@ -218,6 +242,7 @@ export function startGame(platform: Platform): void {
       orderCount: state.orders.length,
       orderSlots: state.orders.map((order) => order.slots.length),
       orderScroll,
+      guestCanvasScale: cfg.economy.guestCanvasScale,
       showHint: false,
       showSheet: false,
       showSkip: state.phase === 'story' || state.buildStory != null,
@@ -234,6 +259,9 @@ export function startGame(platform: Platform): void {
       help: state.showHelp && !tuner && modal == null,
       showEnter: atStep(state, cfg, 'enter'),
       showInfo: false,
+      showShop: state.level >= 3,
+      shop: activeOverlay(state) === 'shop',
+      detail: activeOverlay(state) === 'detail',
     })
   }
 
@@ -397,7 +425,7 @@ export function startGame(platform: Platform): void {
       return
     }
     const other = state.board[cell.row][cell.col]
-    const cap = item.kind === 'product' || item.kind === 'producer' ? lineCap(cfg, item.line) : 11
+    const cap = item.kind === 'producer' ? producerCap(cfg, item.producerId) : item.kind === 'product' ? lineCap(cfg, item.line) : 11
     fx.hover = { kind: 'cell', row: cell.row, col: cell.col, merge: !!other && canMerge(item, other, cap) }
   }
 
@@ -519,6 +547,7 @@ export function startGame(platform: Platform): void {
       sfx.ui()
       if (state.phase === 'story') {
         skipStory(state)
+        comicAudio.sync(cfg.opening, state.storyStep, false)
         mark()
         return
       }
@@ -530,7 +559,7 @@ export function startGame(platform: Platform): void {
       return
     }
     if (hit.kind === 'story') {
-      advanceStory(state, cfg)
+      stepStory()
       sfx.ui()
       mark()
       return
@@ -572,6 +601,43 @@ export function startGame(platform: Platform): void {
     }
     if (hit.kind === 'modalClose') {
       modal = null
+      return
+    }
+    if (hit.kind === 'mult') {
+      const next = cycleSpawnMult(state, cfg)
+      toast(`产出 ${next} 倍`)
+      mark()
+      return
+    }
+    if (hit.kind === 'refill') {
+      modal = 'energy'
+      mark()
+      return
+    }
+    if (hit.kind === 'shop') {
+      state.shopOpen = true
+      mark()
+      return
+    }
+    if (hit.kind === 'shopClose') {
+      state.shopOpen = false
+      if (state.guide === 'smile') state.guide = 'none'
+      mark()
+      return
+    }
+    if (hit.kind === 'shopDaily') {
+      present(claimShopDaily(state, cfg, platform.now()))
+      mark()
+      return
+    }
+    if (hit.kind === 'shopPack') {
+      present(claimShopPack(state, cfg))
+      mark()
+      return
+    }
+    if (hit.kind === 'detailClose') {
+      dismissDetail(state)
+      mark()
       return
     }
     if (hit.kind === 'tune' || hit.kind === 'tunerClose') {
@@ -666,6 +732,7 @@ export function startGame(platform: Platform): void {
     if (hit.kind === 'pending') return
     if (hit.kind === 'order' || hit.kind === 'orderStrip' || hit.kind === 'orderIcon') return
     if (hit.kind === 'cell') {
+      orderFocus = null
       clearSale(state)
       const lock = state.locks.find((entry) => entry.row === hit.row && entry.col === hit.col)
       if (lock?.cover === 'gift' && !state.board[hit.row][hit.col]) {
@@ -705,9 +772,18 @@ export function startGame(platform: Platform): void {
       }
       state.armed = null
       state.chainPop = null
+      const already = selected?.row === hit.row && selected?.col === hit.col
+      selected = { row: hit.row, col: hit.col }
+      if (!already) {
+        if (state.mintStep === 'select' && item.kind === 'producer' && item.producerId === 'bev') state.mintStep = 'produce'
+        return
+      }
       if (item.kind === 'producer') {
-        selected = { row: hit.row, col: hit.col }
         present(tapProducer(state, hit, cfg, rng, now))
+      } else if (item.kind === 'product' && cfg.items.lines.some((line) => line.id === item.line && line.collect)) {
+        const result = collectBoardProduct(state, hit, cfg)
+        if (result.ok) selected = null
+        present(result)
       } else if (item.kind === 'rewardBox') present(openRewardBox(state, hit, cfg, rng))
       else if (item.kind === 'chest') {
         const seen = new Set(occupied(state).map((cell) => cell.item.uid))
@@ -736,52 +812,73 @@ export function startGame(platform: Platform): void {
     cam.y = worldY - (sy - cy) / cam.scale
   }
 
+  function openingMergeSticky(): boolean {
+    if (state.phase !== 'opening') return false
+    const id = currentTutorial(cfg, state)?.id
+    return id === 'merge' || id === 'mergeC' || id === 'mergeD'
+  }
+
+  function noteGuide(now: number): void {
+    const key = guideLockKey(state)
+    if (key === guideKey) return
+    guideKey = key
+    guideSince = now
+    guideMisses = 0
+  }
+
   function tutorialBlocks(hit: Hit): boolean {
+    if (activeOverlay(state) === 'mint' && state.mintStep && state.mintStep !== 'off' && state.mintStep !== 'talk' && state.mintStep !== 'wait') {
+      if (state.mintStep === 'select' || state.mintStep === 'produce') {
+        if (hit.kind !== 'cell') return true
+        const item = state.board[hit.row]?.[hit.col]
+        return !(item?.kind === 'producer' && item.producerId === 'bev' && item.level >= 5)
+      }
+      if (state.mintStep === 'merge') {
+        if (hit.kind !== 'cell') return true
+        const item = state.board[hit.row]?.[hit.col]
+        return !(item?.kind === 'product' && item.line === 'mint')
+      }
+      if (state.mintStep === 'deliver') return hit.kind !== 'complete'
+    }
     if (state.phase !== 'opening') return false
     if (hit.kind === 'skip') return false
     const step = currentTutorial(cfg, state)
     if (!step || step.type === '对话') return false
-    if (step.id === 'enter') return hit.kind !== 'enter'
+    const onCell = (row: number, col: number) => hit.kind === 'cell' && hit.row === row && hit.col === col
     if (step.id === 'merge') {
-      return !(hit.kind === 'cell' && ((hit.row === 3 && hit.col === 2) || (hit.row === 3 && hit.col === 3)))
+      const a = cfg.board.roles.mergeA
+      const b = cfg.board.roles.mergeB
+      return !(onCell(a.row, a.col) || onCell(b.row, b.col))
     }
-    if (step.id === 'unlock') {
+    if (step.id === 'mergeC' || step.id === 'unlock') {
       if (hit.kind !== 'cell') return true
       const item = state.board[hit.row]?.[hit.col]
-      const ready = item?.kind === 'product' && item.line === 'food' && item.level === 2
-      return !(ready || (hit.row === cfg.board.roles.unlock.row && hit.col === cfg.board.roles.unlock.col))
+      const target = cfg.board.roles.unlock
+      return !(item?.kind === 'producer' || onCell(target.row, target.col))
     }
-    if (step.id === 'producerL2' || step.id === 'producerL3') {
+    if (step.id === 'mergeD') {
       if (hit.kind !== 'cell') return true
       const item = state.board[hit.row]?.[hit.col]
-      if (item?.kind !== 'producer' || item.producerId !== 'food') return true
-      if (step.id === 'producerL2') return item.level !== 1
-      return item.level !== 1 && item.level !== 2
+      const target = cfg.board.roles.mergeD
+      return !(item?.kind === 'producer' || (target && onCell(target.row, target.col)))
     }
-    if (step.id === 'produce') {
-      if (hit.kind !== 'cell') return true
-      const item = state.board[hit.row]?.[hit.col]
-      return !(item?.kind === 'producer' && item.level >= cfg.economy.producerSpawnLevel)
-    }
-    if (step.id === 'deliver') return hit.kind !== 'complete'
-    if (step.id === 'stashIn') {
-      if (hit.kind === 'pending') return false
-      if (hit.kind !== 'cell') return true
-      const item = state.board[hit.row]?.[hit.col]
-      return !(item && !(item.kind === 'product' && item.tag === 'bag'))
-    }
-    if (step.id === 'stashOut') return hit.kind !== 'pending'
-    if (step.id === 'bagMerge') {
-      if (hit.kind !== 'cell') return true
-      const item = state.board[hit.row]?.[hit.col]
-      return !(item?.kind === 'product' && item.tag === 'bag')
-    }
-    if (step.id === 'giftTap') {
-      return !(hit.kind === 'cell' && hit.row === cfg.board.roles.gift.row && hit.col === cfg.board.roles.gift.col)
-    }
-    if (step.id === 'giftRush') return hit.kind !== 'rush' && hit.kind !== 'adRush'
-    if (step.id === 'build') return hit.kind !== 'house'
     return true
+  }
+
+  function stepStory(): void {
+    const before = state.storyStep
+    const beforePage = comicCursor(cfg.opening, before)?.page
+    if (before === 0) comicAudio.sync(cfg.opening, 0, true)
+    advanceStory(state, cfg)
+    fx.comicFrom = before
+    fx.comicFadeAt = platform.now()
+    const afterPage = comicCursor(cfg.opening, state.storyStep)?.page
+    if (beforePage !== afterPage) fx.pagePushAt = platform.now()
+    if (silaJustShown(cfg.opening, before, state.storyStep)) {
+      fx.silaAt = platform.now() + 420
+      fx.shakeUntil = fx.silaAt + 460
+    }
+    comicAudio.sync(cfg.opening, state.storyStep, state.phase === 'story')
   }
 
   function onDown(x: number, y: number, id: number): void {
@@ -808,23 +905,32 @@ export function startGame(platform: Platform): void {
       mark()
       return
     }
-    if (state.levelModal) {
+    const overlay = activeOverlay(state)
+    if (overlay === 'level') {
       if (contains(levelClaimRect(frame), x, y)) present(claimLevelModal(state, cfg, rng))
       return
     }
-    if (state.smileModal) {
+    if (overlay === 'smile') {
       if (contains(smileDismissRect(frame), x, y)) state.smileModal = null
       return
     }
-    if (state.notice || state.guide === 'buildTalk' || state.guide === 'backTalk') {
+    if (overlay === 'detail') {
+      const hit = hitTest(frame, x, y)
+      if (hit?.kind === 'detailClose') {
+        dismissDetail(state)
+        mark()
+      }
+      return
+    }
+    if (overlay === 'talk') {
       if (contains(talkRect(frame).ok, x, y)) {
-        if (state.notice) state.notice = null
+        if (state.notice) dismissNotice(state)
         else advanceGuide(state, cfg)
         mark()
       }
       return
     }
-    if (state.smiles >= cfg.economy.smileGoal && contains(frame.smileSlot, x, y)) {
+    if (!overlay && state.smiles >= cfg.economy.smileGoal && contains(frame.smileSlot, x, y)) {
       present(openSmilePrize(state, cfg, rng))
       return
     }
@@ -834,15 +940,41 @@ export function startGame(platform: Platform): void {
     }
     const step = currentTutorial(cfg, state)
     let hit = hitTest(frame, x, y) ?? { kind: 'swallow' as const }
-    const hole = guideHole(frame, state, cfg)
-    if (hole && hit.kind !== 'tune' && !(state.phase === 'opening' && hit.kind === 'skip') && !contains(hole, x, y)) return
+    const hole = state.phase === 'opening' ? null : guideHole(frame, state, cfg)
+    noteGuide(platform.now())
+    if (guideIsLocking(state, cfg)) {
+      const aimed =
+        hit.kind === 'tune' ||
+        (state.phase === 'opening' && hit.kind === 'skip') ||
+        (hole ? contains(hole, x, y) : !tutorialBlocks(hit))
+      if (!aimed) {
+        guideMisses += 1
+        if (!openingMergeSticky() && (guideMisses >= 3 || platform.now() - guideSince > 8000)) {
+          dismissStuckGuide(state, cfg)
+          mark()
+          hit = hitTest(frame, x, y) ?? { kind: 'swallow' as const }
+        } else if (hole && !contains(hole, x, y)) {
+          return
+        } else if (tutorialBlocks(hit)) {
+          return
+        }
+      }
+    } else if (!overlay && hole && hit.kind !== 'tune' && !contains(hole, x, y)) {
+      return
+    }
     if (state.phase === 'story') {
-      if (hit.kind === 'skip') {
+      if (hit.kind === 'mute') {
+        state.soundMuted = !state.soundMuted
+        comicAudio.setMuted(state.soundMuted)
+        sfx.setMuted(state.soundMuted)
+        mark()
+      } else if (hit.kind === 'skip') {
         skipStory(state)
+        comicAudio.sync(cfg.opening, state.storyStep, false)
         sfx.ui()
         mark()
       } else if (hit.kind === 'hotspot') {
-        advanceStory(state, cfg)
+        stepStory()
         sfx.ui()
         mark()
       }
@@ -910,9 +1042,15 @@ export function startGame(platform: Platform): void {
       cam.y = pointer.camY - (y - pointer.sy) / cam.scale
       return
     }
+    const onOrderStrip =
+      pointer.sy >= frame.orderClip.y && pointer.sy < frame.orderClip.y + frame.orderClip.h
     if (
       pointer.moved &&
-      (pointer.hit.kind === 'order' || pointer.hit.kind === 'orderStrip' || pointer.hit.kind === 'orderIcon' || pointer.hit.kind === 'complete')
+      (pointer.hit.kind === 'order' ||
+        pointer.hit.kind === 'orderStrip' ||
+        pointer.hit.kind === 'orderIcon' ||
+        pointer.hit.kind === 'complete' ||
+        (onOrderStrip && (pointer.hit.kind === 'swallow' || pointer.hit.kind === 'refill')))
     ) {
       orderScroll = scrollOrders(pointer.orderScroll, x - pointer.sx, frame.orderMaxScroll)
       return
@@ -963,7 +1101,10 @@ export function startGame(platform: Platform): void {
       if (action === 'icon' && pointer.hit.kind === 'orderIcon' && state.phase === 'play') {
         const order = state.orders[pointer.hit.order]
         const slot = order?.slots[pointer.hit.slot]
-        if (slot) chain = { line: slot.line, level: slot.level, source: 'order' }
+        if (slot) {
+          selected = null
+          orderFocus = { line: slot.line, level: slot.level }
+        }
       }
       return
     }
@@ -1043,9 +1184,16 @@ export function startGame(platform: Platform): void {
     const real = platform.now()
     settleGifts(state, cfg, real)
     arrangeOrders(state, real)
+    applyTestGuests(state, cfg)
     resolveGuides(state, cfg)
+    noteGuide(real)
+    if (guideIsLocking(state, cfg) && !openingMergeSticky() && real - guideSince > 8000) {
+      dismissStuckGuide(state, cfg)
+      mark()
+    }
     if (guideSpot(state, cfg) === 'reward') orderScroll = 0
     refreshGuide(state, cfg, view)
+    pumpMint(state)
     if (atStep(state, cfg, 'giftRush')) {
       const gift = cfg.board.roles.gift
       selected = { row: gift.row, col: gift.col }
@@ -1090,6 +1238,8 @@ export function startGame(platform: Platform): void {
     if (ctx) {
       const dpr = platform.dpr || 1
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = 'high'
       render({
         ctx,
         frame,
@@ -1102,6 +1252,7 @@ export function startGame(platform: Platform): void {
         modal,
         hintText: '',
         selected,
+        orderFocus,
         chain,
         showHand:
           state.phase === 'play' &&
@@ -1109,6 +1260,8 @@ export function startGame(platform: Platform): void {
           !state.smileModal &&
           !tuner &&
           real - lastInput > cfg.economy.idleHintMs,
+        comicHand:
+          state.phase !== 'story' ? 'off' : state.storyStep === 0 ? 'first' : real - lastInput >= 3000 ? 'idle' : 'off',
       })
     }
     if (dirty && real - lastSave > 500) saveNow()
@@ -1127,6 +1280,12 @@ export function startGame(platform: Platform): void {
     },
     select(row: number, col: number) {
       selected = { row, col }
+    },
+    drop(from: Pos, to: Pos) {
+      return dropItem(state, from, to, cfg)
+    },
+    produce(row: number, col: number) {
+      return tapProducer(state, { row, col }, cfg, Math.random, platform.now())
     },
     get cfg() {
       return cfg
@@ -1154,6 +1313,15 @@ export function startGame(platform: Platform): void {
     },
     skip() {
       return frame.skip.w > 0 ? frame.skip : frame.sheetSkip
+    },
+    mute() {
+      return frame.muteBtn
+    },
+    audioTrace() {
+      return comicAudio.trace()
+    },
+    audioReady() {
+      return comicAudio.whenReady()
     },
     buttons() {
       return {

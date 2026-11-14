@@ -7,660 +7,579 @@
       "levels": [
         {
           "level": 1,
-          "name": "一撮猫草麦胚",
+          "name": "饱满麦粒",
           "orderable": false,
-          "coins": 0
+          "coins": 2
         },
         {
           "level": 2,
-          "name": "嫩绿小猫草",
+          "name": "营养面粉",
           "orderable": false,
-          "coins": 0
+          "coins": 4
         },
         {
           "level": 3,
-          "name": "瓦碟小鱼干",
+          "name": "混合粗粮团",
           "orderable": true,
           "coins": 8
         },
         {
           "level": 4,
-          "name": "粗陶鱼肉碎",
+          "name": "基础猫粮粒",
           "orderable": true,
           "coins": 16
         },
         {
           "level": 5,
-          "name": "青瓷猫爪肉饼",
+          "name": "酥脆猫粮饼",
           "orderable": true,
           "coins": 32
         },
         {
           "level": 6,
-          "name": "砂锅浓鱼汤",
+          "name": "浓香猫粮罐",
           "orderable": true,
-          "coins": 64,
-          "big": true,
-          "producer": true,
-          "cooldownMs": 45000,
-          "drops": [
-            1
-          ]
+          "coins": 64
         },
         {
           "level": 7,
-          "name": "铜雕小火锅",
+          "name": "鲜肉猫粮袋",
           "orderable": true,
-          "coins": 128,
-          "producer": true,
-          "cooldownMs": 60000,
-          "drops": [
-            1,
-            2
-          ]
+          "coins": 128
         },
         {
           "level": 8,
-          "name": "双层朱漆食盒",
+          "name": "臻选猫粮桶",
           "orderable": true,
-          "coins": 256,
-          "producer": true,
-          "cooldownMs": 75000,
-          "drops": [
-            2,
-            3
-          ]
+          "coins": 256
         },
         {
           "level": 9,
-          "name": "三层描金馔盒",
+          "name": "营养猫粮箱",
           "orderable": true,
-          "coins": 512,
-          "producer": true,
-          "cooldownMs": 90000,
-          "drops": [
-            2,
-            3,
-            4
-          ]
+          "coins": 512
         },
         {
           "level": 10,
-          "name": "龙凤御膳锦瓮",
+          "name": "皇家猫粮大粮仓",
           "orderable": true,
-          "coins": 1024,
-          "producer": true,
-          "cooldownMs": 120000,
-          "drops": [
-            3,
-            4,
-            5
-          ]
+          "coins": 1024
+        }
+      ]
+    },
+    {
+      "id": "meat",
+      "name": "肉类",
+      "color": "#c45a3a",
+      "levels": [
+        {
+          "level": 1,
+          "name": "新鲜生肉",
+          "orderable": false,
+          "coins": 2
         },
         {
-          "level": 11,
-          "name": "蓬莱百味宝鼎",
+          "level": 2,
+          "name": "精选肉丁",
           "orderable": true,
-          "coins": 2048,
-          "producer": true,
-          "cooldownMs": 30000,
-          "drops": [
-            3,
-            4,
-            5,
-            6
-          ]
+          "coins": 4
+        },
+        {
+          "level": 3,
+          "name": "鲜嫩肉串",
+          "orderable": true,
+          "coins": 8
+        },
+        {
+          "level": 4,
+          "name": "香煎大鸡腿",
+          "orderable": true,
+          "coins": 16
+        },
+        {
+          "level": 5,
+          "name": "秘制酱鸭",
+          "orderable": true,
+          "coins": 32
+        },
+        {
+          "level": 6,
+          "name": "豪华肉食大拼盘",
+          "orderable": true,
+          "coins": 64
+        }
+      ]
+    },
+    {
+      "id": "bev",
+      "name": "咖啡饮料",
+      "color": "#6b4226",
+      "levels": [
+        {
+          "level": 1,
+          "name": "单颗咖啡豆",
+          "orderable": false,
+          "coins": 2
+        },
+        {
+          "level": 2,
+          "name": "饱满咖啡豆",
+          "orderable": false,
+          "coins": 4
+        },
+        {
+          "level": 3,
+          "name": "研磨咖啡粉",
+          "orderable": true,
+          "coins": 8
+        },
+        {
+          "level": 4,
+          "name": "滤纸手冲液",
+          "orderable": true,
+          "coins": 16
+        },
+        {
+          "level": 5,
+          "name": "浓缩咖啡液",
+          "orderable": true,
+          "coins": 32
+        },
+        {
+          "level": 6,
+          "name": "经典香浓拿铁",
+          "orderable": true,
+          "coins": 64
+        },
+        {
+          "level": 7,
+          "name": "猫爪拉花拿铁",
+          "orderable": true,
+          "coins": 128
+        },
+        {
+          "level": 8,
+          "name": "冰爽特调咖啡",
+          "orderable": true,
+          "coins": 256
+        },
+        {
+          "level": 9,
+          "name": "奶油雪顶咖啡",
+          "orderable": true,
+          "coins": 512
+        },
+        {
+          "level": 10,
+          "name": "殿堂级咖啡大师杯",
+          "orderable": true,
+          "coins": 1024
+        }
+      ]
+    },
+    {
+      "id": "mint",
+      "name": "猫薄荷饮料",
+      "color": "#3d9a6a",
+      "levels": [
+        {
+          "level": 1,
+          "name": "新鲜薄荷叶",
+          "orderable": false,
+          "coins": 2
+        },
+        {
+          "level": 2,
+          "name": "翠绿薄荷束",
+          "orderable": true,
+          "coins": 4
+        },
+        {
+          "level": 3,
+          "name": "舒缓薄荷茶",
+          "orderable": true,
+          "coins": 8
+        },
+        {
+          "level": 4,
+          "name": "清凉薄荷气泡水",
+          "orderable": true,
+          "coins": 16
+        },
+        {
+          "level": 5,
+          "name": "冰爽薄荷冰沙",
+          "orderable": true,
+          "coins": 32
+        },
+        {
+          "level": 6,
+          "name": "猫薄荷特调仙露",
+          "orderable": true,
+          "coins": 64
         }
       ]
     },
     {
       "id": "toy",
-      "name": "玩具",
-      "color": "#3d7ec4",
+      "name": "老鼠玩具",
+      "color": "#c46a8a",
       "levels": [
         {
           "level": 1,
-          "name": "一截麻绳头",
+          "name": "零散旧毛线",
           "orderable": false,
-          "coins": 0
+          "coins": 2
         },
         {
           "level": 2,
-          "name": "缠丝小麻球",
+          "name": "缠绕毛线球",
           "orderable": false,
-          "coins": 0
+          "coins": 4
         },
         {
           "level": 3,
-          "name": "竹篾空心球",
+          "name": "简易布老鼠",
           "orderable": true,
           "coins": 8
         },
         {
           "level": 4,
-          "name": "野雉羽逗猫竿",
+          "name": "铃铛布老鼠",
           "orderable": true,
           "coins": 16
         },
         {
           "level": 5,
-          "name": "柳条编织浅筐",
+          "name": "仿真跳跳鼠",
           "orderable": true,
           "coins": 32
         },
         {
           "level": 6,
-          "name": "靛蓝布鱼偶",
+          "name": "智能发条鼠",
           "orderable": true,
-          "coins": 64,
-          "big": true,
-          "producer": true,
-          "cooldownMs": 45000,
-          "drops": [
-            1
-          ]
+          "coins": 64
         },
         {
           "level": 7,
-          "name": "雕漆猫爬架",
+          "name": "机械遥控鼠",
           "orderable": true,
-          "coins": 128,
-          "producer": true,
-          "cooldownMs": 60000,
-          "drops": [
-            1,
-            2
-          ]
+          "coins": 128
         },
         {
           "level": 8,
-          "name": "竹编双层戏篓",
+          "name": "趣味追逐轨道",
           "orderable": true,
-          "coins": 256,
-          "producer": true,
-          "cooldownMs": 75000,
-          "drops": [
-            2,
-            3
-          ]
+          "coins": 256
         },
         {
           "level": 9,
-          "name": "机关走线木匣",
+          "name": "旋转猫咪转塔",
           "orderable": true,
-          "coins": 512,
-          "producer": true,
-          "cooldownMs": 90000,
-          "drops": [
-            2,
-            3,
-            4
-          ]
+          "coins": 512
         },
         {
           "level": 10,
-          "name": "飞檐红木戏猫亭",
+          "name": "奇幻机械互动鼠",
           "orderable": true,
-          "coins": 1024,
-          "producer": true,
-          "cooldownMs": 120000,
-          "drops": [
-            3,
-            4,
-            5
-          ]
-        },
-        {
-          "level": 11,
-          "name": "乾坤万趣百宝阁",
-          "orderable": true,
-          "coins": 2048,
-          "producer": true,
-          "cooldownMs": 30000,
-          "drops": [
-            3,
-            4,
-            5,
-            6
-          ]
+          "coins": 1024
         }
       ]
     },
     {
-      "id": "plant",
-      "name": "花盆",
-      "color": "#3c9a55",
+      "id": "wand",
+      "name": "逗猫棒",
+      "color": "#d4a24a",
       "levels": [
         {
           "level": 1,
-          "name": "破瓦陶土片",
+          "name": "飘逸羽毛",
           "orderable": false,
-          "coins": 0
+          "coins": 2
         },
         {
           "level": 2,
-          "name": "陶土泥钵小芽",
-          "orderable": false,
-          "coins": 0
+          "name": "简易羽毛棒",
+          "orderable": true,
+          "coins": 4
         },
         {
           "level": 3,
-          "name": "青瓷香草小盆",
+          "name": "清脆铃铛棒",
           "orderable": true,
           "coins": 8
         },
         {
           "level": 4,
-          "name": "案头青石菖蒲",
+          "name": "灵动小鱼棒",
           "orderable": true,
           "coins": 16
         },
         {
           "level": 5,
-          "name": "紫砂双色兰花钵",
+          "name": "缤纷彩带棒",
           "orderable": true,
           "coins": 32
         },
         {
           "level": 6,
-          "name": "假山叠石水影盆",
+          "name": "终极豪华逗猫棒",
           "orderable": true,
-          "coins": 64,
-          "big": true,
-          "producer": true,
-          "cooldownMs": 50000,
-          "drops": [
-            1
-          ]
-        },
-        {
-          "level": 7,
-          "name": "迎客微盘古松",
-          "orderable": true,
-          "coins": 128,
-          "producer": true,
-          "cooldownMs": 65000,
-          "drops": [
-            1,
-            2
-          ]
-        },
-        {
-          "level": 8,
-          "name": "白玉缠枝茶梅桩",
-          "orderable": true,
-          "coins": 256,
-          "producer": true,
-          "cooldownMs": 80000,
-          "drops": [
-            2,
-            3
-          ]
-        },
-        {
-          "level": 9,
-          "name": "琼楼山水锦绣景",
-          "orderable": true,
-          "coins": 512,
-          "producer": true,
-          "cooldownMs": 100000,
-          "drops": [
-            2,
-            3,
-            4
-          ]
-        },
-        {
-          "level": 10,
-          "name": "荧光瑶台万寿松",
-          "orderable": true,
-          "coins": 1024,
-          "producer": true,
-          "cooldownMs": 30000,
-          "drops": [
-            3,
-            4,
-            5
-          ]
-        }
-      ]
-    },
-    {
-      "id": "boat",
-      "name": "鱼篓",
-      "color": "#c47a32",
-      "levels": [
-        {
-          "level": 1,
-          "name": "劈篾细竹条",
-          "orderable": false,
-          "coins": 0
-        },
-        {
-          "level": 2,
-          "name": "竹编捕鱼倒须",
-          "orderable": false,
-          "coins": 0
-        },
-        {
-          "level": 3,
-          "name": "粗编腰挎小鱼篓",
-          "orderable": true,
-          "coins": 8
-        },
-        {
-          "level": 4,
-          "name": "熟桐油防水鱼篓",
-          "orderable": true,
-          "coins": 16
-        },
-        {
-          "level": 5,
-          "name": "铜环活鱼大网兜",
-          "orderable": true,
-          "coins": 32
-        },
-        {
-          "level": 6,
-          "name": "带盖双耳深水篓",
-          "orderable": true,
-          "coins": 64,
-          "big": true,
-          "producer": true,
-          "cooldownMs": 40000,
-          "drops": [
-            1
-          ]
-        },
-        {
-          "level": 7,
-          "name": "临水双桨小竹排",
-          "orderable": true,
-          "coins": 128,
-          "producer": true,
-          "cooldownMs": 55000,
-          "drops": [
-            1,
-            2
-          ]
-        },
-        {
-          "level": 8,
-          "name": "水乡摇橹乌篷船",
-          "orderable": true,
-          "coins": 256,
-          "producer": true,
-          "cooldownMs": 70000,
-          "drops": [
-            2,
-            3
-          ]
-        },
-        {
-          "level": 9,
-          "name": "双橹张网捕鱼木船",
-          "orderable": true,
-          "coins": 512,
-          "producer": true,
-          "cooldownMs": 85000,
-          "drops": [
-            2,
-            3,
-            4
-          ]
-        },
-        {
-          "level": 10,
-          "name": "扬帆出水大飞驳",
-          "orderable": true,
-          "coins": 1024,
-          "producer": true,
-          "cooldownMs": 110000,
-          "drops": [
-            3,
-            4,
-            5
-          ]
-        },
-        {
-          "level": 11,
-          "name": "豪华双桅金鳞宝船",
-          "orderable": true,
-          "coins": 2048,
-          "producer": true,
-          "cooldownMs": 25000,
-          "drops": [
-            3,
-            4,
-            5,
-            6
-          ]
+          "coins": 64
         }
       ]
     },
     {
       "id": "bed",
       "name": "猫窝",
-      "color": "#c45a7a",
+      "color": "#8a6a4a",
       "levels": [
         {
           "level": 1,
-          "name": "晒干金黄稻草",
+          "name": "暖心碎稻草",
           "orderable": false,
-          "coins": 0
+          "coins": 2
         },
         {
           "level": 2,
-          "name": "粗编蒲草坐垫",
+          "name": "柔软小棉垫",
           "orderable": false,
-          "coins": 0
+          "coins": 4
         },
         {
           "level": 3,
-          "name": "蓝染碎布软窝",
+          "name": "舒适针织窝",
           "orderable": true,
           "coins": 8
         },
         {
           "level": 4,
-          "name": "低沿竹编椭圆筐",
+          "name": "质朴竹编篮",
           "orderable": true,
           "coins": 16
         },
         {
           "level": 5,
-          "name": "暖绒杉木小卧榻",
+          "name": "经典纸箱窝",
           "orderable": true,
           "coins": 32
         },
         {
           "level": 6,
-          "name": "悬空吊绳小竹巢",
+          "name": "温暖毛绒圆窝",
           "orderable": true,
-          "coins": 64,
-          "big": true,
-          "producer": true,
-          "cooldownMs": 45000,
-          "drops": [
-            1
-          ]
+          "coins": 64
         },
         {
           "level": 7,
-          "name": "红木雕花围栏床",
+          "name": "探险小帐篷",
           "orderable": true,
-          "coins": 128,
-          "producer": true,
-          "cooldownMs": 60000,
-          "drops": [
-            1,
-            2
-          ]
+          "coins": 128
         },
         {
           "level": 8,
-          "name": "微缩木雕拔步床",
+          "name": "豪华原木屋",
           "orderable": true,
-          "coins": 256,
-          "producer": true,
-          "cooldownMs": 75000,
-          "drops": [
-            2,
-            3
-          ]
+          "coins": 256
         },
         {
           "level": 9,
-          "name": "双层飞檐猫小楼",
+          "name": "趣味多层猫爬架",
           "orderable": true,
-          "coins": 512,
-          "producer": true,
-          "cooldownMs": 90000,
-          "drops": [
-            2,
-            3,
-            4
-          ]
+          "coins": 512
         },
         {
           "level": 10,
-          "name": "琉璃飞檐避暑行宫",
+          "name": "奢华猫咪大别墅",
           "orderable": true,
-          "coins": 1024,
-          "producer": true,
-          "cooldownMs": 120000,
-          "drops": [
-            3,
-            4,
-            5
-          ]
-        },
-        {
-          "level": 11,
-          "name": "紫禁猫仙天枢殿",
-          "orderable": true,
-          "coins": 2048,
-          "producer": true,
-          "cooldownMs": 30000,
-          "drops": [
-            3,
-            4,
-            5,
-            6
-          ]
+          "coins": 1024
         }
       ]
     },
     {
-      "id": "bev",
-      "name": "饮料",
-      "color": "#2a7a68",
+      "id": "fish",
+      "name": "鱼",
+      "color": "#3a7ca8",
       "levels": [
         {
           "level": 1,
-          "name": "一勺清洌山泉",
+          "name": "迷你小虾米",
           "orderable": false,
-          "coins": 0
+          "coins": 2
         },
         {
           "level": 2,
-          "name": "粗陶蓄水钵",
+          "name": "灵动小鱼苗",
           "orderable": false,
-          "coins": 0
+          "coins": 4
         },
         {
           "level": 3,
-          "name": "铜吊子滚沸水",
+          "name": "鲜嫩小鲫鱼",
           "orderable": true,
           "coins": 8
         },
         {
           "level": 4,
-          "name": "碎瓷粗碗凉茶",
+          "name": "肥美大鲫鱼",
           "orderable": true,
           "coins": 16
         },
         {
           "level": 5,
-          "name": "青翠竹筒鲜果汁",
+          "name": "鲜活肥鲈鱼",
           "orderable": true,
           "coins": 32
         },
         {
           "level": 6,
-          "name": "冷泡绿茶玻璃瓶",
+          "name": "极品大鳊鱼",
           "orderable": true,
-          "coins": 64,
-          "big": true,
-          "producer": true,
-          "cooldownMs": 40000,
-          "drops": [
-            1
-          ]
+          "coins": 64
         },
         {
           "level": 7,
-          "name": "陶罐冰镇酸梅汤",
+          "name": "巨型青波鱼",
           "orderable": true,
-          "coins": 128,
-          "producer": true,
-          "cooldownMs": 55000,
-          "drops": [
-            1,
-            2
-          ]
+          "coins": 128
         },
         {
           "level": 8,
-          "name": "宜兴紫砂大红袍",
+          "name": "璀璨金鲤鱼",
           "orderable": true,
-          "coins": 256,
-          "producer": true,
-          "cooldownMs": 70000,
-          "drops": [
-            2,
-            3
-          ]
+          "coins": 256
         },
         {
           "level": 9,
-          "name": "荷叶碗雪梨羹",
+          "name": "远古深海巨鲲",
           "orderable": true,
-          "coins": 512,
-          "producer": true,
-          "cooldownMs": 85000,
-          "drops": [
-            2,
-            3,
-            4
-          ]
+          "coins": 512
         },
         {
           "level": 10,
-          "name": "醉仙玉石桃花酿",
+          "name": "神话真龙锦鲤",
           "orderable": true,
-          "coins": 1024,
-          "producer": true,
-          "cooldownMs": 110000,
-          "drops": [
-            3,
-            4,
-            5
-          ]
+          "coins": 1024
+        }
+      ]
+    },
+    {
+      "id": "plant",
+      "name": "花草",
+      "color": "#3d8a4a",
+      "levels": [
+        {
+          "level": 1,
+          "name": "神秘花种",
+          "orderable": false,
+          "coins": 2
         },
         {
-          "level": 11,
-          "name": "瑶池百花神仙露",
+          "level": 2,
+          "name": "破土冒芽盆",
+          "orderable": false,
+          "coins": 4
+        },
+        {
+          "level": 3,
+          "name": "鲜嫩猫草盆",
           "orderable": true,
-          "coins": 2048,
-          "producer": true,
-          "cooldownMs": 25000,
-          "drops": [
-            3,
-            4,
-            5,
-            6
-          ]
+          "coins": 8
+        },
+        {
+          "level": 4,
+          "name": "清新雏菊盆",
+          "orderable": true,
+          "coins": 16
+        },
+        {
+          "level": 5,
+          "name": "优雅茉莉盆",
+          "orderable": true,
+          "coins": 32
+        },
+        {
+          "level": 6,
+          "name": "精致碗莲盆",
+          "orderable": true,
+          "coins": 64
+        },
+        {
+          "level": 7,
+          "name": "典雅桂花盆景",
+          "orderable": true,
+          "coins": 128
+        }
+      ]
+    },
+    {
+      "id": "coin",
+      "name": "金币",
+      "color": "#e0a23a",
+      "collect": "coin",
+      "levels": [
+        {
+          "level": 1,
+          "name": "一枚铜钱",
+          "orderable": false,
+          "coins": 1
+        },
+        {
+          "level": 2,
+          "name": "一小串",
+          "orderable": false,
+          "coins": 2
+        },
+        {
+          "level": 3,
+          "name": "一锭银",
+          "orderable": false,
+          "coins": 5
+        },
+        {
+          "level": 4,
+          "name": "一封赏",
+          "orderable": false,
+          "coins": 15
+        },
+        {
+          "level": 5,
+          "name": "一箱金",
+          "orderable": false,
+          "coins": 50
+        }
+      ]
+    },
+    {
+      "id": "gemline",
+      "name": "钻石",
+      "color": "#d23b62",
+      "collect": "gem",
+      "levels": [
+        {
+          "level": 1,
+          "name": "碎钻",
+          "orderable": false,
+          "coins": 1
+        },
+        {
+          "level": 2,
+          "name": "小钻",
+          "orderable": false,
+          "coins": 3
+        },
+        {
+          "level": 3,
+          "name": "钻石",
+          "orderable": false,
+          "coins": 7
+        },
+        {
+          "level": 4,
+          "name": "钻盒",
+          "orderable": false,
+          "coins": 15
         }
       ]
     }

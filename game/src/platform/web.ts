@@ -1,7 +1,7 @@
 import type { AudioContextLike, Platform } from './types'
 
 export function createWebPlatform(canvas: HTMLCanvasElement): Platform {
-  let dpr = Math.min(2, window.devicePixelRatio || 1)
+  let dpr = Math.min(3, window.devicePixelRatio || 1)
   let logical = { w: 390, h: 844 }
   let resizeCb: (() => void) | null = null
   let wheelCb: ((x: number, y: number, dy: number) => void) | null = null
@@ -11,15 +11,15 @@ export function createWebPlatform(canvas: HTMLCanvasElement): Platform {
   let audio: AudioContextLike | null = null
 
   const sizeQuery = new URLSearchParams(window.location.search).get('size')?.match(/^(\d+)x(\d+)$/)
-  const DESIGN_W = sizeQuery ? Number(sizeQuery[1]) : 393
-  const DESIGN_H = sizeQuery ? Number(sizeQuery[2]) : 852
+  const DESIGN_W = sizeQuery ? Number(sizeQuery[1]) : 390
+  const DESIGN_H = sizeQuery ? Number(sizeQuery[2]) : 844
   const fit = () => {
     const parent = canvas.parentElement ?? document.body
     const pw = parent.clientWidth || window.innerWidth
     const ph = parent.clientHeight || window.innerHeight
     const scale = Math.min(pw / DESIGN_W, ph / DESIGN_H)
     logical = { w: DESIGN_W, h: DESIGN_H }
-    dpr = Math.min(2, window.devicePixelRatio || 1)
+    dpr = Math.min(3, window.devicePixelRatio || 1)
     canvas.style.width = `${Math.max(1, Math.floor(DESIGN_W * scale))}px`
     canvas.style.height = `${Math.max(1, Math.floor(DESIGN_H * scale))}px`
     canvas.width = Math.round(DESIGN_W * dpr)
@@ -82,7 +82,11 @@ export function createWebPlatform(canvas: HTMLCanvasElement): Platform {
       canvas.addEventListener('pointerdown', (event) => {
         if (event.button !== 0) return
         event.preventDefault()
-        canvas.setPointerCapture(event.pointerId)
+        try {
+          canvas.setPointerCapture(event.pointerId)
+        } catch {
+          /* Safari 在指针还没激活时会抛错，不能因此丢掉这次点击 */
+        }
         const p = rel(event.clientX, event.clientY)
         down(p.x, p.y, event.pointerId)
       })

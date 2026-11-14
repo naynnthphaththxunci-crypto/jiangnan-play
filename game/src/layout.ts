@@ -4,6 +4,7 @@ import { SLIDERS } from './tuner'
 import { clamp } from './format'
 import { guideSpot } from './logic/sim'
 import orderLayoutJson from './data/orderLayout.json'
+import { cellOnBoard, hechengParts } from './hechengLayout'
 
 type PctBox = { x: number; y: number; w: number; h: number }
 type DesignBox = { x: number; y: number; w: number; h: number }
@@ -49,6 +50,7 @@ export interface Frame {
   mode: 'story' | 'board' | 'house'
   hotspot: Rect
   skip: Rect
+  muteBtn: Rect
   hud: Rect
   orders: Rect[]
   completes: Rect[]
@@ -69,6 +71,10 @@ export interface Frame {
   pendingBtn: Rect
   houseBtn: Rect
   tuneBtn: Rect
+  multBtn: Rect
+  shopBtn: Rect
+  shop: boolean
+  detail: boolean
   dailyBtn: Rect
   sheet: Rect
   sheetBtn: Rect
@@ -103,6 +109,10 @@ export interface Frame {
   coinSlot: Rect
   gemSlot: Rect
   smileSlot: Rect
+  energyPlus: Rect
+  chestBtn: Rect
+  storyBtn: Rect
+  taskBtn: Rect
   showStorage: boolean
   storageHot: boolean
   showTuner: boolean
@@ -121,6 +131,7 @@ export interface LayoutInput {
   orderCount: number
   orderSlots: number[]
   orderScroll: number
+  guestCanvasScale?: number
   showHint: boolean
   showSheet: boolean
   showSkip: boolean
@@ -137,6 +148,9 @@ export interface LayoutInput {
   help: boolean
   showEnter: boolean
   showInfo: boolean
+  showShop?: boolean
+  shop?: boolean
+  detail?: boolean
 }
 
 const Z: Rect = { x: 0, y: 0, w: 0, h: 0 }
@@ -194,6 +208,9 @@ export function guestFaceBox(guest: Rect, face: NormBox): Rect {
 }
 
 export function cellRect(frame: Frame, row: number, col: number): Rect {
+  if (frame.mode === 'board' && frame.board.cell > 0) {
+    return cellOnBoard(frame.board, frame.w / 1080, row, col)
+  }
   const { x, y, cell } = frame.board
   return { x: x + col * cell, y: y + row * cell, w: cell, h: cell }
 }
@@ -229,6 +246,14 @@ export function guideHole(frame: Frame, state: GameState, cfg?: GameConfig): Rec
 export function cellAt(frame: Frame, x: number, y: number): { row: number; col: number } | null {
   const b = frame.board
   if (b.cell <= 0) return null
+  if (frame.mode === 'board') {
+    for (let row = 0; row < ROWS; row++) {
+      for (let col = 0; col < COLS; col++) {
+        if (contains(cellRect(frame, row, col), x, y)) return { row, col }
+      }
+    }
+    return null
+  }
   if (x < b.x || y < b.y || x >= b.x + b.cell * COLS || y >= b.y + b.cell * ROWS) return null
   return {
     col: Math.min(COLS - 1, Math.floor((x - b.x) / b.cell)),
@@ -238,6 +263,7 @@ export function cellAt(frame: Frame, x: number, y: number): { row: number; col: 
 
 export type Hit =
   | { kind: 'skip' }
+  | { kind: 'mute' }
   | { kind: 'hotspot' }
   | { kind: 'story' }
   | { kind: 'cell'; row: number; col: number }
@@ -253,6 +279,12 @@ export type Hit =
   | { kind: 'reward' }
   | { kind: 'house' }
   | { kind: 'tune' }
+  | { kind: 'mult' }
+  | { kind: 'shop' }
+  | { kind: 'shopDaily' }
+  | { kind: 'shopPack' }
+  | { kind: 'shopClose' }
+  | { kind: 'detailClose' }
   | { kind: 'daily' }
   | { kind: 'sheet' }
   | { kind: 'back' }
@@ -272,6 +304,7 @@ export type Hit =
   | { kind: 'modalClose' }
   | { kind: 'helpOk' }
   | { kind: 'enter' }
+  | { kind: 'refill' }
   | { kind: 'renovate' }
   | { kind: 'complete'; index: number }
   | { kind: 'swallow' }
@@ -341,8 +374,8 @@ export function layout(input: LayoutInput): Frame {
         h: spec.rewardEntry.h * h,
       }
     : Z
-  const origin = rewardTray.w > 0 ? rewardTray.x + rewardTray.w + Math.max(2, w * 0.008) : 8
-  const pitch = (w - origin) / Math.max(1, spec.ordersPerScreen + spec.peekRatio)
+  const origin = 0
+  const pitch = w / Math.max(1, spec.ordersPerScreen + spec.peekRatio)
   const group = spec.group
   let scale = pitch / group.w
   const maxScale = orderClip.h > 0 ? orderClip.h / group.h : scale
@@ -387,30 +420,14 @@ export function layout(input: LayoutInput): Frame {
       w: top.w * plate.w,
       h: top.h * plate.h,
     }
-    const nameH = Math.max(16, w * 0.042)
-    const nameGutter = Math.max(6, plate.w * 0.06)
-    const namePad = 4
-    const nameW = (plate.w - namePad * 2 - nameGutter * Math.max(0, slots - 1)) / slots
-    const nameY = plate.y + plate.h - nameH - 3
-    const iconRoomTop = surface.y
-    const iconRoomH = Math.max(8, nameY - 3 - iconRoomTop)
     const colW = surface.w / slots
-    const iconSize = Math.max(8, Math.min(group.icon.w * scale, group.icon.h * scale, colW - 6, iconRoomH, surface.h - 2))
-    const iconY = iconRoomTop + Math.max(0, (Math.min(surface.h, iconRoomH) - iconSize) / 2)
+    const iconSize = Math.max(8, Math.min(w * 0.103, colW - 4))
+    const stand = plate.y + plate.h - 1
+    const iconY = stand - iconSize
     for (let slot = 0; slot < slots; slot++) {
       const colX = surface.x + slot * colW
       const icon = { x: colX + (colW - iconSize) / 2, y: iconY, w: iconSize, h: iconSize }
       orderIcons.push({ order: i, slot, rect: icon })
-      orderNames.push({
-        order: i,
-        slot,
-        rect: {
-          x: plate.x + namePad + slot * (nameW + nameGutter),
-          y: nameY,
-          w: nameW,
-          h: nameH,
-        },
-      })
     }
   }
   const sellW = Math.round(54 * unit)
@@ -431,9 +448,15 @@ export function layout(input: LayoutInput): Frame {
 
   const tuneS = Math.max(22, Math.round(26 * unit))
   const tuneBtn: Rect = { x: w - tuneS - 6, y: top + 4, w: tuneS, h: tuneS }
+  const multBtn: Rect = boardMode ? { x: tuneBtn.x - tuneS - 6, y: top + 4, w: tuneS, h: tuneS } : Z
+  const shopBtn: Rect = boardMode && input.showShop ? { x: multBtn.x - tuneS - 6, y: top + 4, w: tuneS, h: tuneS } : Z
   const skipW = Math.round(56 * unit)
   const skip: Rect = input.showSkip
     ? { x: tuneBtn.x - 8 - skipW, y: top + 6, w: skipW, h: Math.round(30 * unit) }
+    : Z
+  const muteS = Math.round(30 * unit)
+  const muteBtn: Rect = input.mode === 'story' && skip.w > 0
+    ? { x: skip.x - 6 - muteS, y: skip.y, w: muteS, h: skip.h }
     : Z
   const dailyBtn: Rect = input.showDaily
     ? { x: tuneBtn.x, y: tuneBtn.y + tuneS + 4, w: tuneS, h: tuneS }
@@ -509,8 +532,8 @@ export function layout(input: LayoutInput): Frame {
         index,
         y: tunerView.y + index * rowH - tunerScroll,
         h: rowH,
-        trackX: tunerView.x + 118,
-        trackW: Math.max(40, tunerView.w - 136),
+        trackX: tunerView.x + 96,
+        trackW: Math.max(36, tunerView.w - 96 - 84),
       }))
     : []
   const tunerExport: Rect = input.tuner
@@ -539,6 +562,19 @@ export function layout(input: LayoutInput): Frame {
     ? { x: helpCard.x + 18, y: helpCard.y + helpCard.h - 52, w: helpCard.w - 36, h: 36 }
     : Z
   const enterBtn: Rect = input.showEnter ? { x: (w - Math.round(168 * unit)) / 2, y: h * 0.42, w: Math.round(168 * unit), h: Math.round(56 * unit) } : Z
+  const scene = boardMode
+    ? hechengParts({
+        w,
+        h,
+        insetTop: top,
+        insetBottom: bottomInset,
+        orderCount: input.orderCount,
+        orderSlots: input.orderSlots,
+        orderScroll: input.orderScroll,
+        showRush: input.showRush,
+        guestCanvasScale: input.guestCanvasScale,
+      })
+    : null
 
   return {
     w,
@@ -549,26 +585,31 @@ export function layout(input: LayoutInput): Frame {
         ? { x: (w - Math.round(180 * unit)) / 2, y: h * 0.36, w: Math.round(180 * unit), h: Math.round(120 * unit) }
         : Z,
     skip,
-    hud,
-    orders,
-    completes,
-    orderPlates,
-    orderRewards,
-    orderGuests,
-    orderCharms,
-    orderIcons,
+    muteBtn,
+    hud: scene?.hud ?? hud,
+    orders: scene?.orders ?? orders,
+    completes: scene?.completes ?? completes,
+    orderPlates: scene?.orderPlates ?? orderPlates,
+    orderRewards: scene?.orderRewards ?? orderRewards,
+    orderGuests: scene?.orderGuests ?? orderGuests,
+    orderCharms: scene?.orderRewards ?? orderCharms,
+    orderIcons: scene?.orderIcons ?? orderIcons,
     orderNames,
-    sellBtn,
-    chainBtn,
-    orderClip,
-    orderMaxScroll,
+    sellBtn: scene?.sellBtn ?? sellBtn,
+    chainBtn: scene?.chainBtn ?? chainBtn,
+    orderClip: scene?.orderClip ?? orderClip,
+    orderMaxScroll: scene?.orderMaxScroll ?? orderMaxScroll,
     hint: Z,
-    board,
-    rewardTray,
-    dock,
-    pendingBtn,
-    houseBtn,
+    board: scene?.board ?? board,
+    rewardTray: scene?.rewardTray ?? rewardTray,
+    dock: scene?.dock ?? dock,
+    pendingBtn: scene?.pendingBtn ?? pendingBtn,
+    houseBtn: scene?.houseBtn ?? houseBtn,
     tuneBtn,
+    multBtn: scene?.multBtn ?? multBtn,
+    shopBtn: scene?.shopBtn ?? shopBtn,
+    shop: !!input.shop,
+    detail: !!input.detail,
     dailyBtn,
     sheet,
     sheetBtn,
@@ -595,22 +636,44 @@ export function layout(input: LayoutInput): Frame {
     modalGhost,
     helpCard,
     helpOk,
-    rushBtn,
-    adBtn,
+    rushBtn: scene?.rushBtn ?? rushBtn,
+    adBtn: scene?.adBtn ?? adBtn,
     enterBtn,
     renovateBtn: Z,
-    infoBar,
-    avatarSlot,
-    energySlot,
-    coinSlot,
-    gemSlot,
-    smileSlot,
+    infoBar: scene?.infoBar ?? infoBar,
+    avatarSlot: scene?.avatarSlot ?? avatarSlot,
+    energySlot: scene?.energySlot ?? energySlot,
+    coinSlot: scene?.coinSlot ?? coinSlot,
+    gemSlot: scene?.gemSlot ?? gemSlot,
+    smileSlot: scene?.smileSlot ?? smileSlot,
+    energyPlus: scene?.energyPlus ?? Z,
+    chestBtn: scene?.chestBtn ?? Z,
+    storyBtn: scene?.storyBtn ?? Z,
+    taskBtn: scene?.taskBtn ?? Z,
     showStorage: input.showStorage,
     storageHot: input.storageHot ?? input.showStorage,
     showTuner: input.tuner,
     showModal: input.modal,
     showHelp: input.help,
   }
+}
+
+export function shopRects(frame: Frame): { card: Rect; daily: Rect; pack: Rect; close: Rect } {
+  const w = Math.min(frame.w - 32, 320)
+  const h = 230
+  const card = { x: (frame.w - w) / 2, y: frame.h * 0.24, w, h }
+  return {
+    card,
+    daily: { x: card.x + 16, y: card.y + 64, w: card.w - 32, h: 48 },
+    pack: { x: card.x + 16, y: card.y + 124, w: card.w - 32, h: 48 },
+    close: { x: card.x + card.w - 36, y: card.y + 10, w: 26, h: 26 },
+  }
+}
+
+export function detailCard(frame: Frame): Rect {
+  const w = Math.min(frame.w - 28, 340)
+  const h = Math.min(frame.h * 0.62, 460)
+  return { x: (frame.w - w) / 2, y: frame.h * 0.16, w, h }
 }
 
 export function hitTest(frame: Frame, x: number, y: number): Hit | null {
@@ -641,11 +704,25 @@ export function hitTest(frame: Frame, x: number, y: number): Hit | null {
     return { kind: 'swallow' }
   }
   if (contains(frame.skip, x, y)) return { kind: 'skip' }
-  if (contains(frame.tuneBtn, x, y)) return { kind: 'tune' }
-  if (frame.mode === 'story') {
-    if (contains(frame.hotspot, x, y)) return { kind: 'hotspot' }
+  if (frame.muteBtn.w > 0 && contains(frame.muteBtn, x, y)) return { kind: 'mute' }
+  if (frame.mode === 'story') return { kind: 'hotspot' }
+  if (frame.shop) {
+    const shop = shopRects(frame)
+    if (contains(shop.daily, x, y)) return { kind: 'shopDaily' }
+    if (contains(shop.pack, x, y)) return { kind: 'shopPack' }
+    if (contains(shop.close, x, y) || !contains(shop.card, x, y)) return { kind: 'shopClose' }
     return { kind: 'swallow' }
   }
+  if (frame.detail) {
+    const card = detailCard(frame)
+    if (!contains(card, x, y)) return { kind: 'detailClose' }
+    return { kind: 'swallow' }
+  }
+  if (contains(frame.tuneBtn, x, y)) return { kind: 'tune' }
+  if (contains(frame.energyPlus, x, y) || contains(frame.chestBtn, x, y)) return { kind: 'refill' }
+  if (contains(frame.storyBtn, x, y) || contains(frame.taskBtn, x, y)) return { kind: 'swallow' }
+  if (contains(frame.multBtn, x, y)) return { kind: 'mult' }
+  if (contains(frame.shopBtn, x, y)) return { kind: 'shop' }
   if (contains(frame.sheetSkip, x, y)) return { kind: 'skip' }
   if (contains(frame.sheetBtn, x, y)) return { kind: 'sheet' }
   if (contains(frame.sheet, x, y)) return { kind: 'swallow' }

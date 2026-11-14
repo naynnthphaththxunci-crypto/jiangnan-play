@@ -26,70 +26,22 @@
   ],
   "tutorial": [
     {
-      "id": "enter",
-      "type": "操作",
-      "gesture": "tap",
-      "text": "这里就是厨房的操作台了！哇，这里太脏了！我们需要整理一下。"
-    },
-    {
       "id": "merge",
       "type": "操作",
       "gesture": "drag",
-      "text": "将两个棋子合并为一个高一级的棋子。"
+      "text": "把这两个 1 级猫粮母棋拖到一起。"
     },
     {
-      "id": "unlock",
+      "id": "mergeC",
       "type": "操作",
       "gesture": "drag",
-      "text": "通过合并来解锁被风沙掩埋的物品。"
+      "text": "再拖到半遮着的 2 级猫粮母棋上。"
     },
     {
-      "id": "produce",
-      "type": "操作",
-      "gesture": "tap",
-      "text": "点开砂锅，拿出猫草。"
-    },
-    {
-      "id": "deliver",
-      "type": "操作",
-      "gesture": "tap",
-      "text": "小鱼干好了！端给{daughter}去。"
-    },
-    {
-      "id": "bagMerge",
+      "id": "mergeD",
       "type": "操作",
       "gesture": "drag",
-      "text": "再和另一只合成更大的。"
-    },
-    {
-      "id": "giftTalk",
-      "type": "对话",
-      "gesture": "none",
-      "text": "点一下礼物，冷却才开始计时。"
-    },
-    {
-      "id": "giftTap",
-      "type": "操作",
-      "gesture": "tap",
-      "text": "点礼物，开始冷却。"
-    },
-    {
-      "id": "giftRush",
-      "type": "操作",
-      "gesture": "tap",
-      "text": "点下面的加速。这一次免费。"
-    },
-    {
-      "id": "coinTalk",
-      "type": "对话",
-      "gesture": "none",
-      "text": "铜钱够了。"
-    },
-    {
-      "id": "build",
-      "type": "操作",
-      "gesture": "tap",
-      "text": "去右下角建造，修修铺子。"
+      "text": "和旁边的 3 级合成 4 级，就能产出了。"
     }
   ]
 }
