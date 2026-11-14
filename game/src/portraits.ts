@@ -1,11 +1,10 @@
 import teaGuest from './assets/guests/teaGuest.png'
 import scholar from './assets/guests/scholar.png'
-import embroider from './assets/guests/embroider.png'
 import boatman from './assets/guests/boatman.webp'
 import squire from './assets/guests/squire.webp'
 import fisherman from './assets/guests/fisherman.webp'
 import siamese from './assets/guests/siamese.png'
-import bossDaughter from './assets/guests/bossDaughter.png'
+import bossDaughter from './assets/guests/bossDaughter.webp'
 import ruyue from './assets/guests/ruyue.png'
 import xiaotao from './assets/guests/xiaotao.png'
 import zhao from './assets/guests/zhao.png'
@@ -16,7 +15,8 @@ import type { NormBox } from './types'
 export const PORTRAITS: Record<string, string> = {
   teaGuest,
   scholar,
-  embroider,
+  /** 晴娘订单立绘用老板女儿的 1024 原画，名字仍是晴娘。 */
+  embroider: bossDaughter,
   boatman,
   squire,
   fisherman,

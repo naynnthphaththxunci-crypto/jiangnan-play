@@ -144,10 +144,13 @@ describe('订单卡', () => {
 
   it('六位客人有抠好的立绘，浣熊仍是占位，棋盘颜色在配置里', () => {
     const cfg = defaultConfig()
-    for (const id of ['teaGuest', 'scholar', 'embroider', 'boatman', 'squire', 'fisherman', 'siamese', 'bossDaughter']) {
+    for (const id of ['teaGuest', 'scholar', 'boatman', 'squire', 'fisherman', 'siamese', 'bossDaughter']) {
       expect(cfg.characters.find((entry) => entry.id === id)?.portrait).toBe(id)
       expect(PORTRAITS[id]).toContain(id)
     }
+    expect(cfg.characters.find((entry) => entry.id === 'embroider')?.name).toBe('晴娘')
+    expect(cfg.characters.find((entry) => entry.id === 'embroider')?.portrait).toBe('embroider')
+    expect(PORTRAITS.embroider).toBe(PORTRAITS.bossDaughter)
     expect(cfg.characters.find((entry) => entry.id === 'raccoon')?.portrait).toBeUndefined()
     expect(PORTRAITS.ruyue).toContain('ruyue')
     expect(PORTRAITS.xiaotao).toContain('xiaotao')
