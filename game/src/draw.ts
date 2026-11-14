@@ -723,6 +723,7 @@ function drawHecheng(model: RenderModel): void {
         introEnd: cfg.economy.ajiangIntroEnd,
         loopStart: cfg.economy.ajiangLoopStart,
         loopEnd: cfg.economy.ajiangLoopEnd,
+        zeroFrameMs: cfg.economy.baoZeroFrameMs,
       })
     }
   })

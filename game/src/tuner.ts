@@ -410,6 +410,30 @@ export const SLIDERS: SliderSpec[] = [
     text: (v) => `${Math.round(v)}`,
   },
   {
+    id: 'baoZero',
+    label: '0秒帧时长',
+    min: 16,
+    max: 70,
+    step: 1,
+    get: (c) => c.economy.baoZeroFrameMs ?? 33,
+    set: (c, v) => {
+      c.economy.baoZeroFrameMs = v
+    },
+    text: (v) => `${Math.round(v)} 毫秒`,
+  },
+  {
+    id: 'testGuests',
+    label: '测试：指定订单客人',
+    min: 0,
+    max: 1,
+    step: 1,
+    get: (c) => c.economy.testOrderGuests ?? 0,
+    set: (c, v) => {
+      c.economy.testOrderGuests = v >= 1 ? 1 : 0
+    },
+    text: (v) => (v >= 1 ? '阿桨 + 鲍大叔' : '关'),
+  },
+  {
     id: 'ajiangLoopEnd',
     label: '阿桨循环止帧',
     min: 0,

@@ -1322,6 +1322,28 @@ function maxOrderLevel(state: GameState, line: string): number {
 
 const GUEST_ROTATION = ['boatman', 'embroider', 'fisherman', 'squire', 'scholar', 'teaGuest', 'siamese', 'bossDaughter']
 
+/** 调参打开时，订单区固定带上阿桨和鲍大叔，方便看序列帧。默认关闭。 */
+export function applyTestGuests(state: GameState, cfg: GameConfig): void {
+  if ((cfg.economy.testOrderGuests ?? 0) < 1) return
+  if (state.phase === 'story') return
+  const wanted = ['boatman', 'fisherman']
+  const missing = wanted.filter((id) => !state.orders.some((order) => order.customerId === id))
+  for (const id of missing) {
+    const donor = state.orders.find((order) => !wanted.includes(order.customerId))
+    if (donor) {
+      donor.customerId = id
+      continue
+    }
+    state.orderCounter += 1
+    state.orders.push({
+      id: `test${state.orderCounter}`,
+      customerId: id,
+      slots: [{ line: 'food', level: 1, filled: false }],
+      big: false,
+    })
+  }
+}
+
 function nextGuest(state: GameState): string {
   const busy = new Set(state.orders.map((order) => order.customerId))
   for (let step = 0; step < GUEST_ROTATION.length; step++) {

@@ -235,6 +235,10 @@ export interface Economy {
   ajiangIntroEnd: number
   ajiangLoopStart: number
   ajiangLoopEnd: number
+  /** PS 时间轴里标成 0 秒的帧，实际播放毫秒。鲍大叔眨眼用。 */
+  baoZeroFrameMs: number
+  /** 1 时订单区固定出现阿桨和鲍大叔，方便看序列帧。默认 0。 */
+  testOrderGuests: number
   spawn1High: number
   spawn2Mid: number
   spawnTable: { mult: 1 | 2 | 4 | 8; cost: number; enabled: boolean; weights: { level: number; p: number }[] }[]

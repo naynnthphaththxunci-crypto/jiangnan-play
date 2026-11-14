@@ -248,6 +248,8 @@
   "ajiangIntroEnd": 28,
   "ajiangLoopStart": 20,
   "ajiangLoopEnd": 28,
+  "baoZeroFrameMs": 33,
+  "testOrderGuests": 0,
   "spawn1High": 0.3,
   "spawn2Mid": 0.8,
   "spawnTable": [

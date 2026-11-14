@@ -32,6 +32,7 @@ import {
   advanceBuildStory,
   advanceGuide,
   applyFreeRefill,
+  applyTestGuests,
   arrangeOrders,
   buyEnergyWithGems,
   collectLock,
@@ -1183,6 +1184,7 @@ export function startGame(platform: Platform): void {
     const real = platform.now()
     settleGifts(state, cfg, real)
     arrangeOrders(state, real)
+    applyTestGuests(state, cfg)
     resolveGuides(state, cfg)
     noteGuide(real)
     if (guideIsLocking(state, cfg) && !openingMergeSticky() && real - guideSince > 8000) {

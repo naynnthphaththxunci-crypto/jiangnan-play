@@ -18,6 +18,13 @@ export interface SpriteSheet {
   introEnd?: number
   loopStart?: number
   loopEnd?: number
+  /**
+   * 每帧各自的毫秒数。有这张表就不用 fps。
+   * 0 表示 PS 里的 0 秒帧，播放时改用 zeroFrameMs。
+   */
+  frameDurations?: number[]
+  /** 0 秒帧实际播放的毫秒。眨眼要快，默认 33。 */
+  zeroFrameMs?: number
 }
 
 export interface SpriteDest {
@@ -31,8 +38,26 @@ export function staticSheet(id: string, src: string): SpriteSheet {
   return { id, src, frameWidth: 0, frameHeight: 0, frames: 1, columns: 1, fps: 0 }
 }
 
+/** 把 0 秒帧换成调参时长。没有逐帧表时返回空。 */
+export function resolvedFrameDurations(sheet: SpriteSheet, zeroFrameMs = sheet.zeroFrameMs ?? 33): number[] | null {
+  if (!sheet.frameDurations?.length) return null
+  const fallback = Math.max(1, zeroFrameMs)
+  return sheet.frameDurations.map((ms) => (ms <= 0 ? fallback : ms))
+}
+
 export function spriteFrameIndex(sheet: SpriteSheet, now: number, startedAt = 0): number {
   const frames = Math.max(1, sheet.frames)
+  const durations = resolvedFrameDurations(sheet)
+  if (durations?.length) {
+    const total = durations.reduce((sum, ms) => sum + ms, 0) || 1
+    let age = Math.max(0, now - startedAt) % total
+    for (let i = 0; i < durations.length; i++) {
+      const span = durations[i] ?? 1
+      if (age < span) return i
+      age -= span
+    }
+    return durations.length - 1
+  }
   if (frames <= 1 || sheet.fps <= 0) return 0
   const frameMs = 1000 / sheet.fps
   if (sheet.loopStart == null || sheet.loopEnd == null) {
