@@ -172,25 +172,29 @@ export function designToScreen(
 
 export function cellOnBoard(board: { x: number; y: number }, scale: number, row: number, col: number): Box {
   const spec = designCell(row, col) ?? { x: BOARD_X + 43 + col * 141, y: BOARD_Y + 42 + row * 143, w: 139, h: 140 }
+  const side = spec.w * scale
   return {
     x: board.x + (spec.x - BOARD_X) * scale,
-    y: board.y + (spec.y - BOARD_Y) * scale,
-    w: spec.w * scale,
-    h: spec.h * scale,
+    y: board.y + (spec.y - BOARD_Y) * scale + (spec.h * scale - side) / 2,
+    w: side,
+    h: side,
   }
 }
 
 export function hechengParts(input: HechengInput): HechengScene {
   const scale = input.w / DESIGN_W
-  const top = Math.max(0, input.insetTop)
-  const bottom = Math.max(0, input.insetBottom)
-  const extra = input.h - bottom - top - DESIGN_H * scale
-  const place = (box: Box, anchor: 'top' | 'bottom', scroll = 0): Box => ({
+  const availTop = Math.max(0, input.insetTop)
+  const availBottom = input.h - Math.max(0, input.insetBottom)
+  // 按宽度等比后，设计稿底对齐屏幕底。矮屏裁掉顶部场景，长屏把空档留在顶部。
+  const sceneTop = availBottom - DESIGN_H * scale
+  const hudShift = Math.max(0, availTop - (sceneTop + 140 * scale))
+  const place = (box: Box, scroll = 0, shift = 0): Box => ({
     x: box.x * scale - scroll,
-    y: top + box.y * scale + (anchor === 'bottom' ? extra : 0),
+    y: sceneTop + box.y * scale + shift,
     w: box.w * scale,
     h: box.h * scale,
   })
+  const placeHud = (box: Box) => place(box, 0, hudShift)
   const guestScale = input.guestCanvasScale && input.guestCanvasScale > 0 ? input.guestCanvasScale : GUEST_SCALE
   const n = Math.max(0, input.orderCount)
   let right = 0
@@ -209,10 +213,10 @@ export function hechengParts(input: HechengInput): HechengScene {
   const orderGuests: Box[] = []
   const orderIcons: { order: number; slot: number; rect: Box }[] = []
   for (let i = 0; i < n; i++) {
-    const plate = place(slotAt(PLATES, i), 'top', scroll)
-    const guest = place(guestCanvasBox(i, guestScale), 'top', scroll)
-    const reward = place(slotAt(REWARDS, i), 'top', scroll)
-    const button = place(slotAt(COMPLETES, i), 'top', scroll)
+    const plate = place(slotAt(PLATES, i), scroll)
+    const guest = place(guestCanvasBox(i, guestScale), scroll)
+    const reward = place(slotAt(REWARDS, i), scroll)
+    const button = place(slotAt(COMPLETES, i), scroll)
     orders.push(plate)
     orderPlates.push(plate)
     orderGuests.push(guest)
@@ -232,9 +236,9 @@ export function hechengParts(input: HechengInput): HechengScene {
       })
     }
   }
-  const boardArt = place({ x: BOARD_X, y: BOARD_Y, w: 1071, h: 1370 }, 'top')
+  const boardArt = place({ x: BOARD_X, y: BOARD_Y, w: 1071, h: 1370 })
   const first = designCell(0, 0)
-  const info = place({ x: 178, y: 2126, w: 723, h: 148 }, 'bottom')
+  const info = place({ x: 178, y: 2126, w: 723, h: 148 })
   const unit = Math.max(0.72, input.w / 390)
   const sellW = Math.round(54 * unit)
   const rushW = input.showRush ? Math.round(58 * unit) : 0
@@ -254,20 +258,58 @@ export function hechengParts(input: HechengInput): HechengScene {
     w: Math.round(24 * unit),
     h: Math.round(24 * unit),
   }
-  const build = place({ x: 912, y: 2112, w: 153, h: 163 }, 'bottom')
+  const build = place({ x: 912, y: 2112, w: 153, h: 163 })
   const dockTop = build.y
   const storyOn = input.showStory !== false
   const taskOn = input.showTask !== false
   const chestOn = input.showChest !== false
   // 只剩宝箱时收到绿书的位置，避免书藏起来后宝箱悬在半空。
   const chestDesign = chestOn ? (storyOn ? CHEST_BTN : STORY_BTN) : null
-  const storyBtn = storyOn ? place(STORY_BTN, 'top', scroll) : ZERO_BOX
-  const taskBtn = taskOn ? place(TASK_BTN, 'top', scroll) : ZERO_BOX
-  const chestBtn = chestDesign ? place(chestDesign, 'top', scroll) : ZERO_BOX
+  const storyBtn = storyOn ? place(STORY_BTN, scroll) : ZERO_BOX
+  const taskBtn = taskOn ? place(TASK_BTN, scroll) : ZERO_BOX
+  const chestBtn = chestDesign ? place(chestDesign, scroll) : ZERO_BOX
+  const orderClip = place({ x: 0, y: 300, w: DESIGN_W, h: 420 })
+  const avatarSlot = placeHud({ x: 29, y: 150, w: 149, h: 149 })
+  let orderDy = 0
+  const leadGuest = orderGuests[0]
+  if (leadGuest && leadGuest.h > 0) {
+    const minY = avatarSlot.y + avatarSlot.h + 4 * scale
+    if (leadGuest.y < minY) orderDy = minY - leadGuest.y
+  }
+  const taskIcon = childOf(taskBtn, TASK_BTN, TASK_ICON)
+  const bookIcon = childOf(storyBtn, STORY_BTN, BOOK_ICON)
+  const chestIcon = childOf(chestBtn, CHEST_BTN, CHEST_ICON)
+  const badgeStory = childOf(storyBtn, STORY_BTN, BADGE_STORY)
+  const badgeChest = childOf(chestBtn, CHEST_BTN, BADGE_CHEST)
+  const badgeTask = childOf(taskBtn, TASK_BTN, BADGE_TASK)
+  const shiftDown = (box: Box) => {
+    if (box !== ZERO_BOX && box.h > 0) box.y += orderDy
+  }
+  if (orderDy) {
+    for (const box of [
+      ...orderGuests,
+      ...orderPlates,
+      ...orderRewards,
+      ...completes,
+      storyBtn,
+      taskBtn,
+      chestBtn,
+      orderClip,
+      taskIcon,
+      bookIcon,
+      chestIcon,
+      badgeStory,
+      badgeChest,
+      badgeTask,
+    ]) {
+      shiftDown(box)
+    }
+    for (const icon of orderIcons) shiftDown(icon.rect)
+  }
   return {
     scale,
-    top,
-    orderClip: place({ x: 0, y: 300, w: DESIGN_W, h: 420 }, 'top'),
+    top: sceneTop,
+    orderClip,
     orders,
     completes,
     orderPlates,
@@ -277,34 +319,34 @@ export function hechengParts(input: HechengInput): HechengScene {
     orderMaxScroll,
     board: { x: boardArt.x, y: boardArt.y, cell: (first?.w ?? 139) * scale },
     rewardTray: chestBtn,
-    dock: { x: 0, y: dockTop, w: input.w, h: Math.max(0, input.h - bottom - dockTop) },
-    pendingBtn: place({ x: 14, y: 2113, w: 143, h: 160 }, 'bottom'),
+    dock: { x: 0, y: dockTop, w: input.w, h: Math.max(0, availBottom - dockTop) },
+    pendingBtn: place({ x: 14, y: 2113, w: 143, h: 160 }),
     houseBtn: build,
     infoBar: info,
-    avatarSlot: place({ x: 29, y: 150, w: 149, h: 149 }, 'top'),
-    energySlot: place({ x: 178, y: 169, w: 204, h: 71 }, 'top'),
-    coinSlot: place({ x: 397, y: 169, w: 202, h: 71 }, 'top'),
-    gemSlot: place({ x: 613, y: 168, w: 206, h: 72 }, 'top'),
-    smileSlot: place({ x: 717, y: 260, w: 86, h: 86 }, 'top'),
-    multBtn: place({ x: 827, y: 265, w: 80, h: 78 }, 'top'),
-    shopBtn: place({ x: 918, y: 247, w: 124, h: 107 }, 'top'),
+    avatarSlot,
+    energySlot: placeHud({ x: 178, y: 169, w: 204, h: 71 }),
+    coinSlot: placeHud({ x: 397, y: 169, w: 202, h: 71 }),
+    gemSlot: placeHud({ x: 613, y: 168, w: 206, h: 72 }),
+    smileSlot: placeHud({ x: 717, y: 260, w: 86, h: 86 }),
+    multBtn: placeHud({ x: 827, y: 265, w: 80, h: 78 }),
+    shopBtn: placeHud({ x: 918, y: 247, w: 124, h: 107 }),
     sellBtn,
     chainBtn,
     rushBtn,
     adBtn,
-    energyPlus: place({ x: 342, y: 169, w: 40, h: 71 }, 'top'),
+    energyPlus: placeHud({ x: 342, y: 169, w: 40, h: 71 }),
     chestBtn,
     storyBtn,
     taskBtn,
-    hud: place({ x: 0, y: 140, w: DESIGN_W, h: 220 }, 'top'),
-    counter: place({ x: 0, y: 598, w: DESIGN_W, h: 324 }, 'top', scroll),
+    hud: placeHud({ x: 0, y: 140, w: DESIGN_W, h: 220 }),
+    counter: place({ x: 0, y: 598, w: DESIGN_W, h: 324 }, scroll),
     boardArt,
-    taskIcon: childOf(taskBtn, TASK_BTN, TASK_ICON),
-    bookIcon: childOf(storyBtn, STORY_BTN, BOOK_ICON),
-    chestIcon: childOf(chestBtn, CHEST_BTN, CHEST_ICON),
-    badgeStory: childOf(storyBtn, STORY_BTN, BADGE_STORY),
-    badgeChest: childOf(chestBtn, CHEST_BTN, BADGE_CHEST),
-    badgeTask: childOf(taskBtn, TASK_BTN, BADGE_TASK),
-    badgeShop: place({ x: 1020, y: 246, w: 38, h: 38 }, 'top'),
+    taskIcon,
+    bookIcon,
+    chestIcon,
+    badgeStory,
+    badgeChest,
+    badgeTask,
+    badgeShop: placeHud({ x: 1020, y: 246, w: 38, h: 38 }),
   }
 }

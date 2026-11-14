@@ -136,7 +136,7 @@ describe('订单卡', () => {
     const spec = designCell(3, 4)!
     const box = cellRect(view, 3, 4)
     expect(box.w).toBeCloseTo(spec.w * scale, 3)
-    expect(box.h).toBeCloseTo(spec.h * scale, 3)
+    expect(box.h).toBeCloseTo(box.w, 3)
     expect(box.x + box.w / 2).toBeCloseTo(view.board.x + (spec.x + spec.w / 2 - 7) * scale, 3)
     expect(box.y + box.h / 2).toBeCloseTo(view.board.y + (spec.y + spec.h / 2 - 714) * scale, 3)
     expect(hitTest(view, box.x + box.w / 2, box.y + box.h / 2)).toMatchObject({ kind: 'cell', row: 3, col: 4 })

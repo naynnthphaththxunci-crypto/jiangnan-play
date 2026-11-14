@@ -1,8 +1,10 @@
 import type { AudioContextLike, Platform } from './types'
+import { canvasFit } from '../viewport'
 
 export function createWebPlatform(canvas: HTMLCanvasElement): Platform {
   let dpr = Math.min(3, window.devicePixelRatio || 1)
   let logical = { w: 390, h: 844 }
+  const insets = { top: 0, bottom: 0 }
   let resizeCb: (() => void) | null = null
   let wheelCb: ((x: number, y: number, dy: number) => void) | null = null
   let keyCb: ((key: string) => void) | null = null
@@ -10,20 +12,47 @@ export function createWebPlatform(canvas: HTMLCanvasElement): Platform {
   let showCb: (() => void) | null = null
   let audio: AudioContextLike | null = null
 
-  const sizeQuery = new URLSearchParams(window.location.search).get('size')?.match(/^(\d+)x(\d+)$/)
-  const DESIGN_W = sizeQuery ? Number(sizeQuery[1]) : 390
-  const DESIGN_H = sizeQuery ? Number(sizeQuery[2]) : 844
+  const readSafe = () => {
+    const probe = document.getElementById('safe-probe')
+    if (!probe) return { top: 0, right: 0, bottom: 0, left: 0 }
+    const style = getComputedStyle(probe)
+    const num = (value: string) => {
+      const parsed = Number.parseFloat(value)
+      return Number.isFinite(parsed) ? parsed : 0
+    }
+    return {
+      top: num(style.paddingTop),
+      right: num(style.paddingRight),
+      bottom: num(style.paddingBottom),
+      left: num(style.paddingLeft),
+    }
+  }
+
   const fit = () => {
-    const parent = canvas.parentElement ?? document.body
-    const pw = parent.clientWidth || window.innerWidth
-    const ph = parent.clientHeight || window.innerHeight
-    const scale = Math.min(pw / DESIGN_W, ph / DESIGN_H)
-    logical = { w: DESIGN_W, h: DESIGN_H }
+    const vv = window.visualViewport
+    const vw = vv?.width ?? window.innerWidth
+    const vh = vv?.height ?? window.innerHeight
+    const ox = vv?.offsetLeft ?? 0
+    const oy = vv?.offsetTop ?? 0
+    const box = canvasFit(vw, vh)
     dpr = Math.min(3, window.devicePixelRatio || 1)
-    canvas.style.width = `${Math.max(1, Math.floor(DESIGN_W * scale))}px`
-    canvas.style.height = `${Math.max(1, Math.floor(DESIGN_H * scale))}px`
-    canvas.width = Math.round(DESIGN_W * dpr)
-    canvas.height = Math.round(DESIGN_H * dpr)
+    const cssW = Math.max(1, Math.round(box.w))
+    const cssH = Math.max(1, Math.round(box.h))
+    logical = { w: cssW, h: cssH }
+    const style = canvas.style
+    style.position = 'fixed'
+    style.left = `${Math.round(ox + box.x)}px`
+    style.top = `${Math.round(oy + box.y)}px`
+    style.width = `${cssW}px`
+    style.height = `${cssH}px`
+    canvas.width = Math.max(1, Math.round(cssW * dpr))
+    canvas.height = Math.max(1, Math.round(cssH * dpr))
+    const safe = readSafe()
+    const layoutH = window.innerHeight
+    const viewTop = oy
+    const viewBottom = oy + vh
+    insets.top = box.wide ? 0 : Math.max(0, safe.top - viewTop)
+    insets.bottom = box.wide ? 0 : Math.max(0, viewBottom - (layoutH - safe.bottom))
   }
   fit()
   const refit = () => {
@@ -35,6 +64,7 @@ export function createWebPlatform(canvas: HTMLCanvasElement): Platform {
     window.scrollTo(0, 0)
     refit()
   })
+  window.addEventListener('orientationchange', refit)
   document.addEventListener(
     'touchmove',
     (event) => {
@@ -58,7 +88,7 @@ export function createWebPlatform(canvas: HTMLCanvasElement): Platform {
     get dpr() {
       return dpr
     },
-    insets: { top: 0, bottom: 0 },
+    insets,
     now: () => Date.now(),
     size: () => logical,
     raf: (cb) => {

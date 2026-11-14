@@ -776,6 +776,8 @@ export function hitTest(frame: Frame, x: number, y: number): Hit | null {
     for (const icon of frame.orderIcons) {
       if (contains(icon.rect, x, y)) return { kind: 'orderIcon', order: icon.order, slot: icon.slot }
     }
+    const underOrder = cellAt(frame, x, y)
+    if (underOrder) return { kind: 'cell', ...underOrder }
     for (let i = 0; i < frame.orders.length; i++) {
       if (contains(frame.orders[i], x, y)) return { kind: 'order', index: i }
     }

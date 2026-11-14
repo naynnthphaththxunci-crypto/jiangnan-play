@@ -36,13 +36,10 @@ export async function runBoot(canvas: HTMLCanvasElement): Promise<() => void> {
     if (track instanceof HTMLElement) track.setAttribute('aria-valuenow', String(shown))
   }
   const place = () => {
-    const app = canvas.parentElement
-    if (!app) return
-    const host = app.getBoundingClientRect()
     const box = canvas.getBoundingClientRect()
     root.style.transform = 'none'
-    root.style.left = `${box.left - host.left}px`
-    root.style.top = `${box.top - host.top}px`
+    root.style.left = `${box.left}px`
+    root.style.top = `${box.top}px`
     root.style.width = `${box.width}px`
     root.style.height = `${box.height}px`
   }

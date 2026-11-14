@@ -102,6 +102,7 @@ export function render(model: RenderModel): void {
     drawHecheng(model)
     drawHint(model)
     drawBoard(model)
+    drawOrderGuests(model)
     drawChainPop(model)
     drawFx(model)
     drawInfo(model)
@@ -702,6 +703,26 @@ function blit(ctx: CanvasRenderingContext2D, id: Parameters<typeof hechengImage>
   ctx.drawImage(img as CanvasImageSource, rect.x, rect.y, rect.w, rect.h)
 }
 
+function drawOrderGuests(model: RenderModel): void {
+  const { ctx, frame, state, cfg, realNow } = model
+  if (frame.mode !== 'board') return
+  state.orders.forEach((order, index) => {
+    const guest = frame.orderGuests[index]
+    if (!guest || guest.h <= 0) return
+    const who = cfg.characters.find((entry) => entry.id === order.customerId)
+    const firstOrder = order.scripted === true
+    const portrait = firstOrder ? firstOrderGuestPortrait() : guestPortrait(who?.portrait)
+    if (!guestSeen.has(order.id)) guestSeen.set(order.id, realNow)
+    if ((who || firstOrder) && portrait && portraitReady(portrait)) {
+      drawCharacter(ctx, firstOrder ? 'xiaotao' : who?.portrait, portrait, guest, realNow, 'contain', {
+        startedAt: guestSeen.get(order.id),
+        frameMs: cfg.economy.ajiangFrameMs,
+        zeroFrameMs: cfg.economy.baoZeroFrameMs,
+      })
+    }
+  })
+}
+
 function drawHecheng(model: RenderModel): void {
   const { ctx, frame, state, cfg, realNow } = model
   const scale = frame.w / 1080
@@ -712,6 +733,10 @@ function drawHecheng(model: RenderModel): void {
     const y = top - 178 * scale
     const w = 1725 * scale
     const h = 2627 * scale
+    if (y > 0) {
+      ctx.fillStyle = '#e4d2b4'
+      ctx.fillRect(0, 0, frame.w, y)
+    }
     ctx.drawImage(bg as CanvasImageSource, x, y, w, h)
     if (y + h < frame.h) {
       ctx.fillStyle = '#8a5a32'
@@ -728,6 +753,23 @@ function drawHecheng(model: RenderModel): void {
     ctx.clip()
   }
   const stripScroll = frame.orderPlates[0] ? 354 * scale - frame.orderPlates[0].x : 0
+  const counterImg = hechengImage('counter')
+  if (counterImg && (counterImg.naturalWidth || 0) > 0) {
+    const tileW = 1080 * scale
+    const counterY = top + 598 * scale
+    const counterH = 324 * scale
+    const cover = Math.max(
+      frame.w,
+      ...frame.orderGuests.map((rect) => rect.x + rect.w),
+      ...frame.orderPlates.map((rect) => rect.x + rect.w),
+      ...frame.orderRewards.map((rect) => rect.x + rect.w),
+      ...frame.completes.map((rect) => rect.x + rect.w),
+    ) + 8
+    for (let x = -stripScroll; x < cover; x += tileW) {
+      ctx.drawImage(counterImg as CanvasImageSource, x, counterY, tileW, counterH)
+    }
+  }
+  blit(ctx, 'board', at({ x: 7, y: 714, w: 1071, h: 1370 }))
   ctx.save()
   clipOrders()
   state.orders.forEach((order, index) => {
@@ -746,22 +788,6 @@ function drawHecheng(model: RenderModel): void {
     }
   })
   ctx.restore()
-  const counterImg = hechengImage('counter')
-  if (counterImg && (counterImg.naturalWidth || 0) > 0) {
-    const tileW = 1080 * scale
-    const counterY = top + 598 * scale
-    const counterH = 324 * scale
-    const cover = Math.max(
-      frame.w,
-      ...frame.orderGuests.map((rect) => rect.x + rect.w),
-      ...frame.orderPlates.map((rect) => rect.x + rect.w),
-      ...frame.orderRewards.map((rect) => rect.x + rect.w),
-      ...frame.completes.map((rect) => rect.x + rect.w),
-    ) + 8
-    for (let x = -stripScroll; x < cover; x += tileW) {
-      ctx.drawImage(counterImg as CanvasImageSource, x, counterY, tileW, counterH)
-    }
-  }
   ctx.save()
   clipOrders()
   frame.orderPlates.forEach((plate) => blit(ctx, 'plate', plate))
@@ -803,7 +829,6 @@ function drawHecheng(model: RenderModel): void {
     }
   })
   ctx.restore()
-  blit(ctx, 'board', at({ x: 7, y: 714, w: 1071, h: 1370 }))
   blit(ctx, 'stash', frame.pendingBtn)
   blit(ctx, 'info', frame.infoBar)
   blit(ctx, 'build', frame.houseBtn)
@@ -886,10 +911,26 @@ function drawHecheng(model: RenderModel): void {
     ctx.arc(cx, cy, frame.smileSlot.w * 0.445, -Math.PI / 2, -Math.PI / 2 + ratio * Math.PI * 2)
     ctx.stroke()
   }
-  if (full) blit(ctx, 'badgeSmall', at({ x: 776, y: 248, w: 36, h: 36 }))
+  if (full) {
+    const smile = frame.smileSlot
+    blit(ctx, 'badgeSmall', {
+      x: smile.x + (59 / 86) * smile.w,
+      y: smile.y - (12 / 86) * smile.h,
+      w: (36 / 86) * smile.w,
+      h: (36 / 86) * smile.h,
+    })
+  }
   blit(ctx, speedArtId(state.spawnMult ?? 1), frame.multBtn)
   blit(ctx, 'shop', frame.shopBtn)
-  if (!state.shopPackClaimed || !state.shopClaimDate) blit(ctx, 'badgeShop', at({ x: 1020, y: 246, w: 38, h: 38 }))
+  if (!state.shopPackClaimed || !state.shopClaimDate) {
+    const shop = frame.shopBtn
+    blit(ctx, 'badgeShop', {
+      x: shop.x + (102 / 124) * shop.w,
+      y: shop.y - (1 / 107) * shop.h,
+      w: (38 / 124) * shop.w,
+      h: (38 / 107) * shop.h,
+    })
+  }
   if (buildHot) {
     ctx.beginPath()
     ctx.fillStyle = '#c4552a'
