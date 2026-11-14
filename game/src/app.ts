@@ -962,7 +962,7 @@ export function startGame(platform: Platform): void {
     } else if (!overlay && hole && hit.kind !== 'tune' && !contains(hole, x, y)) {
       return
     }
-    if (state.phase === 'story') {
+    if (state.phase === 'story' && !tuner) {
       if (hit.kind === 'mute') {
         state.soundMuted = !state.soundMuted
         comicAudio.setMuted(state.soundMuted)

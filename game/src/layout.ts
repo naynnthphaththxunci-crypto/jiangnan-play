@@ -523,7 +523,7 @@ export function layout(input: LayoutInput): Frame {
   const tunerView: Rect = input.tuner
     ? { x: tunerCard.x + 8, y: tunerCard.y + 50, w: tunerCard.w - 16, h: tunerCard.h - 50 - 128 }
     : Z
-  const rowH = 40
+  const rowH = 52
   const contentH = SLIDERS.length * rowH + 86
   const tunerMaxScroll = Math.max(0, contentH - tunerView.h)
   const tunerScroll = clamp(input.tunerScroll, 0, tunerMaxScroll)
@@ -532,8 +532,8 @@ export function layout(input: LayoutInput): Frame {
         index,
         y: tunerView.y + index * rowH - tunerScroll,
         h: rowH,
-        trackX: tunerView.x + 96,
-        trackW: Math.max(36, tunerView.w - 96 - 84),
+        trackX: tunerView.x + 8,
+        trackW: Math.max(36, tunerView.w - 16),
       }))
     : []
   const tunerExport: Rect = input.tuner

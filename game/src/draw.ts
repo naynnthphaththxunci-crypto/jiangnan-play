@@ -2210,20 +2210,29 @@ function drawTuner(model: RenderModel): void {
     const spec = SLIDERS[row.index]
     if (!spec) continue
     const value = spec.get(cfg)
-    text(ctx, spec.label, frame.tunerView.x + 4, row.y + row.h / 2, 13, PAL.ink, 'left')
-    const trackY = row.y + row.h / 2
+    const valueText = spec.text(value)
+    ctx.font = `600 11px ${FONT}`
+    const valueW = ctx.measureText(valueText).width
+    ctx.save()
+    ctx.beginPath()
+    ctx.rect(frame.tunerView.x, row.y, Math.max(40, frame.tunerView.w - valueW - 16), 24)
+    ctx.clip()
+    text(ctx, spec.label, frame.tunerView.x + 4, row.y + 14, 13, PAL.ink, 'left')
+    ctx.restore()
+    text(ctx, valueText, frame.tunerView.x + frame.tunerView.w - 4, row.y + 14, 11, PAL.ink, 'right')
+    const trackY = row.y + row.h - 14
     ctx.fillStyle = '#ddcfb8'
     roundRect(ctx, row.trackX, trackY - 3, row.trackW, 6, 3)
     ctx.fill()
     const ratio = trackRatio(cfg, row.index)
     ctx.fillStyle = PAL.danger
-    roundRect(ctx, row.trackX, trackY - 3, row.trackW * ratio, 6, 3)
+    roundRect(ctx, row.trackX, trackY - 3, Math.max(6, row.trackW * ratio), 6, 3)
     ctx.fill()
     ctx.beginPath()
-    ctx.arc(row.trackX + row.trackW * ratio, trackY, 7, 0, Math.PI * 2)
+    ctx.arc(row.trackX + row.trackW * ratio, trackY, 8, 0, Math.PI * 2)
     ctx.fillStyle = PAL.ink
     ctx.fill()
-    text(ctx, spec.text(value), frame.tunerView.x + frame.tunerView.w - 2, trackY, 11, PAL.ink, 'right')
+    void valueW
   }
   const scroll = frame.sliders[0] ? frame.tunerView.y - frame.sliders[0].y : 0
   const statsY = frame.tunerView.y + SLIDERS.length * 40 + 8 - scroll
