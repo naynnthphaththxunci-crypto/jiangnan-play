@@ -4,9 +4,9 @@ import boatman from './assets/guests/boatman.webp'
 import squire from './assets/guests/squire.webp'
 import fisherman from './assets/guests/fisherman.webp'
 import siamese from './assets/guests/siamese.png'
+import embroider from './assets/guests/embroider.webp'
 import bossDaughter from './assets/guests/bossDaughter.webp'
 import ruyue from './assets/guests/ruyue.png'
-import xiaotao from './assets/guests/xiaotao.png'
 import zhao from './assets/guests/zhao.png'
 import liu from './assets/guests/liu.png'
 import portraitsJson from './data/portraits.json'
@@ -15,15 +15,15 @@ import type { NormBox } from './types'
 export const PORTRAITS: Record<string, string> = {
   teaGuest,
   scholar,
-  /** 晴娘订单立绘用老板女儿的 1024 原画，名字仍是晴娘。 */
-  embroider: bossDaughter,
+  embroider,
   boatman,
   squire,
   fisherman,
   siamese,
+  /** 老板女儿和小桃的订单立绘是同一张半身像。开场漫画用整页，不走这张。 */
   bossDaughter,
   ruyue,
-  xiaotao,
+  xiaotao: bossDaughter,
   zhao,
   liu,
 }

@@ -12,9 +12,9 @@
     "face": { "x": 0.22, "y": 0.16, "w": 0.46, "h": 0.32 }
   },
   "embroider": {
-    "file": "bossDaughter.webp",
+    "file": "embroider.webp",
     "aspect": 1,
-    "content": { "x": 0.1143, "y": 0.0527, "w": 0.8857, "h": 0.9473 },
+    "content": { "x": 0.1143, "y": 0.0527, "w": 0.8271, "h": 0.9473 },
     "face": { "x": 0.22, "y": 0.16, "w": 0.46, "h": 0.32 }
   },
   "boatman": {
@@ -44,7 +44,7 @@
   "bossDaughter": {
     "file": "bossDaughter.webp",
     "aspect": 1,
-    "content": { "x": 0.1143, "y": 0.0527, "w": 0.8857, "h": 0.9473 },
+    "content": { "x": 0.0605, "y": 0.0479, "w": 0.9238, "h": 0.9521 },
     "face": { "x": 0.22, "y": 0.16, "w": 0.46, "h": 0.32 }
   },
   "ruyue": {
@@ -64,13 +64,13 @@
     }
   },
   "xiaotao": {
-    "file": "xiaotao.png",
+    "file": "bossDaughter.webp",
     "aspect": 1,
     "content": {
-      "x": 0.2044,
-      "y": 0.0013,
-      "w": 0.5911,
-      "h": 0.9974
+      "x": 0.0605,
+      "y": 0.0479,
+      "w": 0.9238,
+      "h": 0.9521
     },
     "face": {
       "x": 0.32,
