@@ -718,11 +718,7 @@ function drawHecheng(model: RenderModel): void {
     if (who && portrait && portraitReady(portrait)) {
       drawCharacter(ctx, who.portrait, portrait, guest, realNow, 'contain', {
         startedAt: guestSeen.get(order.id),
-        fps: cfg.economy.ajiangFps,
-        introStart: cfg.economy.ajiangIntroStart,
-        introEnd: cfg.economy.ajiangIntroEnd,
-        loopStart: cfg.economy.ajiangLoopStart,
-        loopEnd: cfg.economy.ajiangLoopEnd,
+        frameMs: cfg.economy.ajiangFrameMs,
         zeroFrameMs: cfg.economy.baoZeroFrameMs,
       })
     }

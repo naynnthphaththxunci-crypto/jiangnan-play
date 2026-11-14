@@ -230,11 +230,8 @@ export interface Economy {
   speed4Level: number
   /** 客人 1024 画布缩到设计稿上的比例。0.29 时宽约 297。 */
   guestCanvasScale: number
-  ajiangFps: number
-  ajiangIntroStart: number
-  ajiangIntroEnd: number
-  ajiangLoopStart: number
-  ajiangLoopEnd: number
+  /** 阿桨每一帧播多久。整段 0→23 按这个时长循环，没有出场段。 */
+  ajiangFrameMs: number
   /** PS 时间轴里标成 0 秒的帧，实际播放毫秒。鲍大叔眨眼用。 */
   baoZeroFrameMs: number
   /** 1 时订单区固定出现阿桨和鲍大叔，方便看序列帧。默认 0。 */

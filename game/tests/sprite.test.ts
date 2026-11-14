@@ -44,4 +44,17 @@ describe('角色序列帧接口', () => {
     expect(spriteFrameIndex(sheet, loop, 0)).toBe(0)
     expect(spriteFrameIndex(sheet, loop + 71, 0)).toBe(1)
   })
+
+  it('阿桨 24 帧按统一时长整段循环', () => {
+    const sheet = {
+      ...staticSheet('ajiang', 'frame.webp'),
+      frames: 24,
+      fps: 0,
+      frameDurations: Array.from({ length: 24 }, () => 150),
+    }
+    expect(spriteFrameIndex(sheet, 0, 0)).toBe(0)
+    expect(spriteFrameIndex(sheet, 150, 0)).toBe(1)
+    expect(spriteFrameIndex(sheet, 150 * 23, 0)).toBe(23)
+    expect(spriteFrameIndex(sheet, 150 * 24, 0)).toBe(0)
+  })
 })

@@ -26,15 +26,12 @@ const baoFrames = loadSorted(baoRaw)
 /** 鲍大叔：按 PS 时间轴逐帧时长，从第 1 帧一直循环。0 是 0 秒帧，播放时换成调参。 */
 const BAO_DURATIONS = [70, 0, 0, 0, 0, 0, 0, 70, 70, 70, 70, 70, 70]
 
-/** 阿桨：出场先播完整段，再循环眨眼段。起止帧和帧率由调用处按调参覆盖。 */
+/** 阿桨：24 帧整段循环，每帧时长由调参决定，没有出场段。 */
 const ajiangSheet: SpriteSheet = {
   ...staticSheet('boatman', ajiangRaw[Object.keys(ajiangRaw).sort()[0] ?? ''] ?? ''),
   frames: Math.max(1, ajiangFrames.length),
-  fps: 12,
-  introStart: 0,
-  introEnd: Math.max(0, ajiangFrames.length - 1),
-  loopStart: Math.min(20, Math.max(0, ajiangFrames.length - 1)),
-  loopEnd: Math.max(0, ajiangFrames.length - 1),
+  fps: 0,
+  frameDurations: Array.from({ length: Math.max(1, ajiangFrames.length) }, () => 150),
 }
 
 const baoSheet: SpriteSheet = {
@@ -74,13 +71,28 @@ export const avatarSheet: SpriteSheet = staticSheet('avatar', avatarUrl)
 export interface SpritePlayback {
   /** 这位客人第一次出现的时刻。序列帧用它算出场段和循环段。 */
   startedAt?: number
-  fps?: number
-  introStart?: number
-  introEnd?: number
-  loopStart?: number
-  loopEnd?: number
+  /** 阿桨每一帧的毫秒。整段按这个时长循环。 */
+  frameMs?: number
   /** PS 里标成 0 秒的帧，实际播这么多毫秒。 */
   zeroFrameMs?: number
+}
+
+/**
+ * 新序列帧几乎是方的，旧的 306×343 在方框里是靠高撑满、水平居中。
+ * 按头带中心和头带宽把新图缩到同一位置，宽高比不变。
+ */
+function ajiangDest(dest: SpriteDest): SpriteDest {
+  const side = Math.min(dest.w, dest.h)
+  const ox = dest.x + (dest.w - side) / 2
+  const oy = dest.y + (dest.h - side) / 2
+  const oldDw = 306 / 343
+  const oldDx = (1 - oldDw) / 2
+  const bandCx = oldDx + 0.507 * oldDw
+  const bandCy = 0.274
+  const bandW = 0.562 * oldDw
+  const w = (bandW / 0.476) * side
+  const h = w * (345 / 347)
+  return { x: ox + (bandCx - 0.457 * (w / side)) * side, y: oy + (bandCy - 0.267 * (h / side)) * side, w, h }
 }
 
 export function drawCharacter(
@@ -95,18 +107,15 @@ export function drawCharacter(
   const sheet = characterSheet(id)
   if (!sheet) return false
   if (id === 'boatman' && ajiangFrames.length > 1) {
+    const ms = Math.max(1, playback?.frameMs ?? 150)
     const playing: SpriteSheet = {
-      ...sheet,
-      fps: playback?.fps ?? sheet.fps,
-      introStart: playback?.introStart ?? sheet.introStart,
-      introEnd: playback?.introEnd ?? sheet.introEnd,
-      loopStart: playback?.loopStart ?? sheet.loopStart,
-      loopEnd: playback?.loopEnd ?? sheet.loopEnd,
+      ...ajiangSheet,
+      frameDurations: Array.from({ length: ajiangFrames.length }, () => ms),
     }
-    const index = spriteFrameIndex(playing, now, playback?.startedAt ?? now)
+    const index = spriteFrameIndex(playing, now, playback?.startedAt ?? 0)
     const frame = ajiangFrames[index]
     if (frame && (frame.naturalWidth || 0) > 0) {
-      drawSprite(ctx, frame, { ...playing, frames: 1, fps: 0 }, dest, now, 'contain')
+      drawSprite(ctx, frame, { ...playing, frames: 1, fps: 0, frameDurations: undefined }, ajiangDest(dest), now, 'fill')
       return true
     }
   }

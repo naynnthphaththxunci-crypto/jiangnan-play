@@ -362,52 +362,16 @@ export const SLIDERS: SliderSpec[] = [
     text: (v) => v.toFixed(2),
   },
   {
-    id: 'ajiangFps',
-    label: '阿桨帧率',
-    min: 4,
-    max: 24,
-    step: 1,
-    get: (c) => c.economy.ajiangFps ?? 12,
+    id: 'ajiangFrameMs',
+    label: '阿桨帧时长',
+    min: 40,
+    max: 400,
+    step: 10,
+    get: (c) => c.economy.ajiangFrameMs ?? 150,
     set: (c, v) => {
-      c.economy.ajiangFps = v
+      c.economy.ajiangFrameMs = v
     },
-    text: (v) => `${Math.round(v)} fps`,
-  },
-  {
-    id: 'ajiangIntroStart',
-    label: '阿桨出场起帧',
-    min: 0,
-    max: 28,
-    step: 1,
-    get: (c) => c.economy.ajiangIntroStart ?? 0,
-    set: (c, v) => {
-      c.economy.ajiangIntroStart = v
-    },
-    text: (v) => `${Math.round(v)}`,
-  },
-  {
-    id: 'ajiangIntroEnd',
-    label: '阿桨出场止帧',
-    min: 0,
-    max: 28,
-    step: 1,
-    get: (c) => c.economy.ajiangIntroEnd ?? 28,
-    set: (c, v) => {
-      c.economy.ajiangIntroEnd = v
-    },
-    text: (v) => `${Math.round(v)}`,
-  },
-  {
-    id: 'ajiangLoopStart',
-    label: '阿桨循环起帧',
-    min: 0,
-    max: 28,
-    step: 1,
-    get: (c) => c.economy.ajiangLoopStart ?? 20,
-    set: (c, v) => {
-      c.economy.ajiangLoopStart = v
-    },
-    text: (v) => `${Math.round(v)}`,
+    text: (v) => `${Math.round(v)} 毫秒`,
   },
   {
     id: 'baoZero',
@@ -432,18 +396,6 @@ export const SLIDERS: SliderSpec[] = [
       c.economy.testOrderGuests = v >= 1 ? 1 : 0
     },
     text: (v) => (v >= 1 ? '阿桨 + 鲍大叔' : '关'),
-  },
-  {
-    id: 'ajiangLoopEnd',
-    label: '阿桨循环止帧',
-    min: 0,
-    max: 28,
-    step: 1,
-    get: (c) => c.economy.ajiangLoopEnd ?? 28,
-    set: (c, v) => {
-      c.economy.ajiangLoopEnd = v
-    },
-    text: (v) => `${Math.round(v)}`,
   },
   {
     id: 'guestCanvas',
