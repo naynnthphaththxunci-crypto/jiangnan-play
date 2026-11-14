@@ -4,11 +4,15 @@ import { canvasFit } from '../src/viewport'
 import economy from '../src/data/economy.json'
 
 describe('竹帘切换', () => {
-  it('默认下拉加停留不到半秒', () => {
-    expect(economy.curtainPullMs).toBe(300)
+  it('默认 500 毫秒 ease-out，不回弹', () => {
+    expect(economy.curtainPullMs).toBe(500)
     expect(economy.curtainHoldMs).toBe(0)
-    expect(economy.curtainPullMs + economy.curtainHoldMs).toBeLessThan(500)
-    expect(economy.curtainBounce).toBeGreaterThan(0)
+    expect(economy.curtainBounce).toBe(0)
+    const travel = 844
+    expect(curtainDrop(0, travel, 0)).toBeCloseTo(-travel, 4)
+    expect(curtainDrop(1, travel, 0)).toBeCloseTo(0, 4)
+    expect(curtainDrop(0.5, travel, 0)).toBeGreaterThan(-travel * 0.5)
+    for (let i = 0; i <= 20; i++) expect(curtainDrop(i / 20, travel, 0)).toBeLessThanOrEqual(0.01)
   })
 
   it('按宽度铺满时从顶部裁，铺不满就按高度盖满且不拉伸', () => {

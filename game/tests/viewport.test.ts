@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { cellRect, layout, type LayoutInput } from '../src/layout'
-import { canvasFit, KEEP_TOP, PAGE_W } from '../src/viewport'
+import { canvasFit, coverCanvas, KEEP_TOP, PAGE_W } from '../src/viewport'
 
 function board(w: number, h: number) {
   const input: LayoutInput = {
@@ -34,6 +34,19 @@ function board(w: number, h: number) {
 }
 
 describe('屏幕适配', () => {
+  it('画布从屏幕顶端盖住可见区，不留顶上的缝', () => {
+    const phone = coverCanvas(canvasFit(390, 844), 0, 0, 844)
+    expect(phone.top).toBe(0)
+    expect(phone.h).toBeGreaterThanOrEqual(844)
+    expect(phone.w).toBeGreaterThanOrEqual(390)
+    const pushed = coverCanvas({ x: 0, y: 0, w: 390, h: 744, wide: false }, 0, 40, 844)
+    expect(pushed.top).toBe(0)
+    expect(pushed.h).toBeGreaterThanOrEqual(844)
+    const fractional = coverCanvas({ x: 0, y: 0, w: 390, h: 843.2, wide: false }, 0, 0.4, 844)
+    expect(fractional.top).toBe(0)
+    expect(fractional.h).toBeGreaterThanOrEqual(844)
+  })
+
   it('够高按宽度铺满，太矮或宽屏左右留黑边', () => {
     expect(canvasFit(390, 844)).toMatchObject({ x: 0, y: 0, w: 390, h: 844, wide: false })
     const short = canvasFit(390, 664)

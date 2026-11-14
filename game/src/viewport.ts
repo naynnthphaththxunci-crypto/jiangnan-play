@@ -33,3 +33,29 @@ export function canvasFit(vw: number, vh: number, insetTop = 0, insetBottom = 0)
   const w = PAGE_W * scale
   return { x: (width - w) / 2, y: 0, w, h: height, wide: true }
 }
+
+export interface CoverBox {
+  left: number
+  top: number
+  w: number
+  h: number
+}
+
+/**
+ * 画布从屏幕顶端盖到可见区底边，高度至少到大视口。
+ * 工具栏收起或刘海上方不会露出一条空缝。左右黑边仍留在画布外面。
+ */
+export function coverCanvas(game: CanvasBox, ox = 0, oy = 0, screenH = 0): CoverBox {
+  const gameLeft = ox + game.x
+  const gameTop = oy + game.y
+  const left = Math.floor(gameLeft)
+  const right = Math.ceil(gameLeft + game.w)
+  const top = 0
+  const bottom = Math.ceil(Math.max(gameTop + game.h, screenH))
+  return {
+    left,
+    top,
+    w: Math.max(1, right - left),
+    h: Math.max(1, bottom - top),
+  }
+}

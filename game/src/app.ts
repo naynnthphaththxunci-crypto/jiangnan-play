@@ -895,7 +895,7 @@ export function startGame(platform: Platform): void {
   function curtainProgress(now: number): number {
     if (!curtain) return 0
     if (curtain.freeze != null) return curtain.freeze
-    const pull = Math.max(1, cfg.economy.curtainPullMs ?? 300)
+    const pull = Math.max(1, cfg.economy.curtainPullMs ?? 500)
     return (now - curtain.started) / pull
   }
 
@@ -1252,7 +1252,7 @@ export function startGame(platform: Platform): void {
     fx.toasts = fx.toasts.filter((entry) => real - entry.birth < entry.dur)
     if (fx.banner && real > fx.banner.until) fx.banner = null
     if (curtain && curtain.freeze == null) {
-      const pull = Math.max(1, cfg.economy.curtainPullMs ?? 300)
+      const pull = Math.max(1, cfg.economy.curtainPullMs ?? 500)
       const hold = Math.max(0, cfg.economy.curtainHoldMs ?? 0)
       if (real - curtain.started >= pull + hold) {
         view = curtain.to

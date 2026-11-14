@@ -168,9 +168,9 @@ export interface Economy {
   bigOrderL3Times: number
   l3Coins: number
   animMs: number
-  /** 竹帘从屏幕外拉到盖满的时长，含到底那一下回弹。 */
+  /** 竹帘从屏幕外拉到盖满的时长。缓动是 ease-out，默认不回弹。 */
   curtainPullMs: number
-  /** 回弹超出屏幕的比例，相对画布高度。0 表示不弹。 */
+  /** 回弹超出屏幕的比例，相对画布高度。默认 0，不超出。 */
   curtainBounce: number
   /** 盖满之后、切到新页面前多停多久。 */
   curtainHoldMs: number

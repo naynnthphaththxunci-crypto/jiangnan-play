@@ -1,5 +1,5 @@
 import type { AudioContextLike, Platform } from './types'
-import { canvasFit } from '../viewport'
+import { canvasFit, coverCanvas } from '../viewport'
 
 export function createWebPlatform(canvas: HTMLCanvasElement): Platform {
   let dpr = Math.min(3, window.devicePixelRatio || 1)
@@ -38,23 +38,28 @@ export function createWebPlatform(canvas: HTMLCanvasElement): Platform {
     const layoutH = window.innerHeight
     const viewTop = oy
     const viewBottom = oy + vh
+    const lvhEl = document.getElementById('lvh-probe')
+    const lvh = lvhEl ? lvhEl.getBoundingClientRect().height : 0
+    const screenH = Math.max(layoutH, viewBottom, lvh)
     const insetTop = Math.max(0, safe.top - viewTop)
     const insetBottom = Math.max(0, viewBottom - (layoutH - safe.bottom))
     const box = canvasFit(vw, vh, insetTop, insetBottom)
+    const cover = coverCanvas(box, ox, oy, screenH)
     dpr = Math.min(3, window.devicePixelRatio || 1)
-    const cssW = Math.max(1, Math.round(box.w))
-    const cssH = Math.max(1, Math.round(box.h))
+    const cssW = cover.w
+    const cssH = cover.h
     logical = { w: cssW, h: cssH }
     const style = canvas.style
     style.position = 'fixed'
-    style.left = `${Math.round(ox + box.x)}px`
-    style.top = `${Math.round(oy + box.y)}px`
+    style.left = `${cover.left}px`
+    style.top = `${cover.top}px`
     style.width = `${cssW}px`
     style.height = `${cssH}px`
     canvas.width = Math.max(1, Math.round(cssW * dpr))
     canvas.height = Math.max(1, Math.round(cssH * dpr))
-    insets.top = insetTop
-    insets.bottom = insetBottom
+    const hiddenBelow = Math.max(0, cover.top + cover.h - viewBottom)
+    insets.top = Math.max(0, safe.top - cover.top)
+    insets.bottom = hiddenBelow + insetBottom
   }
   fit()
   const refit = () => {

@@ -46,7 +46,7 @@ export const SLIDERS: SliderSpec[] = [
     min: 80,
     max: 800,
     step: 10,
-    get: (c) => c.economy.curtainPullMs ?? 300,
+    get: (c) => c.economy.curtainPullMs ?? 500,
     set: (c, v) => {
       c.economy.curtainPullMs = v
     },
@@ -58,7 +58,7 @@ export const SLIDERS: SliderSpec[] = [
     min: 0,
     max: CURTAIN_BOUNCE_MAX,
     step: 0.005,
-    get: (c) => c.economy.curtainBounce ?? 0.02,
+    get: (c) => c.economy.curtainBounce ?? 0,
     set: (c, v) => {
       c.economy.curtainBounce = Math.round(v * 1000) / 1000
     },

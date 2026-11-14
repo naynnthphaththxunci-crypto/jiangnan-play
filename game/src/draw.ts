@@ -95,7 +95,7 @@ export interface RenderModel {
 export function render(model: RenderModel): void {
   const { ctx, frame } = model
   ctx.clearRect(0, 0, frame.w, frame.h)
-  ctx.fillStyle = PAL.paper
+  ctx.fillStyle = frame.mode === 'board' ? '#000' : PAL.paper
   ctx.fillRect(0, 0, frame.w, frame.h)
   if (frame.mode === 'story') drawStory(model)
   else if (frame.mode === 'house') {
@@ -744,13 +744,17 @@ function drawHecheng(model: RenderModel): void {
   const top = frame.board.y - 714 * scale
   const bg = hechengImage('bg')
   if (bg && (bg.naturalWidth || 0) > 0) {
-    const x = -324 * scale
-    const y = top - 178 * scale
-    const w = 1725 * scale
-    const h = 2627 * scale
-    if (y > 0) {
-      ctx.fillStyle = '#e4d2b4'
-      ctx.fillRect(0, 0, frame.w, y)
+    let x = -324 * scale
+    let y = top - 178 * scale
+    let w = 1725 * scale
+    let h = 2627 * scale
+    if (y > -1) {
+      const grow = y + 2
+      const s = (h + grow) / h
+      x -= (w * s - w) / 2
+      y -= grow
+      w *= s
+      h *= s
     }
     ctx.drawImage(bg as CanvasImageSource, x, y, w, h)
     if (y + h < frame.h) {
