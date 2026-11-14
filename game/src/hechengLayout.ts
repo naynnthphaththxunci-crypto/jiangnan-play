@@ -1,5 +1,6 @@
 import cells from './data/boardCells.json'
 import { clamp } from './format'
+import { KEEP_TOP } from './viewport'
 
 export const DESIGN_W = 1080
 export const DESIGN_H = 2340
@@ -185,16 +186,14 @@ export function hechengParts(input: HechengInput): HechengScene {
   const scale = input.w / DESIGN_W
   const availTop = Math.max(0, input.insetTop)
   const availBottom = input.h - Math.max(0, input.insetBottom)
-  // 按宽度等比后，设计稿底对齐屏幕底。矮屏裁掉顶部场景，长屏把空档留在顶部。
-  const sceneTop = availBottom - DESIGN_H * scale
-  const hudShift = Math.max(0, availTop - (sceneTop + 140 * scale))
-  const place = (box: Box, scroll = 0, shift = 0): Box => ({
+  // 底对齐设计稿。再保证资源条不被裁出屏幕，只裁它上方的场景。
+  const sceneTop = Math.max(availTop - KEEP_TOP * scale, availBottom - DESIGN_H * scale)
+  const place = (box: Box, scroll = 0): Box => ({
     x: box.x * scale - scroll,
-    y: sceneTop + box.y * scale + shift,
+    y: sceneTop + box.y * scale,
     w: box.w * scale,
     h: box.h * scale,
   })
-  const placeHud = (box: Box) => place(box, 0, hudShift)
   const guestScale = input.guestCanvasScale && input.guestCanvasScale > 0 ? input.guestCanvasScale : GUEST_SCALE
   const n = Math.max(0, input.orderCount)
   let right = 0
@@ -269,43 +268,13 @@ export function hechengParts(input: HechengInput): HechengScene {
   const taskBtn = taskOn ? place(TASK_BTN, scroll) : ZERO_BOX
   const chestBtn = chestDesign ? place(chestDesign, scroll) : ZERO_BOX
   const orderClip = place({ x: 0, y: 300, w: DESIGN_W, h: 420 })
-  const avatarSlot = placeHud({ x: 29, y: 150, w: 149, h: 149 })
-  let orderDy = 0
-  const leadGuest = orderGuests[0]
-  if (leadGuest && leadGuest.h > 0) {
-    const minY = avatarSlot.y + avatarSlot.h + 4 * scale
-    if (leadGuest.y < minY) orderDy = minY - leadGuest.y
-  }
+  const avatarSlot = place({ x: 29, y: 150, w: 149, h: 149 })
   const taskIcon = childOf(taskBtn, TASK_BTN, TASK_ICON)
   const bookIcon = childOf(storyBtn, STORY_BTN, BOOK_ICON)
   const chestIcon = childOf(chestBtn, CHEST_BTN, CHEST_ICON)
   const badgeStory = childOf(storyBtn, STORY_BTN, BADGE_STORY)
   const badgeChest = childOf(chestBtn, CHEST_BTN, BADGE_CHEST)
   const badgeTask = childOf(taskBtn, TASK_BTN, BADGE_TASK)
-  const shiftDown = (box: Box) => {
-    if (box !== ZERO_BOX && box.h > 0) box.y += orderDy
-  }
-  if (orderDy) {
-    for (const box of [
-      ...orderGuests,
-      ...orderPlates,
-      ...orderRewards,
-      ...completes,
-      storyBtn,
-      taskBtn,
-      chestBtn,
-      orderClip,
-      taskIcon,
-      bookIcon,
-      chestIcon,
-      badgeStory,
-      badgeChest,
-      badgeTask,
-    ]) {
-      shiftDown(box)
-    }
-    for (const icon of orderIcons) shiftDown(icon.rect)
-  }
   return {
     scale,
     top: sceneTop,
@@ -324,21 +293,21 @@ export function hechengParts(input: HechengInput): HechengScene {
     houseBtn: build,
     infoBar: info,
     avatarSlot,
-    energySlot: placeHud({ x: 178, y: 169, w: 204, h: 71 }),
-    coinSlot: placeHud({ x: 397, y: 169, w: 202, h: 71 }),
-    gemSlot: placeHud({ x: 613, y: 168, w: 206, h: 72 }),
-    smileSlot: placeHud({ x: 717, y: 260, w: 86, h: 86 }),
-    multBtn: placeHud({ x: 827, y: 265, w: 80, h: 78 }),
-    shopBtn: placeHud({ x: 918, y: 247, w: 124, h: 107 }),
+    energySlot: place({ x: 178, y: 169, w: 204, h: 71 }),
+    coinSlot: place({ x: 397, y: 169, w: 202, h: 71 }),
+    gemSlot: place({ x: 613, y: 168, w: 206, h: 72 }),
+    smileSlot: place({ x: 717, y: 260, w: 86, h: 86 }),
+    multBtn: place({ x: 827, y: 265, w: 80, h: 78 }),
+    shopBtn: place({ x: 918, y: 247, w: 124, h: 107 }),
     sellBtn,
     chainBtn,
     rushBtn,
     adBtn,
-    energyPlus: placeHud({ x: 342, y: 169, w: 40, h: 71 }),
+    energyPlus: place({ x: 342, y: 169, w: 40, h: 71 }),
     chestBtn,
     storyBtn,
     taskBtn,
-    hud: placeHud({ x: 0, y: 140, w: DESIGN_W, h: 220 }),
+    hud: place({ x: 0, y: 140, w: DESIGN_W, h: 220 }),
     counter: place({ x: 0, y: 598, w: DESIGN_W, h: 324 }, scroll),
     boardArt,
     taskIcon,
@@ -347,6 +316,6 @@ export function hechengParts(input: HechengInput): HechengScene {
     badgeStory,
     badgeChest,
     badgeTask,
-    badgeShop: placeHud({ x: 1020, y: 246, w: 38, h: 38 }),
+    badgeShop: place({ x: 1020, y: 246, w: 38, h: 38 }),
   }
 }

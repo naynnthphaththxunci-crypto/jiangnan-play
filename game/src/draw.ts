@@ -102,7 +102,6 @@ export function render(model: RenderModel): void {
     drawHecheng(model)
     drawHint(model)
     drawBoard(model)
-    drawOrderGuests(model)
     drawChainPop(model)
     drawFx(model)
     drawInfo(model)
@@ -701,26 +700,6 @@ function blit(ctx: CanvasRenderingContext2D, id: Parameters<typeof hechengImage>
   const img = hechengImage(id)
   if (!img || (img.naturalWidth || 0) <= 0) return
   ctx.drawImage(img as CanvasImageSource, rect.x, rect.y, rect.w, rect.h)
-}
-
-function drawOrderGuests(model: RenderModel): void {
-  const { ctx, frame, state, cfg, realNow } = model
-  if (frame.mode !== 'board') return
-  state.orders.forEach((order, index) => {
-    const guest = frame.orderGuests[index]
-    if (!guest || guest.h <= 0) return
-    const who = cfg.characters.find((entry) => entry.id === order.customerId)
-    const firstOrder = order.scripted === true
-    const portrait = firstOrder ? firstOrderGuestPortrait() : guestPortrait(who?.portrait)
-    if (!guestSeen.has(order.id)) guestSeen.set(order.id, realNow)
-    if ((who || firstOrder) && portrait && portraitReady(portrait)) {
-      drawCharacter(ctx, firstOrder ? 'xiaotao' : who?.portrait, portrait, guest, realNow, 'contain', {
-        startedAt: guestSeen.get(order.id),
-        frameMs: cfg.economy.ajiangFrameMs,
-        zeroFrameMs: cfg.economy.baoZeroFrameMs,
-      })
-    }
-  })
 }
 
 function drawHecheng(model: RenderModel): void {

@@ -34,7 +34,13 @@ export function createWebPlatform(canvas: HTMLCanvasElement): Platform {
     const vh = vv?.height ?? window.innerHeight
     const ox = vv?.offsetLeft ?? 0
     const oy = vv?.offsetTop ?? 0
-    const box = canvasFit(vw, vh)
+    const safe = readSafe()
+    const layoutH = window.innerHeight
+    const viewTop = oy
+    const viewBottom = oy + vh
+    const insetTop = Math.max(0, safe.top - viewTop)
+    const insetBottom = Math.max(0, viewBottom - (layoutH - safe.bottom))
+    const box = canvasFit(vw, vh, insetTop, insetBottom)
     dpr = Math.min(3, window.devicePixelRatio || 1)
     const cssW = Math.max(1, Math.round(box.w))
     const cssH = Math.max(1, Math.round(box.h))
@@ -47,12 +53,8 @@ export function createWebPlatform(canvas: HTMLCanvasElement): Platform {
     style.height = `${cssH}px`
     canvas.width = Math.max(1, Math.round(cssW * dpr))
     canvas.height = Math.max(1, Math.round(cssH * dpr))
-    const safe = readSafe()
-    const layoutH = window.innerHeight
-    const viewTop = oy
-    const viewBottom = oy + vh
-    insets.top = box.wide ? 0 : Math.max(0, safe.top - viewTop)
-    insets.bottom = box.wide ? 0 : Math.max(0, viewBottom - (layoutH - safe.bottom))
+    insets.top = insetTop
+    insets.bottom = insetBottom
   }
   fit()
   const refit = () => {
