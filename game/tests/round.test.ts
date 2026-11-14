@@ -72,8 +72,8 @@ describe('第三轮教学、订单和布局', () => {
     const state = createGame(1_700_000_000_000, cfg)
     expect(state.phase).toBe('story')
     expect(state.storyStep).toBe(0)
-    expect(cfg.opening.pages).toHaveLength(3)
-    expect(storyLength(cfg)).toBe(12)
+    expect(cfg.opening.pages).toHaveLength(4)
+    expect(storyLength(cfg)).toBe(15)
     expect(comicCursor(cfg.opening, 0)).toEqual({ page: 0, index: 0 })
     expect(comicCursor(cfg.opening, 4)).toEqual({ page: 1, index: 0 })
     expect(silaVisible(cfg.opening, 5)).toBe(false)
@@ -82,7 +82,8 @@ describe('第三轮教学、订单和布局', () => {
     expect(comicPrompt(cfg.opening, 0).beat?.speaker).toBeUndefined()
     expect(comicPrompt(cfg.opening, 5).prompt).toBe('hold')
     expect(comicPrompt(cfg.opening, 6).prompt).toBe('sila')
-    expect(comicPrompt(cfg.opening, 11).prompt).toBe('start')
+    expect(comicPrompt(cfg.opening, 14).prompt).toBe('start')
+    expect(comicPrompt(cfg.opening, 8).beat).toMatchObject({ speaker: '柳姑娘', text: '文轩哥哥……姐姐好凶。' })
     expect(comicPrompt(cfg.opening, 3).beat?.speaker).toBe('温如月')
     expect(comicCue(cfg.opening, 0)).toBe('crickets')
     expect(comicCue(cfg.opening, 1)).toBe('hmm')
@@ -92,7 +93,8 @@ describe('第三轮教学、订单和布局', () => {
     expect(comicCue(cfg.opening, 5)).toBeNull()
     expect(comicBed(cfg.opening, 0)).toBeNull()
     expect(comicBed(cfg.opening, 4)).toBe('tense')
-    expect(comicBed(cfg.opening, 8)).toBe('gentle')
+    expect(comicBed(cfg.opening, 8)).toBe('tense')
+    expect(comicBed(cfg.opening, 11)).toBe('gentle')
     const width = (value: string) => [...value].length * 16
     expect(wrapComicText('正好，休书我早写好了。丫头你也一并带走。', 240, width)).toEqual([
       '正好，休书我早写好了。',
@@ -108,7 +110,7 @@ describe('第三轮教学、订单和布局', () => {
     quiet.soundMuted = true
     const kept = hydrate(serialize(quiet, cfg), cfg)
     expect(kept?.soundMuted).toBe(true)
-    expect(comicCursor(cfg.opening, 11)?.page).toBe(2)
+    expect(comicCursor(cfg.opening, 11)?.page).toBe(3)
     for (let i = 0; i < storyLength(cfg); i++) advanceStory(state, cfg)
     expect(state.phase).toBe('opening')
     expect(state.storySeen).toBe(true)

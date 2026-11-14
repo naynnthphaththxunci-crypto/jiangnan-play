@@ -81,6 +81,8 @@ export interface Fx {
   silaAt: number
   comicFrom: number
   comicFadeAt: number
+  /** 整页慢推镜头开始的时刻。换页时重设，同一页里点台词不重设。 */
+  pagePushAt: number
   ghostOrder: null | {
     customerId: string
     slots: OrderSlot[]
@@ -108,6 +110,7 @@ export function createFx(): Fx {
     silaAt: 0,
     comicFrom: -1,
     comicFadeAt: 0,
+    pagePushAt: 0,
     ghostOrder: null,
   }
 }

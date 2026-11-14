@@ -1,5 +1,4 @@
 import { hostessCostume } from './config'
-import orderLayout from './data/orderLayout.json'
 import { formatDuration, formatMs } from './format'
 import { easeInOut, easeOutBack, easeOutCubic, popScale, type Flyer, type Fx } from './fx'
 import { hintHand, storageLessonHand, tutorialHand } from './coach'
@@ -44,11 +43,12 @@ import {
   tutorialLine,
 } from './logic/sim'
 import { itemSprite, spriteContent } from './itemArt'
-import loadingBgUrl from './assets/ui/loading_bg.jpg'
 import tutorialHandUrl from './assets/ui/tutorial_hand.png'
 import iconBoltUrl from './assets/ui/icon_bolt.png'
-import { orderRewardImage, orderTrayImage } from './orderTray'
-import { guestPortrait, measurePortrait, portraitReady } from './portraits'
+import { guestPortrait, portraitReady } from './portraits'
+import { drawAvatar, drawCharacter } from './cast'
+import { hechengImage, speedArtId } from './hechengArt'
+import { designToScreen } from './hechengLayout'
 import { COMIC_FONT, comicCursor, comicFontReady, comicPanelImage, comicPrompt, comicSilaImage, wrapComicText } from './comic'
 import { SLIDERS } from './tuner'
 import { COLS, ROWS, type ComicEnter, type GameConfig, type GameState, type Item, type NormBox, type OpeningScript } from './types'
@@ -95,22 +95,20 @@ export function render(model: RenderModel): void {
   ctx.fillStyle = PAL.paper
   ctx.fillRect(0, 0, frame.w, frame.h)
   if (frame.mode === 'story') drawStory(model)
-  else {
+  else if (frame.mode === 'house') {
     drawHud(model)
-    if (frame.mode === 'house') drawHouse(model)
-    else {
-      drawOrders(model)
-      drawHint(model)
-      drawBoard(model)
-      drawChainPop(model)
-      drawBottom(model)
-      drawFx(model)
-      drawInfo(model)
-      drawSheet(model)
-      drawTutorial(model)
-      drawStorageLesson(model)
-      drawHand(model)
-    }
+    drawHouse(model)
+  } else {
+    drawHecheng(model)
+    drawHint(model)
+    drawBoard(model)
+    drawChainPop(model)
+    drawFx(model)
+    drawInfo(model)
+    drawSheet(model)
+    drawTutorial(model)
+    drawStorageLesson(model)
+    drawHand(model)
   }
   if (frame.showHelp) drawHelp(model)
   const overlay = activeOverlay(model.state)
@@ -328,6 +326,8 @@ function drawStory(model: RenderModel): void {
   const script = cfg.opening
   if (cursor) {
     if (fx.comicFadeAt === 0) fx.comicFadeAt = realNow
+    const pageBeats = script.pages[cursor.page]?.beats ?? []
+    if (pageBeats.some((beat) => beat.enter === 'slow-push') && fx.pagePushAt === 0) fx.pagePushAt = realNow
     const pageW = script.width
     const pageH = script.height
     const scale = Math.min(frame.w / pageW, frame.h / pageH)
@@ -352,15 +352,15 @@ function drawStory(model: RenderModel): void {
     if (turning && prev) {
       ctx.save()
       ctx.translate(-turnT * pageW, 0)
-      paintComicPanels(ctx, script, prev.page, prev.index, realNow, fx.comicFadeAt, fx.silaAt, false)
+      paintComicPanels(ctx, script, prev.page, prev.index, realNow, fx.comicFadeAt, fx.silaAt, false, realNow - 10000)
       ctx.restore()
       ctx.save()
       ctx.translate((1 - turnT) * pageW, 0)
-      paintComicPanels(ctx, script, cursor.page, cursor.index, realNow, fx.comicFadeAt, fx.silaAt, false)
+      paintComicPanels(ctx, script, cursor.page, cursor.index, realNow, fx.comicFadeAt, fx.silaAt, false, fx.pagePushAt)
       paintStoryBubble(ctx, script, state.storyStep, fx.comicFrom, fx.comicFadeAt, realNow)
       ctx.restore()
     } else {
-      paintComicPanels(ctx, script, cursor.page, cursor.index, realNow, fx.comicFadeAt, fx.silaAt, !arrivedByTurn)
+      paintComicPanels(ctx, script, cursor.page, cursor.index, realNow, fx.comicFadeAt, fx.silaAt, !arrivedByTurn, fx.pagePushAt)
       paintStoryBubble(ctx, script, state.storyStep, fx.comicFrom, fx.comicFadeAt, realNow)
     }
     ctx.restore()
@@ -402,6 +402,7 @@ function paintComicPanels(
   beatAt: number,
   silaAt: number,
   animate: boolean,
+  pushAt = 0,
 ): void {
   const page = script.pages[pageIndex]
   if (!page) return
@@ -416,8 +417,13 @@ function paintComicPanels(
     const panel = page.panels.find((item) => item.id === id)
     const img = comicPanelImage(id)
     if (!panel || !img || (img.naturalWidth || 0) <= 0) continue
+    const slow = page.beats.some((beat) => beat.enter === 'slow-push' && beat.panel === id)
     const posing = animate && current?.panel === id && (fresh || current.enter === 'push')
-    const pose = posing ? enterPose(current?.enter, now - beatAt, current?.ms ?? 450) : { alpha: 1, dx: 0, dy: 0, scale: 1, fx: 0.5, fy: 0.5 }
+    const pose = slow
+      ? enterPose('slow-push', pushAt > 0 ? now - pushAt : 0, 3000)
+      : posing
+        ? enterPose(current?.enter, now - beatAt, current?.ms ?? 450)
+        : { alpha: 1, dx: 0, dy: 0, scale: 1, fx: 0.5, fy: 0.5 }
     const cx = panel.x + panel.w * pose.fx
     const cy = panel.y + panel.h * pose.fy
     ctx.save()
@@ -454,6 +460,11 @@ function enterPose(enter: ComicEnter | undefined, age: number, ms: number): { al
     return peak + (1 - peak) * (1 - (1 - k) ** 2)
   }
   const rest = { alpha: 1, dx: 0, dy: 0, scale: 1, fx: 0.5, fy: 0.5 }
+  if (enter === 'slow-push') {
+    const z = Math.max(0, Math.min(1, age / 3000))
+    const ease = 1 - (1 - z) ** 3
+    return { alpha: 1, dx: 0, dy: 0, scale: 1 + 0.08 * ease, fx: 0.3, fy: 0.55 }
+  }
   if (enter === 'fade-push') {
     const z = Math.min(1, age / 500)
     return { alpha: Math.min(1, age / 400), dx: 0, dy: 0, scale: 1 + 0.07 * (1 - (1 - z) ** 3), fx: 0.82, fy: 0.42 }
@@ -657,6 +668,177 @@ function resourcePill(ctx: CanvasRenderingContext2D, rect: Rect, mark: string, m
   text(ctx, value, rect.x + rect.w - rect.h * 0.28, cy, Math.max(15, rect.h * 0.52), valueColor, 'right', 'middle', 700)
 }
 
+function blit(ctx: CanvasRenderingContext2D, id: Parameters<typeof hechengImage>[0], rect: Rect): void {
+  if (rect.w <= 0 || rect.h <= 0) return
+  const img = hechengImage(id)
+  if (!img || (img.naturalWidth || 0) <= 0) return
+  ctx.drawImage(img as CanvasImageSource, rect.x, rect.y, rect.w, rect.h)
+}
+
+function drawHecheng(model: RenderModel): void {
+  const { ctx, frame, state, cfg, realNow } = model
+  const scale = frame.w / 1080
+  const top = frame.board.y - 714 * scale
+  const bg = hechengImage('bg')
+  if (bg && (bg.naturalWidth || 0) > 0) {
+    const x = -324 * scale
+    const y = top - 178 * scale
+    const w = 1725 * scale
+    const h = 2627 * scale
+    ctx.drawImage(bg as CanvasImageSource, x, y, w, h)
+    if (y + h < frame.h) {
+      ctx.fillStyle = '#8a5a32'
+      ctx.fillRect(0, y + h - 1, frame.w, frame.h - (y + h) + 1)
+    }
+  } else {
+    ctx.fillStyle = '#1a1410'
+    ctx.fillRect(0, 0, frame.w, frame.h)
+  }
+  const at = (box: Rect, anchor: 'top' | 'bottom' = 'top') => designToScreen(frame, box, anchor)
+  const clipOrders = () => {
+    ctx.beginPath()
+    ctx.rect(frame.orderClip.x, frame.orderClip.y, frame.orderClip.w, frame.orderClip.h)
+    ctx.clip()
+  }
+  ctx.save()
+  clipOrders()
+  state.orders.forEach((order, index) => {
+    const guest = frame.orderGuests[index]
+    if (!guest) return
+    const who = cfg.characters.find((entry) => entry.id === order.customerId)
+    const portrait = guestPortrait(who?.portrait)
+    if (who && portrait && portraitReady(portrait) && drawCharacter(ctx, who.portrait, portrait, guest, realNow)) return
+    paintStandIn(ctx, characterName(cfg, order.customerId), SILHOUETTE[order.customerId] ?? '#8a6a4a', guest, who?.face ?? { x: 0.18, y: 0.08, w: 0.64, h: 0.42 })
+  })
+  ctx.restore()
+  blit(ctx, 'counter', at({ x: 0, y: 598, w: 1080, h: 324 }))
+  ctx.save()
+  clipOrders()
+  frame.orderPlates.forEach((plate) => blit(ctx, 'plate', plate))
+  state.orders.forEach((order, index) => {
+    order.slots.forEach((slot, slotIndex) => {
+      const icon = frame.orderIcons.find((entry) => entry.order === index && entry.slot === slotIndex)
+      if (!icon) return
+      const sprite = itemSprite(slot.line, slot.level)
+      if (sprite) drawFittedSprite(ctx, sprite, icon.rect, 1)
+      else {
+        roundRect(ctx, icon.rect.x, icon.rect.y, icon.rect.w, icon.rect.h, 6)
+        ctx.fillStyle = lineColor(cfg, slot.line)
+        ctx.fill()
+      }
+      if (slotChecked(state, order, slotIndex)) {
+        const r = Math.max(4, Math.min(7, icon.rect.h * 0.22))
+        ctx.beginPath()
+        ctx.fillStyle = '#fffaf3'
+        ctx.arc(icon.rect.x + icon.rect.w - r - 1, icon.rect.y + icon.rect.h - r - 1, r, 0, Math.PI * 2)
+        ctx.fill()
+        text(ctx, '✓', icon.rect.x + icon.rect.w - r - 1, icon.rect.y + icon.rect.h - r - 1, r * 1.15, '#2c7a58')
+      }
+    })
+    const payRect = frame.orderRewards[index]
+    if (payRect) {
+      blit(ctx, 'bubble', payRect)
+      const pay = orderPayout(order, cfg)
+      const cover = { x: payRect.x + payRect.w * 0.4, y: payRect.y + payRect.h * 0.16, w: payRect.w * 0.5, h: payRect.h * 0.62 }
+      roundRect(ctx, cover.x, cover.y, cover.w, cover.h, 8)
+      ctx.fillStyle = '#f6e4c4'
+      ctx.fill()
+      const rewardSize = Math.max(8, payRect.h * 0.22)
+      text(ctx, `+${pay.smiles}`, payRect.x + payRect.w * 0.78, payRect.y + payRect.h * 0.34, rewardSize, '#6a3a22', 'right', 'middle', 700)
+      text(ctx, `+${pay.coins}`, payRect.x + payRect.w * 0.78, payRect.y + payRect.h * 0.62, rewardSize, '#6a3a22', 'right', 'middle', 700)
+    }
+    if (orderSatisfied(state, order)) {
+      const btn = frame.completes[index]
+      if (btn) blit(ctx, 'complete', btn)
+    }
+  })
+  if (state.rewards.length > 0 && frame.rewardTray.w > 0) {
+    const loot = state.rewards[0]
+    if (loot) drawItem(ctx, cfg, loot, frame.rewardTray, 1, 1, realNow)
+    if (state.rewards.length > 1) {
+      text(ctx, String(state.rewards.length), frame.rewardTray.x + frame.rewardTray.w * 0.82, frame.rewardTray.y + frame.rewardTray.h * 0.2, 12, '#fffaf3')
+    }
+  }
+  ctx.restore()
+  blit(ctx, 'board', at({ x: 7, y: 714, w: 1071, h: 1370 }))
+  blit(ctx, 'stash', frame.pendingBtn)
+  blit(ctx, 'info', frame.infoBar)
+  blit(ctx, 'build', frame.houseBtn)
+  const task = nextTask(state, cfg)
+  const buildHot = state.phase === 'play' && state.guide === 'none' && task && state.coins >= taskPrice(task, cfg)
+  blit(ctx, 'taskFrame', frame.taskBtn)
+  blit(ctx, 'taskIcon', at({ x: 206, y: 482, w: 89, h: 103 }))
+  if (buildHot) blit(ctx, 'badgeTask', at({ x: 292, y: 452, w: 44, h: 45 }))
+  blit(ctx, 'chestFrame', frame.chestBtn)
+  blit(ctx, 'chestIcon', at({ x: 43, y: 548, w: 85, h: 81 }))
+  if (!state.freeRefillUsed) blit(ctx, 'badgeSmall', at({ x: 114, y: 521, w: 36, h: 36 }))
+  blit(ctx, 'chestFrame', frame.storyBtn)
+  blit(ctx, 'book', at({ x: 40, y: 421, w: 91, h: 85 }))
+  if (!state.storySeen) blit(ctx, 'badgeSmall', at({ x: 114, y: 399, w: 36, h: 36 }))
+  blit(ctx, 'energy', frame.energySlot)
+  blit(ctx, 'coin', frame.coinSlot)
+  blit(ctx, 'gem', frame.gemSlot)
+  const num = (rect: Rect, value: string, flash = false) => {
+    text(ctx, value, rect.x + rect.w * 0.58 + 1, rect.y + rect.h / 2 + 1, rect.h * 0.42, 'rgba(40,24,12,0.45)', 'center', 'middle', 700)
+    text(ctx, value, rect.x + rect.w * 0.58, rect.y + rect.h / 2, rect.h * 0.42, flash ? '#ffd0c8' : '#fffaf2', 'center', 'middle', 700)
+  }
+  num(frame.energySlot, String(state.energy), realNow < model.fx.energyFlash)
+  const shown = Math.max(0, state.coins - model.fx.incoming)
+  num(frame.coinSlot, String(shown))
+  num(frame.gemSlot, String(state.gems))
+  const avatar = frame.avatarSlot
+  const avatarArt = {
+    x: avatar.x + (12 / 149) * avatar.w,
+    y: avatar.y + (15 / 149) * avatar.h,
+    w: (125 / 149) * avatar.w,
+    h: (126 / 149) * avatar.h,
+  }
+  const badge = {
+    x: avatar.x + (102 / 149) * avatar.w,
+    y: avatar.y + (100 / 149) * avatar.h,
+    w: (47 / 149) * avatar.w,
+    h: (47 / 149) * avatar.h,
+  }
+  const portrait = hechengImage('avatar')
+  if (portrait) drawAvatar(ctx, portrait, avatarArt, realNow)
+  blit(ctx, 'avatarFrame', avatar)
+  blit(ctx, 'levelBadge', badge)
+  const levelText = String(state.level)
+  const levelSize = badge.w * (levelText.length >= 3 ? 0.34 : 0.46)
+  ctx.lineWidth = Math.max(2, levelSize * 0.16)
+  ctx.strokeStyle = '#6a3a22'
+  ctx.font = `700 ${Math.round(levelSize)}px ${FONT}`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.strokeText(levelText, badge.x + badge.w / 2, badge.y + badge.h / 2)
+  ctx.fillStyle = '#fffaf2'
+  ctx.fillText(levelText, badge.x + badge.w / 2, badge.y + badge.h / 2)
+  const goal = Math.max(1, cfg.economy.smileGoal)
+  const ratio = Math.max(0, Math.min(1, state.smiles / goal))
+  const full = state.smiles >= goal
+  blit(ctx, full ? 'smileFull' : 'smile', frame.smileSlot)
+  if (!full && ratio > 0) {
+    const cx = frame.smileSlot.x + frame.smileSlot.w / 2
+    const cy = frame.smileSlot.y + frame.smileSlot.h / 2
+    ctx.beginPath()
+    ctx.strokeStyle = '#3cca5f'
+    ctx.lineWidth = Math.max(3, frame.smileSlot.w * 0.12)
+    ctx.lineCap = 'round'
+    ctx.arc(cx, cy, frame.smileSlot.w * 0.445, -Math.PI / 2, -Math.PI / 2 + ratio * Math.PI * 2)
+    ctx.stroke()
+  }
+  if (full) blit(ctx, 'badgeSmall', at({ x: 776, y: 248, w: 36, h: 36 }))
+  blit(ctx, speedArtId(state.spawnMult ?? 1), frame.multBtn)
+  blit(ctx, 'shop', frame.shopBtn)
+  if (!state.shopPackClaimed || !state.shopClaimDate) blit(ctx, 'badgeShop', at({ x: 1020, y: 246, w: 38, h: 38 }))
+  if (buildHot) {
+    ctx.beginPath()
+    ctx.fillStyle = '#c4552a'
+    ctx.arc(frame.houseBtn.x + frame.houseBtn.w - 16 * scale, frame.houseBtn.y + 16 * scale, 7 * scale, 0, Math.PI * 2)
+    ctx.fill()
+  }
+}
+
 function drawHud(model: RenderModel): void {
   const { ctx, frame, state, cfg, realNow, animNow, fx } = model
   ctx.fillStyle = PAL.paperDeep
@@ -734,192 +916,6 @@ function drawHud(model: RenderModel): void {
   if (frame.skip.w > 0) button(ctx, frame.skip, '跳过', 'ghost')
 }
 
-const orderSlide = new Map<string, number>()
-
-let tavernBackdrop: HTMLImageElement | null = null
-
-function tavernImage(): HTMLImageElement | null {
-  const host = globalThis as { Image?: new () => HTMLImageElement; document?: Document }
-  if (!host.document || typeof host.Image !== 'function') return null
-  if (!tavernBackdrop) {
-    tavernBackdrop = new host.Image()
-    tavernBackdrop.src = loadingBgUrl
-  }
-  return tavernBackdrop
-}
-
-function drawOrderStage(ctx: CanvasRenderingContext2D, frame: Frame): void {
-  const clip = frame.orderClip
-  if (clip.h <= 0) return
-  const trayTop = frame.orderPlates[0]?.y ?? clip.y + clip.h * 0.5
-  ctx.save()
-  ctx.beginPath()
-  ctx.rect(clip.x, clip.y, clip.w, clip.h)
-  ctx.clip()
-  const bg = tavernImage()
-  const wallH = Math.max(1, trayTop - clip.y)
-  if (bg && (bg.naturalWidth || 0) > 0) {
-    const srcH = Math.max(1, bg.naturalHeight * 0.2)
-    ctx.drawImage(bg, 0, 0, bg.naturalWidth, srcH, clip.x, clip.y, clip.w, wallH + 6)
-  } else {
-    ctx.fillStyle = '#f0d2aa'
-    ctx.fillRect(clip.x, clip.y, clip.w, wallH)
-  }
-  const beamY = trayTop - 2
-  const beamH = Math.max(1, clip.y + clip.h - beamY)
-  const wood = ctx.createLinearGradient(0, beamY, 0, beamY + beamH)
-  wood.addColorStop(0, '#e7c088')
-  wood.addColorStop(0.16, '#c98448')
-  wood.addColorStop(1, '#8a4e28')
-  ctx.fillStyle = wood
-  ctx.fillRect(clip.x, beamY, clip.w, beamH)
-  ctx.fillStyle = '#f6ddb0'
-  ctx.fillRect(clip.x, beamY, clip.w, Math.max(3, frame.w * 0.008))
-  ctx.restore()
-}
-
-function drawOrders(model: RenderModel): void {
-  const { ctx, frame, state, cfg } = model
-  const spots = state.orders.flatMap((order, index) => {
-    const rect = frame.orders[index]
-    const plate0 = frame.orderPlates[index]
-    const pay0 = frame.orderRewards[index]
-    const guest0 = frame.orderGuests[index]
-    const charm0 = frame.orderCharms[index]
-    if (!rect || !plate0 || !pay0 || !guest0 || !charm0) return []
-    const prev = orderSlide.get(order.id) ?? rect.x
-    const x = prev + (rect.x - prev) * 0.35
-    orderSlide.set(order.id, Math.abs(x - rect.x) < 0.5 ? rect.x : x)
-    const dx = (orderSlide.get(order.id) ?? rect.x) - rect.x
-    const move = (r: Rect) => ({ ...r, x: r.x + dx })
-    return [{ order, index, dx, rect: move(rect), plate: move(plate0), pay: move(pay0), guest: move(guest0), charm: move(charm0) }]
-  })
-  drawOrderStage(ctx, frame)
-  const columnPitch = frame.w / Math.max(1, orderLayout.ordersPerScreen)
-  spots.forEach((spot) => {
-    const who = cfg.characters.find((entry) => entry.id === spot.order.customerId)
-    const portrait = guestPortrait(who?.portrait)
-    ctx.save()
-    ctx.beginPath()
-    const columnLeft = spot.guest.x + spot.guest.w * 0.52 - columnPitch / 2
-    const tuck = Math.max(1, spot.plate.y + spot.plate.h * 0.55 - spot.guest.y)
-    ctx.rect(columnLeft, spot.guest.y, columnPitch, tuck)
-    ctx.clip()
-    if (who?.portrait && portrait && portraitReady(portrait)) {
-      measurePortrait(who.portrait, portrait)
-      ctx.drawImage(portrait as CanvasImageSource, spot.guest.x, spot.guest.y, spot.guest.w, spot.guest.h)
-    } else {
-      paintStandIn(ctx, characterName(cfg, spot.order.customerId), SILHOUETTE[spot.order.customerId] ?? '#8a6a4a', spot.guest, who?.face ?? { x: 0.18, y: 0.08, w: 0.64, h: 0.42 })
-    }
-    ctx.restore()
-  })
-  ctx.save()
-  ctx.beginPath()
-  ctx.rect(frame.orderClip.x, frame.orderClip.y, frame.orderClip.w, frame.orderClip.h)
-  ctx.clip()
-  const tray = frame.rewardTray
-  if (tray.w > 0) {
-    roundRect(ctx, tray.x, tray.y, tray.w, tray.h, 12)
-    ctx.fillStyle = '#f8efdf'
-    ctx.fill()
-    ctx.lineWidth = Math.max(1.5, tray.w * 0.025)
-    ctx.strokeStyle = '#d7b88a'
-    ctx.stroke()
-    const chest = { x: tray.x + tray.w * 0.16, y: tray.y + tray.h * 0.06, w: tray.w * 0.68, h: tray.h * 0.42 }
-    const lidH = chest.h * 0.42
-    roundRect(ctx, chest.x - chest.w * 0.06, chest.y, chest.w * 1.12, lidH, 4)
-    ctx.fillStyle = '#e2b15a'
-    ctx.fill()
-    ctx.strokeStyle = '#8a5a28'
-    ctx.lineWidth = Math.max(1, chest.w * 0.04)
-    ctx.stroke()
-    roundRect(ctx, chest.x, chest.y + lidH * 0.72, chest.w, chest.h - lidH * 0.72, 4)
-    ctx.fillStyle = '#c47a32'
-    ctx.fill()
-    ctx.strokeStyle = '#8a5a28'
-    ctx.stroke()
-    const claspR = Math.max(2.5, chest.w * 0.09)
-    ctx.beginPath()
-    ctx.fillStyle = '#f4e2b0'
-    ctx.arc(chest.x + chest.w / 2, chest.y + lidH, claspR, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.strokeStyle = '#6a3e22'
-    ctx.lineWidth = 1
-    ctx.stroke()
-    text(ctx, '奖励', tray.x + tray.w / 2, tray.y + tray.h * 0.58, Math.max(12, tray.w * 0.2), PAL.ink, 'center', 'middle', 700)
-    const goal = Math.max(1, cfg.economy.smileGoal)
-    const ratio = Math.max(0, Math.min(1, state.smiles / goal))
-    const bar = { x: tray.x + tray.w * 0.12, y: tray.y + tray.h * 0.7, w: tray.w * 0.76, h: Math.max(6, tray.h * 0.07) }
-    roundRect(ctx, bar.x, bar.y, bar.w, bar.h, bar.h / 2)
-    ctx.fillStyle = '#e4d3bc'
-    ctx.fill()
-    roundRect(ctx, bar.x, bar.y, Math.max(bar.h, bar.w * ratio), bar.h, bar.h / 2)
-    ctx.fillStyle = '#e0568a'
-    ctx.fill()
-    text(ctx, `${state.smiles}/${goal}`, tray.x + tray.w / 2, tray.y + tray.h * 0.86, Math.max(11, tray.w * 0.16), PAL.ink, 'center', 'middle', 700)
-  }
-  spots.forEach(({ order, index, dx, plate, pay: payRect }) => {
-    const tray = orderTrayImage()
-    if (tray && (tray.naturalWidth || 0) > 0) {
-      const aspect = tray.naturalWidth / Math.max(1, tray.naturalHeight)
-      const drawW = plate.w
-      const drawH = drawW / aspect
-      ctx.drawImage(tray, plate.x, plate.y + (plate.h - drawH) / 2, drawW, drawH)
-    } else {
-      roundRect(ctx, plate.x, plate.y, plate.w, plate.h, 8)
-      ctx.fillStyle = '#e4b57a'
-      ctx.fill()
-    }
-    order.slots.forEach((slot, slotIndex) => {
-      const icon = frame.orderIcons.find((entry) => entry.order === index && entry.slot === slotIndex)
-      if (!icon) return
-      const ix = icon.rect.x + dx
-      const iy = icon.rect.y
-      const sprite = itemSprite(slot.line, slot.level)
-      if (sprite) {
-        drawFittedSprite(ctx, sprite, { x: ix, y: iy, w: icon.rect.w, h: icon.rect.h }, 1)
-      } else {
-        roundRect(ctx, ix, iy, icon.rect.w, icon.rect.h, 6)
-        ctx.fillStyle = lineColor(cfg, slot.line)
-        ctx.fill()
-      }
-      if (slotChecked(state, order, slotIndex)) {
-        const r = Math.max(4, Math.min(6, icon.rect.h * 0.28))
-        ctx.beginPath()
-        ctx.fillStyle = '#fffaf3'
-        ctx.arc(ix + icon.rect.w - r - 1, iy + icon.rect.h - r - 1, r, 0, Math.PI * 2)
-        ctx.fill()
-        text(ctx, '✓', ix + icon.rect.w - r - 1, iy + icon.rect.h - r - 1, r * 1.15, '#2c7a58')
-      }
-    })
-    const rewardArt = orderRewardImage()
-    if (rewardArt && (rewardArt.naturalWidth || 0) > 0) {
-      ctx.drawImage(rewardArt, payRect.x, payRect.y, payRect.w, payRect.h)
-    } else {
-      roundRect(ctx, payRect.x, payRect.y, payRect.w, payRect.h, 6)
-      ctx.fillStyle = '#f6e2bc'
-      ctx.fill()
-      ctx.strokeStyle = '#8a5a2b'
-      ctx.stroke()
-    }
-    const pay = orderPayout(order, cfg)
-    const rewardSize = Math.max(8, Math.min(11, payRect.h * 0.24, frame.w * (orderLayout.rewardFont ?? 0.028)))
-    text(ctx, `+${pay.smiles}`, payRect.x + payRect.w * 0.9, payRect.y + payRect.h * 0.28, rewardSize, '#6a3a22', 'right', 'middle', 700)
-    text(ctx, `+${pay.coins}`, payRect.x + payRect.w * 0.9, payRect.y + payRect.h * 0.54, rewardSize, '#6a3a22', 'right', 'middle', 700)
-    if (orderSatisfied(state, order)) {
-      const btn = frame.completes[index]
-      if (btn) {
-        const bx = btn.x + dx
-        const by = btn.y
-        roundRect(ctx, bx, by, btn.w, btn.h, 8)
-        ctx.fillStyle = '#2c7a58'
-        ctx.fill()
-        text(ctx, '完成', bx + btn.w / 2, by + btn.h / 2, Math.max(11, btn.h * 0.62), PAL.white, 'center', 'middle', 700)
-      }
-    }
-  })
-  ctx.restore()
-}
 
 const SILHOUETTE: Record<string, string> = {
   xiaotao: '#e07a8a',
@@ -953,17 +949,23 @@ function paintStandIn(ctx: CanvasRenderingContext2D, name: string, color: string
 
 function drawHudTools(model: RenderModel): void {
   const { ctx, frame, state } = model
-  if (frame.multBtn.w > 0) {
+  if (frame.mode !== 'board' && frame.multBtn.w > 0) {
     roundRect(ctx, frame.multBtn.x, frame.multBtn.y, frame.multBtn.w, frame.multBtn.h, 6)
     ctx.fillStyle = '#3a342e'
     ctx.fill()
     text(ctx, `×${state.spawnMult ?? 1}`, frame.multBtn.x + frame.multBtn.w / 2, frame.multBtn.y + frame.multBtn.h / 2, 12, '#fff6e4')
   }
-  if (frame.shopBtn.w > 0) {
+  if (frame.mode !== 'board' && frame.shopBtn.w > 0) {
     roundRect(ctx, frame.shopBtn.x, frame.shopBtn.y, frame.shopBtn.w, frame.shopBtn.h, 6)
     ctx.fillStyle = '#8a6a4a'
     ctx.fill()
     text(ctx, '店', frame.shopBtn.x + frame.shopBtn.w / 2, frame.shopBtn.y + frame.shopBtn.h / 2, 13, '#fff6e4')
+  }
+  if (frame.tuneBtn.w > 0 && frame.mode === 'board') {
+    roundRect(ctx, frame.tuneBtn.x, frame.tuneBtn.y, frame.tuneBtn.w, frame.tuneBtn.h, 6)
+    ctx.fillStyle = 'rgba(255,250,243,0.72)'
+    ctx.fill()
+    text(ctx, '调', frame.tuneBtn.x + frame.tuneBtn.w / 2, frame.tuneBtn.y + frame.tuneBtn.h / 2, 11, PAL.soft)
   }
 }
 
@@ -1048,22 +1050,32 @@ function drawBoard(model: RenderModel): void {
   const checks = new Set(marks.check)
   const readyCells = new Set(marks.ready)
   const glow = new Set(glowingLocks(state).map((pos) => `${pos.row},${pos.col}`))
-  const matTop = frame.orderClip.h > 0 ? frame.orderClip.y + frame.orderClip.h : frame.hud.y + frame.hud.h
-  const matBottom = frame.dock.h > 0 ? frame.dock.y : frame.h
-  ctx.fillStyle = theme.mat
-  ctx.fillRect(0, matTop, frame.w, Math.max(0, matBottom - matTop))
+  const wood = frame.mode === 'board'
+  if (!wood) {
+    const matTop = frame.orderClip.h > 0 ? frame.orderClip.y + frame.orderClip.h : frame.hud.y + frame.hud.h
+    const matBottom = frame.dock.h > 0 ? frame.dock.y : frame.h
+    ctx.fillStyle = theme.mat
+    ctx.fillRect(0, matTop, frame.w, Math.max(0, matBottom - matTop))
+  }
   for (let row = 0; row < ROWS; row++) {
     for (let col = 0; col < COLS; col++) {
       const box = cellBox(frame, row, col)
       const pad = 2
       const key = `${row},${col}`
       const radius = Math.max(6, (box.w - pad * 2) * 0.18)
-      roundRect(ctx, box.x + pad, box.y + pad, box.w - pad * 2, box.h - pad * 2, radius)
-      ctx.fillStyle = readyCells.has(key) ? theme.ready : (row + col) % 2 === 0 ? theme.cellLight : theme.cellDark
-      ctx.fill()
-      ctx.lineWidth = 1
-      ctx.strokeStyle = theme.cellLine
-      ctx.stroke()
+      if (!wood) {
+        roundRect(ctx, box.x + pad, box.y + pad, box.w - pad * 2, box.h - pad * 2, radius)
+        ctx.fillStyle = readyCells.has(key) ? theme.ready : (row + col) % 2 === 0 ? theme.cellLight : theme.cellDark
+        ctx.fill()
+        ctx.lineWidth = 1
+        ctx.strokeStyle = theme.cellLine
+        ctx.stroke()
+      } else if (readyCells.has(key)) {
+        roundRect(ctx, box.x + pad, box.y + pad, box.w - pad * 2, box.h - pad * 2, radius)
+        ctx.lineWidth = 2
+        ctx.strokeStyle = theme.ready
+        ctx.stroke()
+      }
       const hover = fx.hover?.kind === 'cell' && fx.hover.row === row && fx.hover.col === col
       if (highlights.has(key) || hover) {
         ctx.lineWidth = 2.5
@@ -1308,11 +1320,13 @@ function drawInfo(model: RenderModel): void {
   const { ctx, frame, state, cfg, selected } = model
   if (frame.infoBar.h <= 0) return
   const bar = frame.infoBar
-  roundRect(ctx, bar.x, bar.y, bar.w, bar.h, 10)
-  ctx.fillStyle = '#fff6e8'
-  ctx.fill()
-  ctx.strokeStyle = '#e0c8a0'
-  ctx.stroke()
+  if (frame.mode !== 'board') {
+    roundRect(ctx, bar.x, bar.y, bar.w, bar.h, 10)
+    ctx.fillStyle = '#fff6e8'
+    ctx.fill()
+    ctx.strokeStyle = '#e0c8a0'
+    ctx.stroke()
+  }
   const sale = state.sale
   if (sale) {
     text(ctx, cfg.copy.infoSold, bar.x + 12, bar.y + bar.h / 2, 14, PAL.ink, 'left')
@@ -1617,23 +1631,6 @@ function drawSmileModal(model: RenderModel): void {
   button(ctx, smileDismissRect(frame), '放进奖励栏', 'primary')
 }
 
-function drawBottom(model: RenderModel): void {
-  const { ctx, frame, state, cfg } = model
-  if (frame.dock.h <= 0) return
-  if (frame.pendingBtn.w > 0) {
-    const count = state.pending.length
-    button(ctx, frame.pendingBtn, count ? `仓库 ${count}` : '仓库', count ? 'gold' : 'ghost')
-  }
-  button(ctx, frame.houseBtn, '建造', 'ghost')
-  const task = nextTask(state, cfg)
-  const dot = state.phase === 'play' && state.guide === 'none' && task && state.coins >= taskPrice(task, cfg)
-  if (dot) {
-    ctx.beginPath()
-    ctx.fillStyle = '#c4552a'
-    ctx.arc(frame.houseBtn.x + frame.houseBtn.w - 6, frame.houseBtn.y + 6, 6, 0, Math.PI * 2)
-    ctx.fill()
-  }
-}
 
 function drawChain(model: RenderModel): void {
   const chain = model.chain

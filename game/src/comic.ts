@@ -8,6 +8,7 @@ import p2_3 from './assets/comic/p2_3.webp'
 import p2_4 from './assets/comic/p2_4.webp'
 import p3_1 from './assets/comic/p3_1.webp'
 import p3_2 from './assets/comic/p3_2.webp'
+import p2b from './assets/comic/p2b.webp'
 import p3_3 from './assets/comic/p3_3.webp'
 import silaUrl from './assets/comic/sila.webp'
 import regularUrl from './assets/comic/comic-regular.woff2'
@@ -18,7 +19,7 @@ export const COMIC_FONT = 'JiangnanComic'
 
 const PANEL_URLS: Record<string, string> = {
   p1_1, p1_2, p1_3, p1_4,
-  p2_1, p2_2, p2_3, p2_4,
+  p2_1, p2_2, p2_3, p2_4, p2b,
   p3_1, p3_2, p3_3,
 }
 
@@ -129,12 +130,12 @@ export function silaJustShown(script: OpeningScript, before: number, after: numb
 export type ComicCue = 'crickets' | 'hmm' | 'snore' | 'hmph' | 'tear'
 export type ComicBed = 'tense' | 'gentle'
 
-/** 第 1、2 页用紧张古筝，第 3 页换成温柔古筝。第一步之前不响。 */
+/** 最后一页（回江南）用温柔古筝，前面几页包括新插入的门口页都用紧张古筝。第一步之前不响。 */
 export function comicBed(script: OpeningScript, step: number): ComicBed | null {
   if (step < 1) return null
   const cursor = comicCursor(script, step)
   if (!cursor) return null
-  return cursor.page >= 2 ? 'gentle' : 'tense'
+  return cursor.page >= script.pages.length - 1 ? 'gentle' : 'tense'
 }
 
 const BREAK_AFTER = new Set(['。', '！', '？', '，', '、', '；', '：'])

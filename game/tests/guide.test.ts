@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { defaultConfig } from '../src/config'
-import { contains, guideHole, hitTest, layout, type LayoutInput } from '../src/layout'
+import { cellRect, contains, guideHole, hitTest, layout, type LayoutInput } from '../src/layout'
 import type { GameState } from '../src/types'
 import {
   advanceGuide,
@@ -85,8 +85,9 @@ describe('强制引导', () => {
 
     expect(takeReward(state).ok).toBe(true)
     const cell = state.chestCell!
-    expect(guideHole(board, state, cfg)).toEqual(board && { x: board.board.x + cell.col * board.board.cell, y: board.board.y + cell.row * board.board.cell, w: board.board.cell, h: board.board.cell })
-    const chestHit = hitTest(board, board.board.x + cell.col * board.board.cell + 2, board.board.y + cell.row * board.board.cell + 2)
+    const hole = cellRect(board, cell.row, cell.col)
+    expect(guideHole(board, state, cfg)).toEqual(hole)
+    const chestHit = hitTest(board, hole.x + hole.w / 2, hole.y + hole.h / 2)
     expect(chestHit).toMatchObject({ kind: 'cell', row: cell.row, col: cell.col })
 
     state.chestLesson = 3

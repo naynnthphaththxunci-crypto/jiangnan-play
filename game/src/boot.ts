@@ -3,6 +3,7 @@ import { itemImageElements } from './itemArt'
 import { orderTrayImage } from './orderTray'
 import { guestImageElements } from './portraits'
 import { comicImageElements, loadComicFont } from './comic'
+import { hechengImageElements } from './hechengArt'
 
 function waitImage(img: HTMLImageElement): Promise<void> {
   if (img.complete) return Promise.resolve()
@@ -52,7 +53,7 @@ export async function runBoot(canvas: HTMLCanvasElement): Promise<() => void> {
   paint(0)
 
   const tray = orderTrayImage()
-  const images = [...itemImageElements(), ...guestImageElements(), ...comicImageElements(), ...(tray ? [tray] : []), loadUrl(loadingBg)]
+  const images = [...itemImageElements(), ...guestImageElements(), ...comicImageElements(), ...hechengImageElements(), ...(tray ? [tray] : []), loadUrl(loadingBg)]
   const fontReady = loadComicFont()
   const total = Math.max(1, images.length + 1)
   let done = 0

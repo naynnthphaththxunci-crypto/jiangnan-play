@@ -1,5 +1,5 @@
 import { tutorialHand } from './coach'
-import { silaJustShown } from './comic'
+import { comicCursor, silaJustShown } from './comic'
 import { createComicAudio } from './comicAudio'
 import { createSfx, type Sfx } from './audio'
 import { defaultConfig, resetEconomy } from './config'
@@ -607,6 +607,11 @@ export function startGame(platform: Platform): void {
       mark()
       return
     }
+    if (hit.kind === 'refill') {
+      modal = 'energy'
+      mark()
+      return
+    }
     if (hit.kind === 'shop') {
       state.shopOpen = true
       mark()
@@ -860,10 +865,13 @@ export function startGame(platform: Platform): void {
 
   function stepStory(): void {
     const before = state.storyStep
+    const beforePage = comicCursor(cfg.opening, before)?.page
     if (before === 0) comicAudio.sync(cfg.opening, 0, true)
     advanceStory(state, cfg)
     fx.comicFrom = before
     fx.comicFadeAt = platform.now()
+    const afterPage = comicCursor(cfg.opening, state.storyStep)?.page
+    if (beforePage !== afterPage) fx.pagePushAt = platform.now()
     if (silaJustShown(cfg.opening, before, state.storyStep)) {
       fx.silaAt = platform.now() + 420
       fx.shakeUntil = fx.silaAt + 460

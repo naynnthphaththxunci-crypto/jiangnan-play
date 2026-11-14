@@ -362,6 +362,18 @@ export const SLIDERS: SliderSpec[] = [
     text: (v) => v.toFixed(2),
   },
   {
+    id: 'speed4Level',
+    label: 'x4解锁等级',
+    min: 1,
+    max: 40,
+    step: 1,
+    get: (c) => c.economy.speed4Level ?? 20,
+    set: (c, v) => {
+      c.economy.speed4Level = v
+    },
+    text: (v) => `${Math.round(v)} 级`,
+  },
+  {
     id: 'smileGoal',
     label: '笑脸开奖',
     min: 4,

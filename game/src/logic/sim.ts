@@ -824,7 +824,7 @@ export function tapProducer(state: GameState, pos: Pos, cfg: GameConfig, rng: Rn
       ],
     }
   }
-  const mult = state.spawnMult ?? 1
+  const mult = allowedSpawnMults(state, cfg).includes((state.spawnMult ?? 1) as 1 | 2 | 4) ? (state.spawnMult ?? 1) : 1
   const taught = state.producerLesson === item.producerId
   const tierCost = spawnTier(cfg, mult)?.cost ?? mult
   const cost = kind === 'consumable' || kind === 'plant' || taught ? 0 : tierCost
@@ -914,9 +914,16 @@ export function collectBoardProduct(state: GameState, pos: Pos, cfg: GameConfig)
   return { ok: true, events: [{ type: 'toast', text: line.collect === 'gem' ? `钻石 +${amount}` : `铜钱 +${amount}` }] }
 }
 
+/** 按钮这一轮只在 x1 / x2 / x4 之间转。20 级前没有 x4，x8 留给以后的付费档。 */
+export function allowedSpawnMults(state: GameState, cfg: GameConfig): (1 | 2 | 4)[] {
+  const unlock = cfg.economy.speed4Level ?? 20
+  return state.level >= unlock ? [1, 2, 4] : [1, 2]
+}
+
 export function cycleSpawnMult(state: GameState, cfg: GameConfig): 1 | 2 | 4 | 8 {
-  const list = enabledMults(cfg)
-  const index = list.indexOf(state.spawnMult)
+  const list = allowedSpawnMults(state, cfg)
+  const current = list.includes(state.spawnMult as 1 | 2 | 4) ? state.spawnMult : 1
+  const index = list.indexOf(current as 1 | 2 | 4)
   state.spawnMult = list[(index + 1) % list.length] ?? 1
   return state.spawnMult
 }
@@ -2644,6 +2651,7 @@ export function hydrate(raw: string, cfg: GameConfig): GameState | null {
     state.smileModal ??= null
     state.smiles ??= 0
     state.spawnMult ??= 1
+    if (!allowedSpawnMults(state, cfg).includes(state.spawnMult as 1 | 2 | 4)) state.spawnMult = 1
     state.mintStep ??= 'off'
     resolveGuides(state, cfg)
     if (state.phase === 'opening' && !openingStepPossible(state, cfg)) dismissStuckGuide(state, cfg)

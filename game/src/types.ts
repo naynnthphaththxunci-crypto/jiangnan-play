@@ -103,6 +103,7 @@ export type ComicEnter =
   | 'fade'
   | 'push'
   | 'slide-slant'
+  | 'slow-push'
 
 export interface ComicPanel {
   id: string
@@ -223,6 +224,8 @@ export interface Economy {
   shopPackGems: number
   shopPackEnergy: number
   smileUnlockLevel: number
+  /** 达到这个等级，倍速按钮才出现 x4。x8 不进循环。 */
+  speed4Level: number
   spawn1High: number
   spawn2Mid: number
   spawnTable: { mult: 1 | 2 | 4 | 8; cost: number; enabled: boolean; weights: { level: number; p: number }[] }[]

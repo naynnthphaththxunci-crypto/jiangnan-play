@@ -11,6 +11,8 @@ import {
   dismissDetail,
   dismissNotice,
   dropItem,
+  allowedSpawnMults,
+  cycleSpawnMult,
   enabledMults,
   guardedDrop,
   hydrate,
@@ -46,6 +48,19 @@ describe('第十轮开局和前期', () => {
     const cfg = defaultConfig()
     expect(orderItemLabel('混合粗粮团', 3, true)).toBe('混合粗粮团 3级')
     expect(enabledMults(cfg)).toEqual([1, 2, 4])
+    expect(cfg.economy.speed4Level).toBe(20)
+    const low = createGame(1, cfg)
+    low.phase = 'play'
+    expect(allowedSpawnMults(low, cfg)).toEqual([1, 2])
+    expect(cycleSpawnMult(low, cfg)).toBe(2)
+    expect(cycleSpawnMult(low, cfg)).toBe(1)
+    low.level = 20
+    low.spawnMult = 1
+    expect(allowedSpawnMults(low, cfg)).toEqual([1, 2, 4])
+    expect(cycleSpawnMult(low, cfg)).toBe(2)
+    expect(cycleSpawnMult(low, cfg)).toBe(4)
+    expect(cycleSpawnMult(low, cfg)).toBe(1)
+    expect(low.spawnMult).not.toBe(8)
     expect(spawnTier(cfg, 8)?.enabled).toBe(false)
     expect(spawnTier(cfg, 4)?.weights.map((row) => row.p)).toEqual([0.35, 0.2, 0.2, 0.2, 0.05])
     const state = createGame(1, cfg)
