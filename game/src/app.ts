@@ -89,6 +89,7 @@ import {
   settleGifts,
   skipStory,
   scrollOrders,
+  snapOrderScroll,
   smilesVisible,
   startVisit,
   storageTakeIndex,
@@ -1116,6 +1117,7 @@ export function startGame(platform: Platform): void {
         onComplete: pointer.hit.kind === 'complete',
         onIcon: pointer.hit.kind === 'orderIcon',
       })
+      if (pointer.moved) orderScroll = snapOrderScroll(orderScroll, frame.orderPitch, frame.orderMaxScroll)
       if (action === 'complete' && pointer.hit.kind === 'complete') activate(pointer.hit)
       if (action === 'icon' && pointer.hit.kind === 'orderIcon' && state.phase === 'play') {
         const order = state.orders[pointer.hit.order]
@@ -1304,6 +1306,10 @@ export function startGame(platform: Platform): void {
     },
     setView(next: 'board' | 'house') {
       view = next
+      frame = makeFrame()
+    },
+    setOrderScroll(value: number) {
+      orderScroll = value
       frame = makeFrame()
     },
     select(row: number, col: number) {

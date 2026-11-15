@@ -1708,6 +1708,15 @@ export function scrollOrders(start: number, dx: number, max: number): number {
   return Math.min(Math.max(0, max), Math.max(0, start - dx))
 }
 
+/** 松手后把客人吸到最近的固定桌位。 */
+export function snapOrderScroll(scroll: number, pitch: number, max: number): number {
+  const limit = Math.max(0, max)
+  const clamped = Math.min(limit, Math.max(0, scroll))
+  if (!(pitch > 0)) return clamped
+  const snapped = Math.round(clamped / pitch) * pitch
+  return Math.min(limit, Math.max(0, snapped))
+}
+
 export function storyLength(cfg: GameConfig): number {
   return cfg.opening.pages.reduce((sum, page) => sum + page.beats.length, 0)
 }

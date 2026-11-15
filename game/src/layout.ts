@@ -55,6 +55,8 @@ export interface Frame {
   orders: Rect[]
   completes: Rect[]
   orderPlates: Rect[]
+  tableSlots: Rect[]
+  orderPitch: number
   orderRewards: Rect[]
   orderGuests: Rect[]
   orderCharms: Rect[]
@@ -605,6 +607,8 @@ export function layout(input: LayoutInput): Frame {
     orders: scene?.orders ?? orders,
     completes: scene?.completes ?? completes,
     orderPlates: scene?.orderPlates ?? orderPlates,
+    tableSlots: scene?.tableSlots ?? [],
+    orderPitch: scene?.orderPitch ?? 0,
     orderRewards: scene?.orderRewards ?? orderRewards,
     orderGuests: scene?.orderGuests ?? orderGuests,
     orderCharms: scene?.orderRewards ?? orderCharms,

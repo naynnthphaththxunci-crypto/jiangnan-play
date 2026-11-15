@@ -771,22 +771,11 @@ function drawHecheng(model: RenderModel): void {
     ctx.rect(frame.orderClip.x, frame.orderClip.y, frame.orderClip.w, frame.orderClip.h)
     ctx.clip()
   }
-  const stripScroll = frame.orderPlates[0] ? 354 * scale - frame.orderPlates[0].x : 0
   const counterImg = hechengImage('counter')
   if (counterImg && (counterImg.naturalWidth || 0) > 0) {
-    const tileW = 1080 * scale
     const counterY = top + 598 * scale
     const counterH = 324 * scale
-    const cover = Math.max(
-      frame.w,
-      ...frame.orderGuests.map((rect) => rect.x + rect.w),
-      ...frame.orderPlates.map((rect) => rect.x + rect.w),
-      ...frame.orderRewards.map((rect) => rect.x + rect.w),
-      ...frame.completes.map((rect) => rect.x + rect.w),
-    ) + 8
-    for (let x = -stripScroll; x < cover; x += tileW) {
-      ctx.drawImage(counterImg as CanvasImageSource, x, counterY, tileW, counterH)
-    }
+    ctx.drawImage(counterImg as CanvasImageSource, 0, counterY, frame.w, counterH)
   }
   blit(ctx, 'board', at({ x: 7, y: 714, w: 1071, h: 1370 }))
   ctx.save()
@@ -809,7 +798,7 @@ function drawHecheng(model: RenderModel): void {
   ctx.restore()
   ctx.save()
   clipOrders()
-  frame.orderPlates.forEach((plate) => blit(ctx, 'plate', plate))
+  frame.tableSlots.forEach((plate) => blit(ctx, 'plate', plate))
   state.orders.forEach((order, index) => {
     order.slots.forEach((slot, slotIndex) => {
       const icon = frame.orderIcons.find((entry) => entry.order === index && entry.slot === slotIndex)

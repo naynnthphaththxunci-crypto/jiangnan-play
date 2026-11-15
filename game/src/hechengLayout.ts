@@ -18,6 +18,10 @@ const CELL_TABLE = cells as number[][]
 
 const PITCH = 313
 
+/** 第一张小桌子的设计横坐标。原来第一位在画面中间，现在改到柜台最左边。 */
+const ORDER_LEFT = 28
+const ORDER_SHIFT = 354 - ORDER_LEFT
+
 /** 客人原画是 1024 的整张画布，按这个比例缩到 1080 宽的设计稿上。 */
 export const GUEST_CANVAS = 1024
 export const GUEST_SCALE = 0.29
@@ -82,6 +86,9 @@ export interface HechengScene {
   orders: Box[]
   completes: Box[]
   orderPlates: Box[]
+  /** 柜台上固定的小桌子，不随订单滑动。 */
+  tableSlots: Box[]
+  orderPitch: number
   orderRewards: Box[]
   orderGuests: Box[]
   orderIcons: { order: number; slot: number; rect: Box }[]
@@ -132,16 +139,19 @@ function childOf(button: Box, designButton: Box, designChild: Box): Box {
 }
 
 function slotAt(list: Box[], index: number): Box {
-  if (index < list.length) return list[index]!
-  const last = list[list.length - 1]!
-  return { ...last, x: last.x + (index - (list.length - 1)) * PITCH }
+  const raw = index < list.length ? list[index]! : (() => {
+    const last = list[list.length - 1]!
+    return { ...last, x: last.x + (index - (list.length - 1)) * PITCH }
+  })()
+  return { ...raw, x: raw.x - ORDER_SHIFT }
 }
 
 /** 整张 1024 画布的设计坐标。默认比例下左上角就是锚点；改比例时绕画布中心缩放。 */
 export function guestCanvasBox(index: number, guestScale = GUEST_SCALE): Box {
-  const anchor = index < GUEST_ANCHOR.length
+  const raw = index < GUEST_ANCHOR.length
     ? GUEST_ANCHOR[index]!
     : { x: GUEST_ANCHOR[2]!.x + (index - 2) * PITCH, y: GUEST_ANCHOR[2]!.y }
+  const anchor = { x: raw.x - ORDER_SHIFT, y: raw.y }
   const nominal = GUEST_CANVAS * GUEST_SCALE
   const size = GUEST_CANVAS * guestScale
   return { x: anchor.x + nominal / 2 - size / 2, y: anchor.y, w: size, h: size }
@@ -196,15 +206,24 @@ export function hechengParts(input: HechengInput): HechengScene {
   })
   const guestScale = input.guestCanvasScale && input.guestCanvasScale > 0 ? input.guestCanvasScale : GUEST_SCALE
   const n = Math.max(0, input.orderCount)
+  const pitchPx = PITCH * scale
   let right = 0
-  for (let i = 0; i < n; i++) {
-    for (const box of [guestCanvasBox(i, guestScale), slotAt(PLATES, i), slotAt(REWARDS, i), slotAt(COMPLETES, i)]) {
+  if (n > 0) {
+    const last = n - 1
+    for (const box of [guestCanvasBox(last, guestScale), slotAt(PLATES, last), slotAt(REWARDS, last), slotAt(COMPLETES, last)]) {
       right = Math.max(right, (box.x + box.w) * scale)
     }
+    right += 16 * scale
   }
-  right += 16 * scale
-  const orderMaxScroll = Math.max(0, right - input.w)
+  const rawMax = Math.max(0, right - input.w)
+  const orderMaxScroll = rawMax <= 0.5 || pitchPx <= 0 ? 0 : Math.ceil((rawMax - 0.5) / pitchPx) * pitchPx
   const scroll = clamp(input.orderScroll, 0, orderMaxScroll)
+  const tableSlots: Box[] = []
+  for (let i = 0; i < 12; i++) {
+    const plate = slotAt(PLATES, i)
+    if (plate.x >= DESIGN_W) break
+    tableSlots.push(place(plate))
+  }
   const orders: Box[] = []
   const completes: Box[] = []
   const orderPlates: Box[] = []
@@ -212,7 +231,7 @@ export function hechengParts(input: HechengInput): HechengScene {
   const orderGuests: Box[] = []
   const orderIcons: { order: number; slot: number; rect: Box }[] = []
   for (let i = 0; i < n; i++) {
-    const plate = place(slotAt(PLATES, i), scroll)
+    const plate = place(slotAt(PLATES, i), scroll) // 客人这一组的虚拟桌位，物品跟着它走
     const guest = place(guestCanvasBox(i, guestScale), scroll)
     const reward = place(slotAt(REWARDS, i), scroll)
     const button = place(slotAt(COMPLETES, i), scroll)
@@ -264,9 +283,9 @@ export function hechengParts(input: HechengInput): HechengScene {
   const chestOn = input.showChest !== false
   // 只剩宝箱时收到绿书的位置，避免书藏起来后宝箱悬在半空。
   const chestDesign = chestOn ? (storyOn ? CHEST_BTN : STORY_BTN) : null
-  const storyBtn = storyOn ? place(STORY_BTN, scroll) : ZERO_BOX
-  const taskBtn = taskOn ? place(TASK_BTN, scroll) : ZERO_BOX
-  const chestBtn = chestDesign ? place(chestDesign, scroll) : ZERO_BOX
+  const storyBtn = storyOn ? place(STORY_BTN) : ZERO_BOX
+  const taskBtn = taskOn ? place(TASK_BTN) : ZERO_BOX
+  const chestBtn = chestDesign ? place(chestDesign) : ZERO_BOX
   const orderClip = place({ x: 0, y: 300, w: DESIGN_W, h: 420 })
   const avatarSlot = place({ x: 29, y: 150, w: 149, h: 149 })
   const taskIcon = childOf(taskBtn, TASK_BTN, TASK_ICON)
@@ -282,6 +301,8 @@ export function hechengParts(input: HechengInput): HechengScene {
     orders,
     completes,
     orderPlates,
+    tableSlots,
+    orderPitch: pitchPx,
     orderRewards,
     orderGuests,
     orderIcons,
@@ -308,7 +329,7 @@ export function hechengParts(input: HechengInput): HechengScene {
     storyBtn,
     taskBtn,
     hud: place({ x: 0, y: 140, w: DESIGN_W, h: 220 }),
-    counter: place({ x: 0, y: 598, w: DESIGN_W, h: 324 }, scroll),
+    counter: place({ x: 0, y: 598, w: DESIGN_W, h: 324 }),
     boardArt,
     taskIcon,
     bookIcon,
