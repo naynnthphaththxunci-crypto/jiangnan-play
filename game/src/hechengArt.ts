@@ -28,6 +28,7 @@ import bookUrl from './assets/hecheng/book.webp'
 import avatarUrl from './assets/hecheng/avatar.webp'
 import avatarFrameUrl from './assets/hecheng/avatar_frame.webp'
 import levelBadgeUrl from './assets/hecheng/level_badge.webp'
+import selectFrameUrl from './assets/hecheng/select_frame.webp'
 
 export const HECHENG_ART = {
   bg: bgUrl,
@@ -60,6 +61,7 @@ export const HECHENG_ART = {
   avatar: avatarUrl,
   avatarFrame: avatarFrameUrl,
   levelBadge: levelBadgeUrl,
+  selectFrame: selectFrameUrl,
 } as const
 
 export type HechengArtId = keyof typeof HECHENG_ART

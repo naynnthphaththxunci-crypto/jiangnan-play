@@ -48,6 +48,7 @@ import iconBoltUrl from './assets/ui/stamina_bolt.webp'
 import { firstOrderGuestPortrait, guestPortrait, portraitReady } from './portraits'
 import { drawAvatar, drawCharacter } from './cast'
 import { hechengImage, speedArtId } from './hechengArt'
+import { selectBreathScale, selectFrameRect } from './selectFrame'
 import { curtainBambooPlace, curtainBitmaps, curtainDrop, curtainPlace } from './curtain'
 import { designToScreen } from './hechengLayout'
 import { COMIC_FONT, comicCursor, comicFontReady, comicPanelImage, comicPrompt, comicSilaImage, wrapComicText } from './comic'
@@ -1111,6 +1112,13 @@ function cellBox(frame: Frame, row: number, col: number): Rect {
   return cellRect(frame, row, col)
 }
 
+function drawSelectFrame(ctx: CanvasRenderingContext2D, box: Rect): void {
+  const img = hechengImage('selectFrame')
+  if (!img || (img.naturalWidth || 0) <= 0) return
+  const rect = selectFrameRect(box)
+  ctx.drawImage(img as CanvasImageSource, rect.x, rect.y, rect.w, rect.h)
+}
+
 function hiddenCells(fx: Fx): Set<string> {
   const set = new Set<string>()
   if (fx.drag && !fx.drag.pending) set.add(`${fx.drag.row},${fx.drag.col}`)
@@ -1207,12 +1215,7 @@ function drawBoard(model: RenderModel): void {
           const lockLabel = lock.giftUntil == null ? '礼物' : giftLeft > 0 ? formatMs(giftLeft) : '可开'
           text(ctx, lockLabel, box.x + box.w / 2, box.y + box.h * 0.72, Math.max(9, box.w * 0.16), PAL.ink)
         }
-        if (model.selected && model.selected.row === row && model.selected.col === col) {
-          ctx.lineWidth = 3
-          ctx.strokeStyle = '#3d6ea8'
-          roundRect(ctx, box.x + 1, box.y + 1, box.w - 2, box.h - 2, 6)
-          ctx.stroke()
-        }
+        if (model.selected && model.selected.row === row && model.selected.col === col) drawSelectFrame(ctx, box)
         if (glow.has(key)) {
           const amp = Math.max(0, Math.min(1, cfg.economy.lockPulse || 0))
           const wave = 0.5 + 0.5 * Math.sin(realNow / 540)
@@ -1236,7 +1239,9 @@ function drawBoard(model: RenderModel): void {
           ctx.fill()
         }
       }
-      drawItem(ctx, cfg, item, box, scale, 1, realNow, unlimited && item.kind === 'producer')
+      const picked = model.selected?.row === row && model.selected?.col === col
+      const breath = picked ? selectBreathScale(realNow, cfg.economy.selectBreath ?? 0.06, cfg.economy.selectBreathMs ?? 1000) : 1
+      drawItem(ctx, cfg, item, box, scale * breath, 1, realNow, unlimited && item.kind === 'producer')
       if (item.kind === 'producer' && producerTapCostsEnergy(cfg, item)) {
         const cooling = producerCooldown(cfg, item, realNow)
         if (producerCanSpawn(cfg, item, realNow)) drawSpawnBolt(ctx, box)
@@ -1252,12 +1257,7 @@ function drawBoard(model: RenderModel): void {
         ctx.fill()
         text(ctx, '✓', cx, cy, r * 1.35, PAL.white)
       }
-      if (model.selected && model.selected.row === row && model.selected.col === col) {
-        ctx.lineWidth = 2.5
-        ctx.strokeStyle = '#3d6ea8'
-        roundRect(ctx, box.x + 1, box.y + 1, box.w - 2, box.h - 2, 6)
-        ctx.stroke()
-      }
+      if (picked) drawSelectFrame(ctx, box)
     }
   }
   if (fx.drag) {

@@ -152,6 +152,8 @@
   "curtainPullMs": 500,
   "curtainBounce": 0,
   "curtainHoldMs": 0,
+  "selectBreath": 0.06,
+  "selectBreathMs": 1000,
   "hitStopMs": 70,
   "snapStrength": 0.75,
   "dailyChestFromDay": 2,

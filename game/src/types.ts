@@ -174,6 +174,10 @@ export interface Economy {
   curtainBounce: number
   /** 盖满之后、切到新页面前多停多久。 */
   curtainHoldMs: number
+  /** 选中棋子呼吸时，相对原大的放大比例。0 为关闭。 */
+  selectBreath: number
+  /** 选中棋子完成一次放大缩小的毫秒数。 */
+  selectBreathMs: number
   hitStopMs: number
   snapStrength: number
   dailyChestFromDay: number
