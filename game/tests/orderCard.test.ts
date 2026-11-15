@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { defaultConfig } from '../src/config'
 import { cellRect, hitTest, layout, type LayoutInput, type Rect } from '../src/layout'
 import { designCell } from '../src/hechengLayout'
-import { scrollOrders, snapOrderScroll } from '../src/logic/sim'
+import { scrollOrders } from '../src/logic/sim'
 import type { NormBox } from '../src/types'
 import { PORTRAITS, portraitConfig } from '../src/portraits'
 
@@ -54,22 +54,17 @@ function overlaps(a: Rect, b: Rect): boolean {
 }
 
 describe('订单卡', () => {
-  it('订单从最左边的桌位往右排，两个订单时不能滑', () => {
-    const view = frame()
-    const one = frame({ orderCount: 1, orderSlots: [1] })
-    expect(one.orderPlates[0]!.x).toBeCloseTo(view.orderPlates[0]!.x, 3)
-    expect(one.orderGuests[0]!.x).toBeCloseTo(view.orderGuests[0]!.x, 3)
+  it('没有左侧按钮时订单从最左边排', () => {
+    const bare = { showStory: false, showTask: false, showChest: false }
+    const view = frame({ ...bare, orderCount: 1, orderSlots: [1] })
     expect(view.orderPlates[0]!.x).toBeLessThan(view.w * 0.12)
-    expect(view.tableSlots[0]!.x).toBeCloseTo(view.orderPlates[0]!.x, 3)
-    expect(one.tableSlots).toHaveLength(1)
-    expect(view.tableSlots).toHaveLength(3)
-    expect(view.orderNames).toHaveLength(0)
-    const two = frame({ orderCount: 2, orderSlots: [1, 1] })
-    expect(two.tableSlots).toHaveLength(2)
-    expect(two.orderMaxScroll).toBe(0)
-    expect(two.orderPlates[1]!.x).toBeGreaterThan(two.orderPlates[0]!.x)
-    expect(two.orderPlates[1]!.x + two.orderPlates[1]!.w).toBeLessThanOrEqual(two.w + 1)
-    expect(two.orderRewards[1]!.x + two.orderRewards[1]!.w).toBeLessThanOrEqual(two.w + 1)
+    expect(view.storyBtn.w).toBe(0)
+    expect(view.taskBtn.w).toBe(0)
+    expect(view.chestBtn.w).toBe(0)
+    expect(view.tableSlots).toHaveLength(1)
+    const chest = frame({ showStory: false, showTask: false, showChest: true, orderCount: 1, orderSlots: [1] })
+    expect(chest.chestBtn.w).toBeGreaterThan(0)
+    expect(chest.orderPlates[0]!.x).toBeGreaterThan(chest.chestBtn.x + chest.chestBtn.w)
   })
 
   it('滑动时桌子不动，客人吸附到桌位，最右的奖励能拉进屏幕', () => {
@@ -125,20 +120,28 @@ describe('订单卡', () => {
     }
   })
 
-  it('客人按 1024 画布的 0.29 倍摆在最左桌位，桌子和左侧按钮不跟着滑', () => {
-    const view = frame({ w: 1080, h: 2340, orderCount: 4, orderSlots: [1, 1, 1, 1] })
-    const guest = view.orderGuests[0]!
-    expect(guest.x).toBeCloseTo(12, 0)
-    expect(guest.y).toBeCloseTo(307, 0)
-    expect(guest.w).toBeCloseTo(1024 * 0.29, 0)
-    expect(view.orderPlates[0]!.x).toBeCloseTo(28, 0)
-    expect(view.storyBtn.x).toBeCloseTo(29, 0)
-    const scrolled = frame({ w: 1080, h: 2340, orderCount: 4, orderSlots: [1, 1, 1, 1], orderScroll: view.orderPitch * 0.4 })
-    expect(scrolled.storyBtn.x).toBeCloseTo(view.storyBtn.x, 3)
-    expect(scrolled.tableSlots[0]!.x).toBeCloseTo(view.tableSlots[0]!.x, 3)
-    expect(scrolled.chestBtn.x).toBeCloseTo(view.chestBtn.x, 3)
-    expect(snapOrderScroll(view.orderPitch * 0.4, view.orderPitch, view.orderMaxScroll)).toBeCloseTo(0, 3)
-    expect(snapOrderScroll(view.orderPitch * 0.6, view.orderPitch, view.orderMaxScroll)).toBeCloseTo(view.orderPitch, 3)
+  it('5 级按钮和订单一起滑，没宝箱时绿书下移，桌子留在槽位上', () => {
+    const full = frame({ w: 1080, h: 2340, showStory: true, showTask: true, showChest: true, orderCount: 1, orderSlots: [1] })
+    expect(full.storyBtn.y).toBeLessThan(full.chestBtn.y)
+    expect(full.taskBtn.x).toBeGreaterThan(full.chestBtn.x + full.chestBtn.w)
+    expect(full.orderPlates[0]!.x).toBeGreaterThan(full.taskBtn.x + full.taskBtn.w - 2)
+    const noChest = frame({ w: 1080, h: 2340, showStory: true, showTask: true, showChest: false, orderCount: 1, orderSlots: [1] })
+    expect(noChest.chestBtn.w).toBe(0)
+    expect(noChest.storyBtn.y).toBeCloseTo(full.chestBtn.y, 0)
+    const scrolled = frame({
+      w: 1080,
+      h: 2340,
+      showStory: true,
+      showTask: true,
+      showChest: true,
+      orderCount: 4,
+      orderSlots: [1, 1, 1, 1],
+      orderScroll: 80,
+    })
+    expect(scrolled.storyBtn.x).toBeCloseTo(full.storyBtn.x - 80, 0)
+    expect(scrolled.taskBtn.x).toBeCloseTo(full.taskBtn.x - 80, 0)
+    expect(scrolled.tableSlots[0]!.x).toBeCloseTo(full.tableSlots[0]!.x, 0)
+    expect(scrolled.orderGuests[0]!.x).toBeLessThan(full.orderGuests[0]!.x - 70)
   })
 
   it('棋盘格子用排版表的坐标，点在格子中心能点中', () => {

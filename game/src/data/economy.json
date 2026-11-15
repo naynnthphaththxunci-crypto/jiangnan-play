@@ -155,6 +155,7 @@
   "selectBreath": 0.06,
   "selectBreathMs": 1000,
   "selectBreathTimes": 2,
+  "selectFrameScale": 1.16,
   "hitStopMs": 70,
   "snapStrength": 0.75,
   "dailyChestFromDay": 2,

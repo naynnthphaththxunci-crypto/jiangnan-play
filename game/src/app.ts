@@ -491,11 +491,18 @@ export function startGame(platform: Platform): void {
     }
     const dest = cellCenter(frame, cell.row, cell.col)
     const event = result.events[0]
-    if (event?.type === 'move') fly(item, x, y, dest.x, dest.y, [cell], 'snap')
-    else if (event?.type === 'swap') {
+    if (event?.type === 'move') {
+      fly(item, x, y, dest.x, dest.y, [cell], 'snap')
+      pickCell(event.toRow, event.toCol)
+    } else if (event?.type === 'swap') {
       const other = state.board[from.row]?.[from.col]
       fly(item, x, y, dest.x, dest.y, [cell], 'snap')
       if (other) fly(other, dest.x, dest.y, origin.x, origin.y, [from], 'snap')
+      pickCell(event.bRow, event.bCol)
+    } else if (event?.type === 'merge') {
+      pickCell(event.row, event.col)
+    } else {
+      pickCell(cell.row, cell.col)
     }
     present(result)
   }

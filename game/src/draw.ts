@@ -1114,10 +1114,10 @@ function cellBox(frame: Frame, row: number, col: number): Rect {
   return cellRect(frame, row, col)
 }
 
-function drawSelectFrame(ctx: CanvasRenderingContext2D, box: Rect): void {
+function drawSelectFrame(ctx: CanvasRenderingContext2D, box: Rect, frameScale: number): void {
   const img = hechengImage('selectFrame')
   if (!img || (img.naturalWidth || 0) <= 0) return
-  const rect = selectFrameRect(box)
+  const rect = selectFrameRect(box, frameScale)
   ctx.drawImage(img as CanvasImageSource, rect.x, rect.y, rect.w, rect.h)
 }
 
@@ -1217,7 +1217,6 @@ function drawBoard(model: RenderModel): void {
           const lockLabel = lock.giftUntil == null ? '礼物' : giftLeft > 0 ? formatMs(giftLeft) : '可开'
           text(ctx, lockLabel, box.x + box.w / 2, box.y + box.h * 0.72, Math.max(9, box.w * 0.16), PAL.ink)
         }
-        if (model.selected && model.selected.row === row && model.selected.col === col) drawSelectFrame(ctx, box)
         if (glow.has(key)) {
           const amp = Math.max(0, Math.min(1, cfg.economy.lockPulse || 0))
           const wave = 0.5 + 0.5 * Math.sin(realNow / 540)
@@ -1266,7 +1265,14 @@ function drawBoard(model: RenderModel): void {
         ctx.fill()
         text(ctx, '✓', cx, cy, r * 1.35, PAL.white)
       }
-      if (picked) drawSelectFrame(ctx, box)
+    }
+  }
+  if (model.selected && !fx.drag) {
+    const picked = model.selected
+    const held = state.board[picked.row]?.[picked.col]
+    const lock = lockAt(state, picked.row, picked.col)
+    if (held || lock) {
+      drawSelectFrame(ctx, cellBox(frame, picked.row, picked.col), cfg.economy.selectFrameScale ?? 1.16)
     }
   }
   if (fx.drag) {

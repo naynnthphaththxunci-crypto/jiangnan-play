@@ -113,6 +113,18 @@ export const SLIDERS: SliderSpec[] = [
     text: (v) => `${Math.round(v)} 次`,
   },
   {
+    id: 'selectFrameScale',
+    label: '选中框大小',
+    min: 1,
+    max: 1.5,
+    step: 0.02,
+    get: (c) => c.economy.selectFrameScale ?? 1.16,
+    set: (c, v) => {
+      c.economy.selectFrameScale = Math.round(v * 100) / 100
+    },
+    text: (v) => `${Math.round(v * 100)}%`,
+  },
+  {
     id: 'hit',
     label: '卡帧',
     min: 0,

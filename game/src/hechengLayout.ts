@@ -138,20 +138,20 @@ function childOf(button: Box, designButton: Box, designChild: Box): Box {
   }
 }
 
-function slotAt(list: Box[], index: number): Box {
+function slotAt(list: Box[], index: number, dx = 0): Box {
   const raw = index < list.length ? list[index]! : (() => {
     const last = list[list.length - 1]!
     return { ...last, x: last.x + (index - (list.length - 1)) * PITCH }
   })()
-  return { ...raw, x: raw.x - ORDER_SHIFT }
+  return { ...raw, x: raw.x - ORDER_SHIFT + dx }
 }
 
 /** 整张 1024 画布的设计坐标。默认比例下左上角就是锚点；改比例时绕画布中心缩放。 */
-export function guestCanvasBox(index: number, guestScale = GUEST_SCALE): Box {
+export function guestCanvasBox(index: number, guestScale = GUEST_SCALE, dx = 0): Box {
   const raw = index < GUEST_ANCHOR.length
     ? GUEST_ANCHOR[index]!
     : { x: GUEST_ANCHOR[2]!.x + (index - 2) * PITCH, y: GUEST_ANCHOR[2]!.y }
-  const anchor = { x: raw.x - ORDER_SHIFT, y: raw.y }
+  const anchor = { x: raw.x - ORDER_SHIFT + dx, y: raw.y }
   const nominal = GUEST_CANVAS * GUEST_SCALE
   const size = GUEST_CANVAS * guestScale
   return { x: anchor.x + nominal / 2 - size / 2, y: anchor.y, w: size, h: size }
@@ -206,11 +206,23 @@ export function hechengParts(input: HechengInput): HechengScene {
   })
   const guestScale = input.guestCanvasScale && input.guestCanvasScale > 0 ? input.guestCanvasScale : GUEST_SCALE
   const n = Math.max(0, input.orderCount)
+  const storyOn = input.showStory !== false
+  const taskOn = input.showTask !== false
+  const chestOn = input.showChest !== false
+  const columnRight = storyOn || chestOn ? ORDER_LEFT + STORY_BTN.w : 0
+  const taskRight = taskOn ? ORDER_LEFT + (TASK_BTN.x - STORY_BTN.x) + TASK_BTN.w : 0
+  const buttonRight = Math.max(columnRight, taskRight)
+  const orderPad = buttonRight === 0 ? 0 : buttonRight + 28 - ORDER_LEFT
   const pitchPx = PITCH * scale
-  let right = 0
+  let right = buttonRight * scale
   if (n > 0) {
     const last = n - 1
-    for (const box of [guestCanvasBox(last, guestScale), slotAt(PLATES, last), slotAt(REWARDS, last), slotAt(COMPLETES, last)]) {
+    for (const box of [
+      guestCanvasBox(last, guestScale, orderPad),
+      slotAt(PLATES, last, orderPad),
+      slotAt(REWARDS, last, orderPad),
+      slotAt(COMPLETES, last, orderPad),
+    ]) {
       right = Math.max(right, (box.x + box.w) * scale)
     }
     right += 16 * scale
@@ -219,7 +231,7 @@ export function hechengParts(input: HechengInput): HechengScene {
   const orderMaxScroll = rawMax <= 0.5 || pitchPx <= 0 ? 0 : Math.ceil((rawMax - 0.5) / pitchPx) * pitchPx
   const scroll = clamp(input.orderScroll, 0, orderMaxScroll)
   const tableSlots: Box[] = []
-  for (let i = 0; i < n; i++) tableSlots.push(place(slotAt(PLATES, i)))
+  for (let i = 0; i < n; i++) tableSlots.push(place(slotAt(PLATES, i, orderPad)))
   const orders: Box[] = []
   const completes: Box[] = []
   const orderPlates: Box[] = []
@@ -227,10 +239,10 @@ export function hechengParts(input: HechengInput): HechengScene {
   const orderGuests: Box[] = []
   const orderIcons: { order: number; slot: number; rect: Box }[] = []
   for (let i = 0; i < n; i++) {
-    const plate = place(slotAt(PLATES, i), scroll) // 客人这一组的虚拟桌位，物品跟着它走
-    const guest = place(guestCanvasBox(i, guestScale), scroll)
-    const reward = place(slotAt(REWARDS, i), scroll)
-    const button = place(slotAt(COMPLETES, i), scroll)
+    const plate = place(slotAt(PLATES, i, orderPad), scroll)
+    const guest = place(guestCanvasBox(i, guestScale, orderPad), scroll)
+    const reward = place(slotAt(REWARDS, i, orderPad), scroll)
+    const button = place(slotAt(COMPLETES, i, orderPad), scroll)
     orders.push(plate)
     orderPlates.push(plate)
     orderGuests.push(guest)
@@ -274,14 +286,13 @@ export function hechengParts(input: HechengInput): HechengScene {
   }
   const build = place({ x: 912, y: 2112, w: 153, h: 163 })
   const dockTop = build.y
-  const storyOn = input.showStory !== false
-  const taskOn = input.showTask !== false
-  const chestOn = input.showChest !== false
-  // 只剩宝箱时收到绿书的位置，避免书藏起来后宝箱悬在半空。
-  const chestDesign = chestOn ? (storyOn ? CHEST_BTN : STORY_BTN) : null
-  const storyBtn = storyOn ? place(STORY_BTN) : ZERO_BOX
-  const taskBtn = taskOn ? place(TASK_BTN) : ZERO_BOX
-  const chestBtn = chestDesign ? place(chestDesign) : ZERO_BOX
+  const shiftBtn = (box: Box): Box => ({ ...box, x: box.x - STORY_BTN.x + ORDER_LEFT })
+  const storyDesign = storyOn ? shiftBtn(chestOn ? STORY_BTN : { ...STORY_BTN, y: CHEST_BTN.y }) : null
+  const chestDesign = chestOn ? shiftBtn(CHEST_BTN) : null
+  const taskDesign = taskOn ? shiftBtn(TASK_BTN) : null
+  const storyBtn = storyDesign ? place(storyDesign, scroll) : ZERO_BOX
+  const taskBtn = taskDesign ? place(taskDesign, scroll) : ZERO_BOX
+  const chestBtn = chestDesign ? place(chestDesign, scroll) : ZERO_BOX
   const orderClip = place({ x: 0, y: 300, w: DESIGN_W, h: 420 })
   const avatarSlot = place({ x: 29, y: 150, w: 149, h: 149 })
   const taskIcon = childOf(taskBtn, TASK_BTN, TASK_ICON)

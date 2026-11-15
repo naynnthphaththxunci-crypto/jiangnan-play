@@ -180,6 +180,8 @@ export interface Economy {
   selectBreathMs: number
   /** 点中后呼吸几个来回，然后停在原大。 */
   selectBreathTimes: number
+  /** 选中框相对格子的大小。1 是正好一格，1.16 是大一圈。 */
+  selectFrameScale: number
   hitStopMs: number
   snapStrength: number
   dailyChestFromDay: number

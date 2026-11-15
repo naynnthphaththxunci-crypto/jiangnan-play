@@ -9,13 +9,17 @@ export interface SelectRect {
   h: number
 }
 
-/** 整张框等比缩放，内容范围的左右边贴住格子，上下居中。不单独拉宽或拉高。 */
-export function selectFrameRect(cell: SelectRect): SelectRect {
-  const scale = cell.w / SELECT_CONTENT.w
+/** 整张框等比缩放，比格子大一圈并居中。不单独拉宽或拉高。 */
+export function selectFrameRect(cell: SelectRect, frameScale = 1.16): SelectRect {
+  const cover = Math.max(0.5, frameScale)
+  const scale = (cell.w * cover) / SELECT_CONTENT.w
+  const contentW = SELECT_CONTENT.w * scale
   const contentH = SELECT_CONTENT.h * scale
+  const contentX = cell.x + (cell.w - contentW) / 2
+  const contentY = cell.y + (cell.h - contentH) / 2
   return {
-    x: cell.x - SELECT_CONTENT.x * scale,
-    y: cell.y + (cell.h - contentH) / 2 - SELECT_CONTENT.y * scale,
+    x: contentX - SELECT_CONTENT.x * scale,
+    y: contentY - SELECT_CONTENT.y * scale,
     w: SELECT_FRAME_SIZE * scale,
     h: SELECT_FRAME_SIZE * scale,
   }
