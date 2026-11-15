@@ -238,7 +238,7 @@ export function guideHole(frame: Frame, state: GameState, cfg?: GameConfig): Rec
   const spot = guideSpot(state, cfg)
   if (!spot) return null
   const live = (rect: Rect) => (rect.w > 0 && rect.h > 0 ? rect : null)
-  if (spot === 'reward') return live(frame.chestBtn.w > 0 ? frame.chestBtn : frame.rewardTray)
+  if (spot === 'reward') return visibleGuide(frame, chestTarget(frame))
   if (spot === 'chest' && state.chestCell) return cellRect(frame, state.chestCell.row, state.chestCell.col)
   if (spot === 'producer') {
     for (let row = 0; row < state.board.length; row++) {
@@ -247,14 +247,37 @@ export function guideHole(frame: Frame, state: GameState, cfg?: GameConfig): Rec
         if (item?.kind === 'producer' && item.producerId === state.producerLesson) return cellRect(frame, row, col)
       }
     }
-    return live(frame.chestBtn.w > 0 ? frame.chestBtn : frame.rewardTray)
+    return visibleGuide(frame, chestTarget(frame))
   }
-  if (spot === 'build') return live(frame.houseBtn)
-  if (spot === 'repair') return live(frame.buildBtn)
-  if (spot === 'back') return live(frame.backBtn)
-  if (spot === 'smile') return live(frame.smileSlot)
-  if (spot === 'rush') return live(frame.rushBtn)
+  if (spot === 'build') return visibleGuide(frame, live(frame.houseBtn))
+  if (spot === 'repair') return visibleGuide(frame, live(frame.buildBtn))
+  if (spot === 'back') return visibleGuide(frame, live(frame.backBtn))
+  if (spot === 'smile') return visibleGuide(frame, live(frame.smileSlot))
+  if (spot === 'rush') return visibleGuide(frame, live(frame.rushBtn))
   return null
+}
+
+function visibleGuide(frame: Frame, rect: Rect | null): Rect | null {
+  if (!rect || rect.w <= 0 || rect.h <= 0) return null
+  if (rect.x + rect.w <= 2 || rect.x >= frame.w - 2) return null
+  if (rect.y + rect.h <= 0 || rect.y >= frame.h) return null
+  return rect
+}
+
+/** 宝箱按钮加上红点，引导和点击都用这块。 */
+export function chestTarget(frame: Frame): Rect | null {
+  const btn = frame.chestBtn.w > 0 ? frame.chestBtn : frame.rewardTray
+  if (btn.w <= 0) return null
+  const badge = frame.badgeChest
+  if (!badge || badge.w <= 0) return btn
+  const x = Math.min(btn.x, badge.x)
+  const y = Math.min(btn.y, badge.y)
+  return {
+    x,
+    y,
+    w: Math.max(btn.x + btn.w, badge.x + badge.w) - x,
+    h: Math.max(btn.y + btn.h, badge.y + badge.h) - y,
+  }
 }
 
 export function cellAt(frame: Frame, x: number, y: number): { row: number; col: number } | null {
@@ -745,7 +768,8 @@ export function hitTest(frame: Frame, x: number, y: number): Hit | null {
   }
   if (contains(frame.tuneBtn, x, y)) return { kind: 'tune' }
   if (contains(frame.energyPlus, x, y)) return { kind: 'refill' }
-  if (contains(frame.chestBtn, x, y)) return { kind: 'reward' }
+  const chest = chestTarget(frame)
+  if (chest && contains(chest, x, y)) return { kind: 'reward' }
   if (contains(frame.storyBtn, x, y) || contains(frame.taskBtn, x, y)) return { kind: 'swallow' }
   if (contains(frame.multBtn, x, y)) return { kind: 'mult' }
   if (contains(frame.shopBtn, x, y)) return { kind: 'shop' }
@@ -767,7 +791,7 @@ export function hitTest(frame: Frame, x: number, y: number): Hit | null {
     return { kind: 'swallow' }
   }
   if ((frame.showStorage || frame.storageHot) && contains(frame.pendingBtn, x, y)) return { kind: 'pending' }
-  if (frame.rewardTray.w > 0 && contains(frame.rewardTray, x, y)) return { kind: 'reward' }
+  if (chest && contains(chest, x, y)) return { kind: 'reward' }
   if (contains(frame.houseBtn, x, y)) return { kind: 'house' }
   if (contains(frame.sellBtn, x, y)) return { kind: 'sell' }
   if (frame.rushBtn.w > 0 && contains(frame.rushBtn, x, y)) return { kind: 'rush' }

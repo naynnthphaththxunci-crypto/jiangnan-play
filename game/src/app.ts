@@ -6,12 +6,13 @@ import { createSfx, type Sfx } from './audio'
 import { defaultConfig, resetEconomy } from './config'
 import { partAt, render } from './draw'
 import { curtainReady as curtainImagesReady } from './curtain'
-import { createFx, type Fx } from './fx'
+import { createFx, easeOutCubic, type Fx } from './fx'
 import { clamp } from './format'
 import {
   cellAt,
   cellCenter,
   guideHole,
+  chestTarget,
   chainCardRect,
   chainCloseRect,
   chainPopRect,
@@ -91,6 +92,7 @@ import {
   skipStory,
   scrollOrders,
   snapOrderScroll,
+  revealOrderTarget,
   smilesVisible,
   startVisit,
   storageTakeIndex,
@@ -165,6 +167,7 @@ export function startGame(platform: Platform): void {
   let selected: { row: number; col: number } | null = null
   let selectedAt = 0
   let orderScroll = 0
+  let orderAnim: { from: number; to: number; start: number; dur: number } | null = null
   let chain: { line: string; level: number; source: 'order' | 'producer' } | null = null
   let orderFocus: { line: string; level: number } | null = null
   let lastInput = platform.now()
@@ -918,7 +921,6 @@ export function startGame(platform: Platform): void {
     sfx.unlock()
     lastInput = platform.now()
     if (curtain) return
-    if (guideSpot(state, cfg) === 'reward') orderScroll = 0
     frame = makeFrame()
     if (state.buildStory) {
       if (hitTest(frame, x, y)?.kind === 'skip') state.buildStory = null
@@ -1102,7 +1104,15 @@ export function startGame(platform: Platform): void {
         pointer.hit.kind === 'complete' ||
         (onOrderStrip && (pointer.hit.kind === 'swallow' || pointer.hit.kind === 'refill')))
     ) {
-      orderScroll = scrollOrders(pointer.orderScroll, x - pointer.sx, frame.orderMaxScroll)
+      if (!guideIsLocking(state, cfg)) {
+        orderAnim = null
+        orderScroll = scrollOrders(
+          pointer.orderScroll,
+          x - pointer.sx,
+          frame.orderMaxScroll,
+          cfg.economy.orderOverscroll ?? 120,
+        )
+      }
       return
     }
     if (pointer.moved && pointer.hit.kind === 'pending' && dragId < 0 && state.pending.length) {
@@ -1147,7 +1157,22 @@ export function startGame(platform: Platform): void {
         onComplete: pointer.hit.kind === 'complete',
         onIcon: pointer.hit.kind === 'orderIcon',
       })
-      if (pointer.moved) orderScroll = snapOrderScroll(orderScroll, frame.orderPitch, frame.orderMaxScroll)
+      if (guideIsLocking(state, cfg)) {
+        const hole = guideHole(frame, state, cfg)
+        if (hole && contains(hole, x, y) && contains(hole, pointer.sx, pointer.sy)) activate(pointer.hit)
+        return
+      }
+      if (pointer.moved) {
+        const max = frame.orderMaxScroll
+        if (orderScroll < -0.5 || orderScroll > max + 0.5) {
+          orderAnim = {
+            from: orderScroll,
+            to: orderScroll < 0 ? 0 : max,
+            start: platform.now(),
+            dur: Math.max(1, cfg.economy.orderBounceMs ?? 320),
+          }
+        } else orderScroll = snapOrderScroll(orderScroll, frame.orderPitch, max)
+      }
       if (action === 'complete' && pointer.hit.kind === 'complete') activate(pointer.hit)
       if (action === 'icon' && pointer.hit.kind === 'orderIcon' && state.phase === 'play') {
         const order = state.orders[pointer.hit.order]
@@ -1247,7 +1272,23 @@ export function startGame(platform: Platform): void {
       dismissStuckGuide(state, cfg)
       mark()
     }
-    if (guideSpot(state, cfg) === 'reward') orderScroll = 0
+    if (orderAnim && dragId < 0) {
+      const t = (real - orderAnim.start) / Math.max(1, orderAnim.dur)
+      if (t >= 1) {
+        orderScroll = orderAnim.to
+        orderAnim = null
+      } else orderScroll = orderAnim.from + (orderAnim.to - orderAnim.from) * easeOutCubic(Math.min(1, t))
+    }
+    if (guideSpot(state, cfg) === 'reward') {
+      const target = chestTarget(frame)
+      if (target) {
+        const next = revealOrderTarget(orderScroll, target, frame.w, frame.orderMaxScroll)
+        if (Math.abs(next - orderScroll) > 0.5) {
+          orderScroll = next
+          orderAnim = null
+        }
+      }
+    }
     refreshGuide(state, cfg, view)
     pumpMint(state)
     if (atStep(state, cfg, 'giftRush')) {

@@ -1,5 +1,4 @@
 import cells from './data/boardCells.json'
-import { clamp } from './format'
 import { KEEP_TOP } from './viewport'
 
 export const DESIGN_W = 1080
@@ -225,11 +224,9 @@ export function hechengParts(input: HechengInput): HechengScene {
     ]) {
       right = Math.max(right, (box.x + box.w) * scale)
     }
-    right += 16 * scale
   }
-  const rawMax = Math.max(0, right - input.w)
-  const orderMaxScroll = rawMax <= 0.5 || pitchPx <= 0 ? 0 : Math.ceil((rawMax - 0.5) / pitchPx) * pitchPx
-  const scroll = clamp(input.orderScroll, 0, orderMaxScroll)
+  const orderMaxScroll = Math.max(0, right - input.w)
+  const scroll = input.orderScroll
   const tableSlots: Box[] = []
   for (let i = 0; i < n; i++) tableSlots.push(place(slotAt(PLATES, i, orderPad), scroll))
   const orders: Box[] = []

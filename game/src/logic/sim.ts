@@ -1704,8 +1704,29 @@ export function orderStripAction(input: {
   return 'none'
 }
 
-export function scrollOrders(start: number, dx: number, max: number): number {
-  return Math.min(Math.max(0, max), Math.max(0, start - dx))
+/** 越界后阻力变大，位移趋近 limit，到不了更远。 */
+export function rubberOffset(distance: number, limit: number): number {
+  if (limit <= 0 || distance <= 0) return 0
+  return (distance * limit) / (distance + limit)
+}
+
+export function scrollOrders(start: number, dx: number, max: number, limit = 120): number {
+  const raw = start - dx
+  const cap = Math.max(0, max)
+  if (raw < 0) return -rubberOffset(-raw, limit)
+  if (raw > cap) return cap + rubberOffset(raw - cap, limit)
+  return raw
+}
+
+/** 把订单条上的目标滚进屏幕。已经完全可见时不动。 */
+export function revealOrderTarget(scroll: number, rect: { x: number; w: number }, viewW: number, max: number): number {
+  const cap = Math.max(0, max)
+  if (rect.w <= 0) return Math.min(cap, Math.max(0, scroll))
+  const margin = 8
+  let next = scroll
+  if (rect.x < margin) next = scroll + rect.x - margin
+  if (rect.x + rect.w > viewW - margin) next = scroll + rect.x + rect.w - (viewW - margin)
+  return Math.min(cap, Math.max(0, next))
 }
 
 /** 松手后把客人吸到最近的固定桌位。 */

@@ -125,6 +125,30 @@ export const SLIDERS: SliderSpec[] = [
     text: (v) => `${Math.round(v * 100)}%`,
   },
   {
+    id: 'orderOverscroll',
+    label: '订单越界拖动上限',
+    min: 0,
+    max: 240,
+    step: 8,
+    get: (c) => c.economy.orderOverscroll ?? 120,
+    set: (c, v) => {
+      c.economy.orderOverscroll = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)} 像素`,
+  },
+  {
+    id: 'orderBounceMs',
+    label: '订单回弹时长',
+    min: 80,
+    max: 800,
+    step: 20,
+    get: (c) => c.economy.orderBounceMs ?? 320,
+    set: (c, v) => {
+      c.economy.orderBounceMs = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)} 毫秒`,
+  },
+  {
     id: 'hit',
     label: '卡帧',
     min: 0,

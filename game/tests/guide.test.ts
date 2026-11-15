@@ -106,7 +106,11 @@ describe('强制引导', () => {
 
     state.phase = 'play'
     state.chestLesson = 1
-    expect(guideHole(onlyChest, state, cfg)).toBe(onlyChest.chestBtn)
+    const chestHole = guideHole(onlyChest, state, cfg)!
+    expect(chestHole.x).toBeLessThanOrEqual(onlyChest.chestBtn.x + 0.5)
+    expect(chestHole.y).toBeLessThanOrEqual(onlyChest.chestBtn.y + 0.5)
+    expect(chestHole.x + chestHole.w).toBeGreaterThanOrEqual(onlyChest.chestBtn.x + onlyChest.chestBtn.w - 0.5)
+    expect(chestHole.y + chestHole.h).toBeGreaterThanOrEqual(onlyChest.chestBtn.y + onlyChest.chestBtn.h - 0.5)
     const spot = {
       x: onlyChest.chestBtn.x + onlyChest.chestBtn.w / 2,
       y: onlyChest.chestBtn.y + onlyChest.chestBtn.h / 2,
@@ -116,7 +120,9 @@ describe('强制引导', () => {
 
     const both = frame({ showStory: true, showTask: true, showChest: true })
     expect(both.chestBtn.y).toBeGreaterThan(both.storyBtn.y + both.storyBtn.h * 0.6)
-    expect(guideHole(both, state, cfg)).toBe(both.chestBtn)
+    const bothHole = guideHole(both, state, cfg)!
+    expect(bothHole.x).toBeLessThanOrEqual(both.chestBtn.x + 0.5)
+    expect(bothHole.x + bothHole.w).toBeGreaterThanOrEqual(both.chestBtn.x + both.chestBtn.w - 0.5)
     expect(both.rewardTray).toBe(both.chestBtn)
   })
 
@@ -128,7 +134,11 @@ describe('强制引导', () => {
     state.locks = []
     state.rewards = [makeRewardBox(state, cfg, mulberry32(1), 'blue')]
     state.chestLesson = 1
-    expect(guideHole(board, state, cfg)).toBe(board.rewardTray)
+    const rewardHole = guideHole(board, state, cfg)!
+    expect(rewardHole.x).toBeLessThanOrEqual(board.rewardTray.x + 0.5)
+    expect(rewardHole.y).toBeLessThanOrEqual(board.rewardTray.y + 0.5)
+    expect(rewardHole.x + rewardHole.w).toBeGreaterThanOrEqual(board.rewardTray.x + board.rewardTray.w - 0.5)
+    expect(rewardHole.y + rewardHole.h).toBeGreaterThanOrEqual(board.rewardTray.y + board.rewardTray.h - 0.5)
     expect(hitTest(board, board.rewardTray.x + 2, board.rewardTray.y + 2)?.kind).toBe('reward')
 
     expect(takeReward(state).ok).toBe(true)

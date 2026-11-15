@@ -79,11 +79,13 @@ describe('订单卡', () => {
     const guest = scrolled.orderGuests[3]!
     expect(pay.x).toBeGreaterThanOrEqual(-1)
     expect(pay.x + pay.w).toBeLessThanOrEqual(view.w + 1)
-    expect(guest.x + guest.w).toBeLessThanOrEqual(view.w + 8)
-    const steps = (view.orderGuests[0]!.x - scrolled.orderGuests[0]!.x) / view.orderPitch
-    expect(steps).toBeCloseTo(Math.round(steps), 2)
+    expect(guest.x + guest.w).toBeLessThanOrEqual(view.w + 1)
+    const edge = Math.max(pay.x + pay.w, guest.x + guest.w, scrolled.tableSlots[3]!.x + scrolled.tableSlots[3]!.w)
+    expect(edge).toBeCloseTo(view.w, 0)
     expect(scrollOrders(0, -40, view.orderMaxScroll)).toBeGreaterThan(0)
-    expect(scrollOrders(0, -9999, view.orderMaxScroll)).toBe(view.orderMaxScroll)
+    const pulled = scrollOrders(0, -9999, view.orderMaxScroll, 120)
+    expect(pulled).toBeGreaterThan(view.orderMaxScroll)
+    expect(pulled).toBeLessThan(view.orderMaxScroll + 120)
   })
 
   it('托盘上等距，物品落在自己的托盘上且互不重叠', () => {
