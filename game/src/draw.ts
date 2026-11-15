@@ -2090,7 +2090,7 @@ function drawDecorPopup(model: RenderModel): void {
   const pick = model.state.decorate
   if (!pick || model.frame.mode !== 'house') return
   const { ctx, frame } = model
-  const { card, swatches, ok } = decorPopupRects(frame)
+  const { card, swatches, ok, close } = decorPopupRects(frame)
   roundRect(ctx, card.x, card.y, card.w, card.h, 16)
   ctx.fillStyle = PAL.white
   ctx.fill()
@@ -2098,6 +2098,7 @@ function drawDecorPopup(model: RenderModel): void {
   ctx.lineWidth = 1.5
   ctx.stroke()
   text(ctx, '选择装修', card.x + card.w / 2, card.y + 26, 16, PAL.ink)
+  button(ctx, close, '×', 'ghost')
   swatches.forEach((rect, index) => {
     const swatch = SWATCHES[index]
     roundRect(ctx, rect.x, rect.y, rect.w, rect.h, 10)

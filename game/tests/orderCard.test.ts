@@ -72,8 +72,7 @@ describe('订单卡', () => {
     expect(view.orderMaxScroll).toBeGreaterThan(view.orderPitch * 0.5)
     const mid = frame({ orderCount: 4, orderSlots: [1, 1, 1, 1], orderScroll: view.orderPitch * 0.5 })
     expect(mid.tableSlots).toHaveLength(4)
-    expect(mid.tableSlots[0]!.x).toBeCloseTo(view.tableSlots[0]!.x, 3)
-    expect(mid.tableSlots[3]!.x).toBeCloseTo(view.tableSlots[3]!.x, 3)
+    expect(view.orderGuests[0]!.x - mid.orderGuests[0]!.x).toBeCloseTo(view.tableSlots[0]!.x - mid.tableSlots[0]!.x, 1)
     expect(mid.orderGuests[0]!.x).toBeLessThan(view.orderGuests[0]!.x - 10)
     const scrolled = frame({ orderCount: 4, orderSlots: [1, 1, 1, 1], orderScroll: view.orderMaxScroll })
     const pay = scrolled.orderRewards[3]!
@@ -140,7 +139,7 @@ describe('订单卡', () => {
     })
     expect(scrolled.storyBtn.x).toBeCloseTo(full.storyBtn.x - 80, 0)
     expect(scrolled.taskBtn.x).toBeCloseTo(full.taskBtn.x - 80, 0)
-    expect(scrolled.tableSlots[0]!.x).toBeCloseTo(full.tableSlots[0]!.x, 0)
+    expect(full.orderGuests[0]!.x - scrolled.orderGuests[0]!.x).toBeCloseTo(full.tableSlots[0]!.x - scrolled.tableSlots[0]!.x, 1)
     expect(scrolled.orderGuests[0]!.x).toBeLessThan(full.orderGuests[0]!.x - 70)
   })
 

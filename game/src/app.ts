@@ -23,6 +23,7 @@ import {
   layout,
   levelClaimRect,
   smileDismissRect,
+  shopRects,
   type Frame,
   type Hit,
 } from './layout'
@@ -919,19 +920,6 @@ export function startGame(platform: Platform): void {
     if (curtain) return
     if (guideSpot(state, cfg) === 'reward') orderScroll = 0
     frame = makeFrame()
-    if (view === 'house' && state.decorate) {
-      const popup = decorPopupRects(frame)
-      if (contains(popup.ok, x, y)) {
-        present(confirmDecor(state, cfg))
-        return
-      }
-      const swatch = popup.swatches.findIndex((rect) => contains(rect, x, y))
-      if (swatch >= 0) {
-        previewDecor(state, swatch)
-        mark()
-        return
-      }
-    }
     if (state.buildStory) {
       if (hitTest(frame, x, y)?.kind === 'skip') state.buildStory = null
       else advanceBuildStory(state, cfg)
@@ -963,6 +951,35 @@ export function startGame(platform: Platform): void {
       }
       return
     }
+    if (overlay === 'shop') {
+      const shop = shopRects(frame)
+      const shopHit = hitTest(frame, x, y)
+      if (shopHit?.kind === 'shopDaily' || shopHit?.kind === 'shopPack' || shopHit?.kind === 'shopClose') {
+        pointers.set(id, { id, x, y, sx: x, sy: y, hit: shopHit, moved: false, camX: cam.x, camY: cam.y, scroll: tunerScroll, orderScroll, downAt: platform.now() })
+      } else if (!contains(shop.card, x, y)) {
+        state.shopOpen = false
+        mark()
+      }
+      return
+    }
+    if (view === 'house' && state.decorate) {
+      const popup = decorPopupRects(frame)
+      if (contains(popup.close, x, y)) {
+        state.decorate = null
+        mark()
+        return
+      }
+      if (contains(popup.ok, x, y)) {
+        present(confirmDecor(state, cfg))
+        return
+      }
+      const swatch = popup.swatches.findIndex((rect) => contains(rect, x, y))
+      if (swatch >= 0) {
+        previewDecor(state, swatch)
+        mark()
+      }
+      return
+    }
     if (!overlay && state.smiles >= cfg.economy.smileGoal && contains(frame.smileSlot, x, y)) {
       present(openSmilePrize(state, cfg, rng))
       return
@@ -985,7 +1002,7 @@ export function startGame(platform: Platform): void {
         if (!openingMergeSticky() && (guideMisses >= 3 || platform.now() - guideSince > 8000)) {
           dismissStuckGuide(state, cfg)
           mark()
-          hit = hitTest(frame, x, y) ?? { kind: 'swallow' as const }
+          return
         } else if (hole && !contains(hole, x, y)) {
           return
         } else if (tutorialBlocks(hit)) {
@@ -1153,8 +1170,13 @@ export function startGame(platform: Platform): void {
           return
         }
       }
-      if (view === 'house' && state.decorate) {
+      if (view === 'house' && state.decorate && !activeOverlay(state)) {
         const popup = decorPopupRects(frame)
+        if (contains(popup.close, x, y)) {
+          state.decorate = null
+          mark()
+          return
+        }
         if (contains(popup.ok, x, y)) {
           present(confirmDecor(state, cfg))
           return
@@ -1165,7 +1187,7 @@ export function startGame(platform: Platform): void {
           mark()
           return
         }
-        if (pointer.hit.kind !== 'back') return
+        return
       }
       const held = platform.now() - pointer.downAt
       if (held > 480 && view === 'house' && pointer.hit.kind === 'map') {

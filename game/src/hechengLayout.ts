@@ -231,7 +231,7 @@ export function hechengParts(input: HechengInput): HechengScene {
   const orderMaxScroll = rawMax <= 0.5 || pitchPx <= 0 ? 0 : Math.ceil((rawMax - 0.5) / pitchPx) * pitchPx
   const scroll = clamp(input.orderScroll, 0, orderMaxScroll)
   const tableSlots: Box[] = []
-  for (let i = 0; i < n; i++) tableSlots.push(place(slotAt(PLATES, i, orderPad)))
+  for (let i = 0; i < n; i++) tableSlots.push(place(slotAt(PLATES, i, orderPad), scroll))
   const orders: Box[] = []
   const completes: Box[] = []
   const orderPlates: Box[] = []

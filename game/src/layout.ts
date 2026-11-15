@@ -810,7 +810,7 @@ export function chainPopRect(frame: Frame): { card: Rect; close: Rect } {
   return { card, close: { x: card.x + card.w - 40, y: card.y + 8, w: 28, h: 28 } }
 }
 
-export function decorPopupRects(frame: Frame): { card: Rect; swatches: Rect[]; ok: Rect } {
+export function decorPopupRects(frame: Frame): { card: Rect; swatches: Rect[]; ok: Rect; close: Rect } {
   const w = Math.min(300, frame.w - 28)
   const h = 176
   const card = { x: (frame.w - w) / 2, y: frame.h - h - 18, w, h }
@@ -820,7 +820,12 @@ export function decorPopupRects(frame: Frame): { card: Rect; swatches: Rect[]; o
     w: (card.w - 44) / 3 - 8,
     h: 52,
   }))
-  return { card, swatches, ok: { x: card.x + 22, y: card.y + 112, w: card.w - 44, h: 44 } }
+  return {
+    card,
+    swatches,
+    ok: { x: card.x + 22, y: card.y + 112, w: card.w - 44, h: 44 },
+    close: { x: card.x + card.w - 36, y: card.y + 8, w: 26, h: 26 },
+  }
 }
 
 export function levelClaimRect(frame: Frame): Rect {
