@@ -160,6 +160,8 @@ export interface Economy {
   newbieChestFixed: boolean
   newbieChestCount: number
   newbieChest: number[]
+  /** 引导目标一直点不中时，遮罩最多盖这么久就放开。 */
+  guideTimeoutMs: number
   producerCharges: number
   producerCooldownMs: number
   producerL2Chance: number
@@ -332,6 +334,8 @@ export interface PotionItem {
   uid: string
   kind: 'potion'
   tier: number
+  /** 和档位表对不上的体力，比如新手宝箱的 15、6。 */
+  energy?: number
 }
 
 export interface LootDrop {

@@ -94,6 +94,8 @@ export interface RenderModel {
   comicHand: 'first' | 'idle' | 'off'
   /** 合成页和建造页之间的竹帘。progress 0 在屏幕外，1 盖满并停住。 */
   curtain: { progress: number } | null
+  /** 调参里「全部恢复默认」正在等第二次确认。 */
+  confirmReset?: boolean
 }
 
 export function render(model: RenderModel): void {
@@ -342,7 +344,7 @@ function drawItem(
       text(ctx, formatMs(item.cooldownUntil - now), cx, box.y + box.h * 0.82, Math.max(9, box.w * 0.14), PAL.danger)
     }
   } else if (item.kind === 'potion') {
-    const energy = cfg.items.potions.find((p) => p.tier === item.tier)?.energy ?? 0
+    const energy = item.energy ?? cfg.items.potions.find((p) => p.tier === item.tier)?.energy ?? 0
     const r = box.w * (0.18 + item.tier * 0.035)
     ctx.fillStyle = PAL.potion
     roundRect(ctx, cx - r * 0.62, cy - r * 0.15, r * 1.24, r * 1.15, r * 0.28)
@@ -2298,7 +2300,14 @@ function drawTuner(model: RenderModel): void {
     ctx.clip()
     text(ctx, spec.label, frame.tunerView.x + 4, row.y + 14, 13, PAL.ink, 'left')
     ctx.restore()
-    text(ctx, valueText, frame.tunerView.x + frame.tunerView.w - 4, row.y + 14, 11, PAL.ink, 'right')
+    text(ctx, valueText, row.reset.x - 6, row.y + 14, 11, PAL.ink, 'right')
+    roundRect(ctx, row.reset.x, row.reset.y, row.reset.w, row.reset.h, 4)
+    ctx.fillStyle = '#efe4d2'
+    ctx.fill()
+    ctx.strokeStyle = '#b9a88a'
+    ctx.lineWidth = 1
+    ctx.stroke()
+    text(ctx, '↺', row.reset.x + row.reset.w / 2, row.reset.y + row.reset.h / 2, 12, PAL.ink)
     const trackY = row.y + row.h - 14
     ctx.fillStyle = '#ddcfb8'
     roundRect(ctx, row.trackX, trackY - 3, row.trackW, 6, 3)
@@ -2324,7 +2333,7 @@ function drawTuner(model: RenderModel): void {
   lines.forEach((line, i) => text(ctx, line, frame.tunerView.x + 4, statsY + i * 18, 12, PAL.soft, 'left', 'middle', 500))
   ctx.restore()
   button(ctx, frame.tunerExport, '导出 JSON', 'primary')
-  button(ctx, frame.tunerReset, '恢复默认', 'ghost')
+  button(ctx, frame.tunerReset, model.confirmReset ? '确认恢复全部？' : '全部恢复默认', model.confirmReset ? 'primary' : 'ghost')
   button(ctx, frame.tunerNewbie, `新手宝箱固定：${cfg.economy.newbieChestFixed ? '开' : '关'}`, 'ghost')
   button(ctx, frame.tunerWipe, '清空进度，从剧情重开', 'primary')
 }

@@ -41,14 +41,14 @@ function potionEnergySum(state: GameState, cfg: ReturnType<typeof defaultConfig>
   let sum = 0
   eachCell(state.board, (item) => {
     if (item?.kind === 'potion') {
-      sum += cfg.items.potions.find((p) => p.tier === item.tier)?.energy ?? 0
+      sum += item.energy ?? cfg.items.potions.find((p) => p.tier === item.tier)?.energy ?? 0
     }
   })
   for (const item of state.pending) {
-    if (item.kind === 'potion') sum += cfg.items.potions.find((p) => p.tier === item.tier)?.energy ?? 0
+    if (item.kind === 'potion') sum += item.energy ?? cfg.items.potions.find((p) => p.tier === item.tier)?.energy ?? 0
   }
   for (const item of state.rewards) {
-    if (item.kind === 'potion') sum += cfg.items.potions.find((p) => p.tier === item.tier)?.energy ?? 0
+    if (item.kind === 'potion') sum += item.energy ?? cfg.items.potions.find((p) => p.tier === item.tier)?.energy ?? 0
   }
   return sum
 }
@@ -187,6 +187,7 @@ describe('体力', () => {
     expect(rollEnergy(cfg, () => 0.999)).toBe(40)
 
     const state = createGame(1_700_000_000_000, cfg)
+    state.locks = []
     const putChest = () => {
       for (let row = ROWS - 1; row >= 0; row--) {
         for (let col = COLS - 1; col >= 0; col--) {
@@ -207,11 +208,11 @@ describe('体力', () => {
       }
     }
     drain(() => 0.99)
-    expect(potionEnergySum(state, cfg)).toBe(50)
+    expect(potionEnergySum(state, cfg)).toBe(48)
     drain(() => 0.99)
-    expect(potionEnergySum(state, cfg)).toBe(100)
+    expect(potionEnergySum(state, cfg)).toBe(96)
     drain(() => 0)
-    expect(potionEnergySum(state, cfg)).toBe(125)
+    expect(potionEnergySum(state, cfg)).toBe(121)
     expect(state.chestsOpened).toBe(3)
   })
 

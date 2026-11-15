@@ -135,12 +135,13 @@
   "newbieChestFixed": true,
   "newbieChestCount": 2,
   "newbieChest": [
-    20,
-    10,
-    10,
-    5,
-    5
+    15,
+    15,
+    6,
+    6,
+    6
   ],
+  "guideTimeoutMs": 3000,
   "producerCharges": 1,
   "producerCooldownMs": 120000,
   "producerL2Chance": 0.2,

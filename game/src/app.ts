@@ -112,7 +112,7 @@ import {
   undoSale,
 } from './logic/sim'
 import type { Platform } from './platform/types'
-import { SLIDERS, sliderValue } from './tuner'
+import { SLIDERS, resetSlider, sliderValue } from './tuner'
 import type { ActionResult, GameState, Item, Pos, Rng } from './types'
 
 const SAVE_KEY = 'jiangnan.save.v1'
@@ -155,6 +155,7 @@ export function startGame(platform: Platform): void {
   let modal: 'energy' | null = null
   let tuner = false
   let tunerScroll = 0
+  let confirmTunerReset = false
   let cam = { x: 700, y: 980, scale: 0.85 }
   let camReady = false
   let dirty = false
@@ -512,6 +513,7 @@ export function startGame(platform: Platform): void {
   }
 
   function activate(hit: Hit): void {
+    if (hit.kind !== 'tunerReset') confirmTunerReset = false
     const now = platform.now()
     if (hit.kind === 'enter') {
       enterKitchen(state, cfg)
@@ -655,6 +657,7 @@ export function startGame(platform: Platform): void {
     }
     if (hit.kind === 'tune' || hit.kind === 'tunerClose') {
       tuner = hit.kind === 'tune'
+      confirmTunerReset = false
       sfx.ui()
       return
     }
@@ -674,9 +677,25 @@ export function startGame(platform: Platform): void {
       return
     }
     if (hit.kind === 'tunerReset') {
+      if (!confirmTunerReset) {
+        confirmTunerReset = true
+        sfx.ui()
+        mark()
+        return
+      }
+      confirmTunerReset = false
       resetEconomy(cfg)
       reconcileLevel(state, cfg, rng)
+      saveNow()
       toast('已恢复默认数值')
+      sfx.ui()
+      return
+    }
+    if (hit.kind === 'tunerItemReset') {
+      confirmTunerReset = false
+      resetSlider(cfg, hit.index)
+      reconcileLevel(state, cfg, rng)
+      saveNow()
       sfx.ui()
       mark()
       return
@@ -1001,7 +1020,7 @@ export function startGame(platform: Platform): void {
         (hole ? contains(hole, x, y) : !tutorialBlocks(hit))
       if (!aimed) {
         guideMisses += 1
-        if (!openingMergeSticky() && (guideMisses >= 3 || platform.now() - guideSince > 8000)) {
+        if (!openingMergeSticky() && (guideMisses >= 3 || platform.now() - guideSince > (cfg.economy.guideTimeoutMs ?? 3000))) {
           dismissStuckGuide(state, cfg)
           mark()
           return
@@ -1067,7 +1086,7 @@ export function startGame(platform: Platform): void {
     if (!pointer) return
     pointer.x = x
     pointer.y = y
-    if (!pointer.moved && Math.hypot(x - pointer.sx, y - pointer.sy) > 8) pointer.moved = true
+    if (!pointer.moved && Math.hypot(x - pointer.sx, y - pointer.sy) > 22) pointer.moved = true
     if (pinch && pointers.size >= 2 && view === 'house') {
       const pts = [...pointers.values()]
       const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1
@@ -1119,7 +1138,9 @@ export function startGame(platform: Platform): void {
       fx.drag = { row: -1, col: -1, x, y, pending: true, index: storageTakeIndex(state, cfg) }
       dragId = id
     }
-    if (pointer.moved && pointer.hit.kind === 'cell' && dragId < 0 && frame.mode === 'board' && !tuner && !modal) {
+    const guideHoleNow = guideIsLocking(state, cfg) ? guideHole(frame, state, cfg) : null
+    const pressingGuide = !!guideHoleNow && contains(guideHoleNow, pointer.sx, pointer.sy)
+    if (pointer.moved && pointer.hit.kind === 'cell' && dragId < 0 && frame.mode === 'board' && !tuner && !modal && !pressingGuide) {
       const item = state.board[pointer.hit.row]?.[pointer.hit.col]
       if (item) {
         state.armed = null
@@ -1144,6 +1165,22 @@ export function startGame(platform: Platform): void {
       finishDrag(x, y)
       dragId = -1
       return
+    }
+    const hole = guideIsLocking(state, cfg) ? guideHole(frame, state, cfg) : null
+    let ux = x
+    let uy = y
+    if (x === 0 && y === 0 && (pointer.sx !== 0 || pointer.sy !== 0)) {
+      ux = pointer.x
+      uy = pointer.y
+    }
+    if (hole && contains(hole, pointer.sx, pointer.sy)) {
+      const travel = Math.hypot(ux - pointer.sx, uy - pointer.sy)
+      const ended = contains(hole, ux, uy)
+      const quick = platform.now() - pointer.downAt < 450
+      if (ended || travel <= 64 || quick) {
+        activate(pointer.hit)
+        return
+      }
     }
     const strip =
       pointer.hit.kind === 'order' ||
@@ -1268,7 +1305,7 @@ export function startGame(platform: Platform): void {
     applyTestGuests(state, cfg)
     resolveGuides(state, cfg)
     noteGuide(real)
-    if (guideIsLocking(state, cfg) && !openingMergeSticky() && real - guideSince > 8000) {
+    if (guideIsLocking(state, cfg) && !openingMergeSticky() && real - guideSince > (cfg.economy.guideTimeoutMs ?? 3000)) {
       dismissStuckGuide(state, cfg)
       mark()
     }
@@ -1369,6 +1406,7 @@ export function startGame(platform: Platform): void {
         comicHand:
           state.phase !== 'story' ? 'off' : state.storyStep === 0 ? 'first' : real - lastInput >= 3000 ? 'idle' : 'off',
         curtain: curtain ? { progress: curtainProgress(real) } : null,
+        confirmReset: confirmTunerReset,
       })
     }
     if (dirty && real - lastSave > 500) saveNow()

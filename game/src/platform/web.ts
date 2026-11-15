@@ -55,6 +55,7 @@ export function createWebPlatform(canvas: HTMLCanvasElement): Platform {
     style.top = `${cover.top}px`
     style.width = `${cssW}px`
     style.height = `${cssH}px`
+    style.touchAction = 'none'
     canvas.width = Math.max(1, Math.round(cssW * dpr))
     canvas.height = Math.max(1, Math.round(cssH * dpr))
     const hiddenBelow = Math.max(0, cover.top + cover.h - viewBottom)
@@ -116,23 +117,62 @@ export function createWebPlatform(canvas: HTMLCanvasElement): Platform {
       }
     },
     onPointer(down, move, up) {
-      canvas.addEventListener('pointerdown', (event) => {
-        if (event.button !== 0) return
+      const listen = { passive: false } as const
+      const point = (clientX: number, clientY: number) => rel(clientX, clientY)
+      canvas.addEventListener(
+        'touchstart',
+        (event) => {
+          event.preventDefault()
+          for (const touch of event.changedTouches) {
+            const p = point(touch.clientX, touch.clientY)
+            down(p.x, p.y, touch.identifier)
+          }
+        },
+        listen,
+      )
+      canvas.addEventListener(
+        'touchmove',
+        (event) => {
+          event.preventDefault()
+          for (const touch of event.changedTouches) {
+            const p = point(touch.clientX, touch.clientY)
+            move(p.x, p.y, touch.identifier)
+          }
+        },
+        listen,
+      )
+      const touchEnd = (event: TouchEvent) => {
         event.preventDefault()
-        try {
-          canvas.setPointerCapture(event.pointerId)
-        } catch {
-          /* Safari 在指针还没激活时会抛错，不能因此丢掉这次点击 */
+        for (const touch of event.changedTouches) {
+          const p = point(touch.clientX, touch.clientY)
+          up(p.x, p.y, touch.identifier)
         }
-        const p = rel(event.clientX, event.clientY)
-        down(p.x, p.y, event.pointerId)
-      })
+      }
+      canvas.addEventListener('touchend', touchEnd, listen)
+      canvas.addEventListener('touchcancel', touchEnd, listen)
+      canvas.addEventListener(
+        'pointerdown',
+        (event) => {
+          if (event.pointerType === 'touch' || event.button !== 0) return
+          event.preventDefault()
+          try {
+            canvas.setPointerCapture(event.pointerId)
+          } catch {
+            /* Safari 在指针还没激活时会抛错，不能因此丢掉这次点击 */
+          }
+          const p = point(event.clientX, event.clientY)
+          down(p.x, p.y, event.pointerId)
+        },
+        listen,
+      )
       canvas.addEventListener('pointermove', (event) => {
-        const p = rel(event.clientX, event.clientY)
+        if (event.pointerType === 'touch') return
+        const p = point(event.clientX, event.clientY)
         move(p.x, p.y, event.pointerId)
       })
       const end = (event: PointerEvent) => {
-        const p = rel(event.clientX, event.clientY)
+        if (event.pointerType === 'touch') return
+        const p = point(event.clientX, event.clientY)
         up(p.x, p.y, event.pointerId)
       }
       canvas.addEventListener('pointerup', end)

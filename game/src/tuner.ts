@@ -1,4 +1,5 @@
 import { CURTAIN_BOUNCE_MAX } from './curtain'
+import { defaultConfig } from './config'
 import economySeed from './data/economy.json'
 import type { GameConfig } from './types'
 
@@ -25,6 +26,13 @@ function setThreshold(index: number): (cfg: GameConfig, value: number) => void {
     }
     cfg.economy.levelTaskThresholds = next
   }
+}
+
+export function resetSlider(cfg: GameConfig, index: number): void {
+  const spec = SLIDERS[index]
+  if (!spec) return
+  const fresh = defaultConfig()
+  spec.set(cfg, spec.get(fresh))
 }
 
 export const SLIDERS: SliderSpec[] = [
@@ -159,6 +167,18 @@ export const SLIDERS: SliderSpec[] = [
       c.economy.tickOffsetY = Math.round(v)
     },
     text: (v) => `${Math.round(v)}`,
+  },
+  {
+    id: 'guideTimeout',
+    label: '引导兜底超时',
+    min: 1000,
+    max: 8000,
+    step: 500,
+    get: (c) => c.economy.guideTimeoutMs ?? 3000,
+    set: (c, v) => {
+      c.economy.guideTimeoutMs = Math.round(v)
+    },
+    text: (v) => `${Math.round(v / 100) / 10} 秒`,
   },
   {
     id: 'orderOverscroll',

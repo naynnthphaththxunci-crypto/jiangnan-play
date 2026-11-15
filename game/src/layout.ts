@@ -42,6 +42,7 @@ export interface SliderRow {
   h: number
   trackX: number
   trackW: number
+  reset: Rect
 }
 
 export interface Frame {
@@ -333,6 +334,7 @@ export type Hit =
   | { kind: 'tunerClose' }
   | { kind: 'tunerExport' }
   | { kind: 'tunerReset' }
+  | { kind: 'tunerItemReset'; index: number }
   | { kind: 'tunerNewbie' }
   | { kind: 'tunerWipe' }
   | { kind: 'tunerScroll' }
@@ -558,32 +560,36 @@ export function layout(input: LayoutInput): Frame {
   const tunerCard: Rect = input.tuner ? { x: 10, y: 10, w: w - 20, h: h - 20 } : Z
   const tunerClose: Rect = input.tuner ? { x: tunerCard.x + tunerCard.w - 76, y: tunerCard.y + 10, w: 64, h: 32 } : Z
   const tunerView: Rect = input.tuner
-    ? { x: tunerCard.x + 8, y: tunerCard.y + 50, w: tunerCard.w - 16, h: tunerCard.h - 50 - 128 }
+    ? { x: tunerCard.x + 8, y: tunerCard.y + 50, w: tunerCard.w - 16, h: tunerCard.h - 50 - 148 }
     : Z
   const rowH = 52
   const contentH = SLIDERS.length * rowH + 86
   const tunerMaxScroll = Math.max(0, contentH - tunerView.h)
   const tunerScroll = clamp(input.tunerScroll, 0, tunerMaxScroll)
   const sliders: SliderRow[] = input.tuner
-    ? SLIDERS.map((_, index) => ({
-        index,
-        y: tunerView.y + index * rowH - tunerScroll,
-        h: rowH,
-        trackX: tunerView.x + 8,
-        trackW: Math.max(36, tunerView.w - 16),
-      }))
+    ? SLIDERS.map((_, index) => {
+        const y = tunerView.y + index * rowH - tunerScroll
+        return {
+          index,
+          y,
+          h: rowH,
+          trackX: tunerView.x + 8,
+          trackW: Math.max(36, tunerView.w - 16),
+          reset: { x: tunerView.x + tunerView.w - 26, y: y + 2, w: 20, h: 20 },
+        }
+      })
     : []
   const tunerExport: Rect = input.tuner
-    ? { x: tunerCard.x + 12, y: tunerCard.y + tunerCard.h - 84, w: (tunerCard.w - 32) / 2, h: 32 }
+    ? { x: tunerCard.x + 12, y: tunerCard.y + tunerCard.h - 140, w: (tunerCard.w - 32) / 2, h: 32 }
     : Z
   const tunerReset: Rect = input.tuner
     ? { x: tunerExport.x + tunerExport.w + 8, y: tunerExport.y, w: tunerExport.w, h: 32 }
     : Z
   const tunerNewbie: Rect = input.tuner
-    ? { x: tunerCard.x + 12, y: tunerCard.y + tunerCard.h - 78, w: tunerCard.w - 24, h: 28 }
+    ? { x: tunerCard.x + 12, y: tunerCard.y + tunerCard.h - 100, w: tunerCard.w - 24, h: 28 }
     : Z
   const tunerWipe: Rect = input.tuner
-    ? { x: tunerCard.x + 12, y: tunerCard.y + tunerCard.h - 44, w: tunerCard.w - 24, h: 30 }
+    ? { x: tunerCard.x + 12, y: tunerCard.y + tunerCard.h - 64, w: tunerCard.w - 24, h: 32 }
     : Z
   const mw = Math.min(320, w - 36)
   const modalCard: Rect = input.modal ? { x: (w - mw) / 2, y: (h - 240) / 2, w: mw, h: 240 } : Z
@@ -734,6 +740,7 @@ export function hitTest(frame: Frame, x: number, y: number): Hit | null {
     if (contains(frame.tunerView, x, y)) {
       for (const row of frame.sliders) {
         const visible = row.y + 4 < frame.tunerView.y + frame.tunerView.h && row.y + row.h - 4 > frame.tunerView.y
+        if (visible && contains(row.reset, x, y)) return { kind: 'tunerItemReset', index: row.index }
         if (visible && y >= row.y && y < row.y + row.h) return { kind: 'slider', index: row.index }
       }
       return { kind: 'tunerScroll' }

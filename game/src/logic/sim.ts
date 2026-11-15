@@ -175,6 +175,16 @@ export function tierForEnergy(cfg: GameConfig, energy: number): number {
   return cfg.items.potions.find((p) => p.energy === energy)?.tier ?? 1
 }
 
+export function makeEnergyPotion(state: GameState, cfg: GameConfig, energy: number): Item {
+  const known = cfg.items.potions.find((potion) => potion.energy === energy)
+  if (known) return makePotion(state, known.tier)
+  return { uid: nextUid(state, 'p'), kind: 'potion', tier: tierForEnergy(cfg, energy), energy }
+}
+
+export function bottleEnergy(cfg: GameConfig, item: { tier: number; energy?: number }): number {
+  return item.energy ?? potionEnergy(cfg, item.tier)
+}
+
 export function producerName(cfg: GameConfig, id: string): string {
   return cfg.producers.find((p) => p.id === id)?.name ?? '母棋'
 }
@@ -297,7 +307,7 @@ export function takeReward(state: GameState): ActionResult {
   const spot = findEmpty(state)[0]
   if (!spot) {
     resolveGuides(state, undefined)
-    return { ok: false, reason: 'full', events: [{ type: 'toast', text: '棋盘满了，奖励先留着' }] }
+    return { ok: false, reason: 'full', events: [{ type: 'toast', text: '棋盘已满' }] }
   }
   state.rewards.shift()
   state.board[spot.row][spot.col] = item
@@ -969,7 +979,7 @@ export function tapConsumable(state: GameState, pos: Pos, cfg: GameConfig, now: 
 export function drinkPotion(state: GameState, pos: Pos, cfg: GameConfig, now: number): ActionResult {
   const item = inBoard(pos.row, pos.col) ? state.board[pos.row][pos.col] : null
   if (!item || item.kind !== 'potion') return { ok: false, reason: 'not-potion', events: [] }
-  const amount = potionEnergy(cfg, item.tier)
+  const amount = bottleEnergy(cfg, item)
   state.board[pos.row][pos.col] = null
   state.energy += amount
   if (state.energy >= cfg.economy.energyMax) state.energyTs = now
@@ -1008,8 +1018,11 @@ export function openChest(state: GameState, pos: Pos, cfg: GameConfig, rng: Rng)
     const fixed = cfg.economy.newbieChestFixed && state.chestsOpened < cfg.economy.newbieChestCount
     const energies = fixed ? cfg.economy.newbieChest.slice() : Array.from({ length: 5 }, () => rollEnergy(cfg, rng))
     state.chestsOpened += 1
-    item.drops = energies.map((energy) => ({ item: makePotion(state, tierForEnergy(cfg, energy)) }))
+    item.drops = energies.map((energy) => ({ item: makeEnergyPotion(state, cfg, energy) }))
     maybeLateProducer(state, cfg, rng)
+  }
+  if (!nearestEmpty(state, pos.row, pos.col)) {
+    return { ok: false, reason: 'full', events: [{ type: 'toast', text: '棋盘已满' }] }
   }
   const left = popLoot(state, cfg, pos, item.drops)
   if (left <= 0) state.board[pos.row][pos.col] = null
@@ -1829,7 +1842,7 @@ export function infoCaption(cfg: GameConfig, item: Item, now = 0): { title: stri
     const title = item.box === 'blue' ? '蓝宝箱' : item.box === 'purple' ? '紫礼盒' : '购物袋'
     return { title: `${title}（奖励）`, usage: item.box === 'blue' ? '点开得到体力瓶。' : '点开得到一些棋子。' }
   }
-  return { title: `${cfg.items.chestName}（宝箱）`, usage: '点一下拆出体力。' }
+  return { title: `${cfg.items.chestName}（宝箱）`, usage: '再点一次，出一瓶体力。出完这只宝箱就消失。' }
 }
 
 export interface ChainSlot {
