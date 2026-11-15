@@ -154,6 +154,7 @@
   "curtainHoldMs": 0,
   "selectBreath": 0.06,
   "selectBreathMs": 1000,
+  "selectBreathTimes": 2,
   "hitStopMs": 70,
   "snapStrength": 0.75,
   "dailyChestFromDay": 2,

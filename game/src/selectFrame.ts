@@ -21,10 +21,15 @@ export function selectFrameRect(cell: SelectRect): SelectRect {
   }
 }
 
-/** 1 是原大。幅度为 0 时停在 1。周期内按正弦放大再缩小。 */
-export function selectBreathScale(now: number, amplitude: number, periodMs: number): number {
+/**
+ * 从点中那一刻起，按正弦放大再缩小。
+ * times 次来回之后回到 1，不再循环。幅度为 0 或次数为 0 时一直是 1。
+ */
+export function selectBreathScale(elapsed: number, amplitude: number, periodMs: number, times = 2): number {
   const amp = Math.max(0, amplitude)
-  if (amp === 0) return 1
+  const count = Math.max(0, Math.floor(times))
+  if (amp === 0 || count === 0 || elapsed < 0) return 1
   const period = Math.max(1, periodMs)
-  return 1 + amp * Math.sin((now / period) * Math.PI * 2)
+  if (elapsed >= count * period) return 1
+  return 1 + amp * Math.sin((elapsed / period) * Math.PI * 2)
 }

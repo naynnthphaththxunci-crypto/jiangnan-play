@@ -162,6 +162,7 @@ export function startGame(platform: Platform): void {
   let lastAnim = 0
   let dragId = -1
   let selected: { row: number; col: number } | null = null
+  let selectedAt = 0
   let orderScroll = 0
   let chain: { line: string; level: number; source: 'order' | 'producer' } | null = null
   let orderFocus: { line: string; level: number } | null = null
@@ -512,7 +513,7 @@ export function startGame(platform: Platform): void {
       if (state.sale) {
         const spot = { row: state.sale.row, col: state.sale.col }
         const result = undoSale(state)
-        if (result.ok) selected = spot
+        if (result.ok) pickCell(spot.row, spot.col)
         present(result)
         return
       }
@@ -738,7 +739,7 @@ export function startGame(platform: Platform): void {
       if (lock?.cover === 'gift' && !state.board[hit.row][hit.col]) {
         state.armed = null
         state.chainPop = null
-        selected = { row: hit.row, col: hit.col }
+        pickCell(hit.row, hit.col)
         present(pokeGift(state, hit, cfg, now))
         return
       }
@@ -750,7 +751,7 @@ export function startGame(platform: Platform): void {
           present(collectLock(state, hit))
           return
         }
-        selected = { row: hit.row, col: hit.col }
+        pickCell(hit.row, hit.col)
         return
       }
       const item = state.board[hit.row]?.[hit.col]
@@ -763,7 +764,7 @@ export function startGame(platform: Platform): void {
       if (item.kind === 'potion' || item.kind === 'gem') {
         const result = tapConsumable(state, hit, cfg, now)
         if (result.reason === 'arm') {
-          selected = { row: hit.row, col: hit.col }
+          pickCell(hit.row, hit.col)
           return
         }
         selected = null
@@ -773,7 +774,7 @@ export function startGame(platform: Platform): void {
       state.armed = null
       state.chainPop = null
       const already = selected?.row === hit.row && selected?.col === hit.col
-      selected = { row: hit.row, col: hit.col }
+      pickCell(hit.row, hit.col)
       if (!already) {
         if (state.mintStep === 'select' && item.kind === 'producer' && item.producerId === 'bev') state.mintStep = 'produce'
         return
@@ -797,9 +798,14 @@ export function startGame(platform: Platform): void {
       } else if (!tutorialAllowsInspect(state)) {
         return
       } else {
-        selected = { row: hit.row, col: hit.col }
+        pickCell(hit.row, hit.col)
       }
     }
+  }
+
+  function pickCell(row: number, col: number): void {
+    selected = { row, col }
+    selectedAt = platform.now()
   }
 
   function zoomAt(sx: number, sy: number, factor: number): void {
@@ -1217,7 +1223,7 @@ export function startGame(platform: Platform): void {
     pumpMint(state)
     if (atStep(state, cfg, 'giftRush')) {
       const gift = cfg.board.roles.gift
-      selected = { row: gift.row, col: gift.col }
+      if (selected?.row !== gift.row || selected?.col !== gift.col) pickCell(gift.row, gift.col)
     }
     const playDt = Math.min(1000, Math.max(0, real - lastPlay))
     lastPlay = real
@@ -1281,6 +1287,7 @@ export function startGame(platform: Platform): void {
         modal,
         hintText: '',
         selected,
+        selectedAt,
         orderFocus,
         chain,
         showHand:
@@ -1313,7 +1320,10 @@ export function startGame(platform: Platform): void {
       frame = makeFrame()
     },
     select(row: number, col: number) {
-      selected = { row, col }
+      pickCell(row, col)
+    },
+    get selectedAt() {
+      return selectedAt
     },
     drop(from: Pos, to: Pos) {
       return dropItem(state, from, to, cfg)

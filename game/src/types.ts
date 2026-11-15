@@ -178,6 +178,8 @@ export interface Economy {
   selectBreath: number
   /** 选中棋子完成一次放大缩小的毫秒数。 */
   selectBreathMs: number
+  /** 点中后呼吸几个来回，然后停在原大。 */
+  selectBreathTimes: number
   hitStopMs: number
   snapStrength: number
   dailyChestFromDay: number

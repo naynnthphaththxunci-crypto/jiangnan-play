@@ -101,6 +101,18 @@ export const SLIDERS: SliderSpec[] = [
     text: (v) => `${Math.round(v)} 毫秒`,
   },
   {
+    id: 'selectBreathTimes',
+    label: '选中呼吸次数',
+    min: 0,
+    max: 6,
+    step: 1,
+    get: (c) => c.economy.selectBreathTimes ?? 2,
+    set: (c, v) => {
+      c.economy.selectBreathTimes = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)} 次`,
+  },
+  {
     id: 'hit',
     label: '卡帧',
     min: 0,

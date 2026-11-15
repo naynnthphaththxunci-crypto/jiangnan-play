@@ -14,11 +14,16 @@ describe('选中框', () => {
     expect(contentTop + SELECT_CONTENT.h * scale / 2).toBeCloseTo(cell.y + cell.h / 2, 5)
   })
 
-  it('呼吸默认大约 6% 和 1000 毫秒，幅度为 0 时不动', () => {
+  it('点中后呼吸两次就停在原大', () => {
     expect(economy.selectBreath).toBeCloseTo(0.06, 5)
     expect(economy.selectBreathMs).toBe(1000)
-    expect(selectBreathScale(0, 0, 1000)).toBe(1)
-    expect(selectBreathScale(250, 0.06, 1000)).toBeCloseTo(1.06, 5)
-    expect(selectBreathScale(750, 0.06, 1000)).toBeCloseTo(0.94, 5)
+    expect(economy.selectBreathTimes).toBe(2)
+    expect(selectBreathScale(0, 0.06, 1000, 2)).toBeCloseTo(1, 5)
+    expect(selectBreathScale(250, 0.06, 1000, 2)).toBeCloseTo(1.06, 5)
+    expect(selectBreathScale(1250, 0.06, 1000, 2)).toBeCloseTo(1.06, 5)
+    expect(selectBreathScale(2000, 0.06, 1000, 2)).toBeCloseTo(1, 5)
+    expect(selectBreathScale(2250, 0.06, 1000, 2)).toBeCloseTo(1, 5)
+    expect(selectBreathScale(250, 0, 1000, 2)).toBe(1)
+    expect(selectBreathScale(250, 0.06, 1000, 0)).toBe(1)
   })
 })

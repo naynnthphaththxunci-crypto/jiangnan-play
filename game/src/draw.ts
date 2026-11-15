@@ -85,6 +85,8 @@ export interface RenderModel {
   modal: 'energy' | null
   hintText: string
   selected: { row: number; col: number } | null
+  /** 这次选中开始的时间。呼吸从这里算两个来回。 */
+  selectedAt: number
   orderFocus: { line: string; level: number } | null
   showHand: boolean
   chain: { line: string; level: number; source: 'order' | 'producer' } | null
@@ -1240,7 +1242,14 @@ function drawBoard(model: RenderModel): void {
         }
       }
       const picked = model.selected?.row === row && model.selected?.col === col
-      const breath = picked ? selectBreathScale(realNow, cfg.economy.selectBreath ?? 0.06, cfg.economy.selectBreathMs ?? 1000) : 1
+      const breath = picked
+        ? selectBreathScale(
+            realNow - model.selectedAt,
+            cfg.economy.selectBreath ?? 0.06,
+            cfg.economy.selectBreathMs ?? 1000,
+            cfg.economy.selectBreathTimes ?? 2,
+          )
+        : 1
       drawItem(ctx, cfg, item, box, scale * breath, 1, realNow, unlimited && item.kind === 'producer')
       if (item.kind === 'producer' && producerTapCostsEnergy(cfg, item)) {
         const cooling = producerCooldown(cfg, item, realNow)
