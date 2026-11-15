@@ -248,6 +248,8 @@ export interface Economy {
   speed4Level: number
   /** 客人 1024 画布缩到设计稿上的比例。0.29 时宽约 297。 */
   guestCanvasScale: number
+  /** 序列帧客人相对桌子中心的左右微调，屏幕像素。默认 0。 */
+  guestNudgeX: number
   /** 1 时订单区固定出现阿桨和鲍大叔，方便看序列帧。默认 0。 */
   testOrderGuests: number
   spawn1High: number

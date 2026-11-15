@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { guestClip, guestFrameAt } from '../src/guestClips'
+import { GUEST_FRAME_W, guestClip, guestFrameAt, sequencedGuestDest } from '../src/guestClips'
+import { hechengParts } from '../src/hechengLayout'
 
 describe('客人序列帧时间轴', () => {
   it('鲍大叔 15 槽来回，第 1 张在接缝连着两槽', () => {
@@ -42,5 +43,50 @@ describe('客人序列帧时间轴', () => {
 
   it('陆老伯不再有序列帧', () => {
     expect(guestClip('teaGuest')).toBeNull()
+  })
+
+  it('第 1 帧身子中心对准桌子中心，高度和脚不动', () => {
+    const centers: Record<string, number> = {
+      fisherman: 650,
+      boatman: 696,
+      squire: 645.5,
+      scholar: 668,
+      siamese: 661.5,
+    }
+    for (const id of Object.keys(centers)) {
+      const clip = guestClip(id)
+      expect(clip?.bodyCenterX).toBe(centers[id])
+      expect(clip?.offsetX).toBe(0)
+    }
+    const scene = hechengParts({
+      w: 390,
+      h: 844,
+      insetTop: 0,
+      insetBottom: 0,
+      orderCount: 3,
+      orderSlots: [1, 1, 1],
+      orderScroll: 0,
+      showStory: false,
+      showTask: false,
+      showChest: false,
+    })
+    for (const id of Object.keys(centers)) {
+      const clip = guestClip(id)!
+      for (let i = 0; i < 3; i++) {
+        const guest = scene.orderGuests[i]!
+        const table = scene.tableSlots[i]!
+        const tableCenter = table.x + table.w / 2
+        const placed = sequencedGuestDest(guest, tableCenter, clip.bodyCenterX, clip.offsetX)
+        const body = placed.x + (clip.bodyCenterX / GUEST_FRAME_W) * placed.w
+        expect(Math.abs(body - tableCenter), `${id} slot ${i}`).toBeLessThanOrEqual(2)
+        expect(placed.y).toBeCloseTo(guest.y, 5)
+        expect(placed.h).toBeCloseTo(guest.h, 5)
+        expect(placed.w).toBeCloseTo(guest.h * (GUEST_FRAME_W / 720), 5)
+        const nudged = sequencedGuestDest(guest, tableCenter, clip.bodyCenterX, 6)
+        expect(nudged.x - placed.x).toBeCloseTo(6, 5)
+        expect(nudged.y).toBeCloseTo(placed.y, 5)
+        expect(nudged.h).toBeCloseTo(placed.h, 5)
+      }
+    }
   })
 })

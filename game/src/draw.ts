@@ -791,8 +791,12 @@ function drawHecheng(model: RenderModel): void {
     const portrait = firstOrder ? firstOrderGuestPortrait() : guestPortrait(who?.portrait)
     if (!guestSeen.has(order.id)) guestSeen.set(order.id, realNow)
     if ((who || firstOrder) && portrait && portraitReady(portrait)) {
-      drawCharacter(ctx, firstOrder ? 'xiaotao' : who?.portrait, portrait, guest, realNow, 'contain', {
+      const portraitId = firstOrder ? 'xiaotao' : who?.portrait
+      const table = frame.tableSlots[index]
+      drawCharacter(ctx, portraitId, portrait, guest, realNow, 'contain', {
         startedAt: guestSeen.get(order.id),
+        tableCenterX: table ? table.x + table.w / 2 : guest.x + guest.w / 2,
+        nudgeX: cfg.economy.guestNudgeX ?? 0,
       })
     }
   })

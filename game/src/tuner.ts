@@ -495,6 +495,18 @@ export const SLIDERS: SliderSpec[] = [
     text: (v) => v.toFixed(2),
   },
   {
+    id: 'guestNudgeX',
+    label: '客人左右微调',
+    min: -80,
+    max: 80,
+    step: 1,
+    get: (c) => c.economy.guestNudgeX ?? 0,
+    set: (c, v) => {
+      c.economy.guestNudgeX = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)} 像素`,
+  },
+  {
     id: 'speed4Level',
     label: 'x4解锁等级',
     min: 1,

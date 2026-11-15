@@ -1,11 +1,7 @@
-import { guestClip } from './guestClips'
+import { guestClip, sequencedGuestDest } from './guestClips'
 import { PORTRAITS } from './portraits'
 import { drawSprite, spriteFrameIndex, staticSheet, type SpriteDest, type SpriteSheet } from './sprite'
 import avatarUrl from './assets/hecheng/avatar.webp'
-
-/** 新序列帧画布。按订单位的高度来摆，脚落在立绘框下沿。 */
-const FRAME_W = 1280
-const FRAME_H = 720
 
 const frameRaw = {
   boatman: import.meta.glob('./assets/guests/boatman/*.webp', { eager: true, import: 'default' }) as Record<string, string>,
@@ -73,13 +69,10 @@ export const avatarSheet: SpriteSheet = staticSheet('avatar', avatarUrl)
 export interface SpritePlayback {
   /** 这位客人第一次出现的时刻。序列帧从这里开始算时间轴。 */
   startedAt?: number
-}
-
-/** 1280×720 按订单位高度缩放，水平居中，脚对齐立绘框下沿。 */
-function wideGuestDest(dest: SpriteDest): SpriteDest {
-  const h = dest.h
-  const w = h * (FRAME_W / FRAME_H)
-  return { x: dest.x + (dest.w - w) / 2, y: dest.y + dest.h - h, w, h }
+  /** 这张桌子的水平中心。序列帧用第 1 帧身子中心去对齐。 */
+  tableCenterX?: number
+  /** 全局「客人左右微调」，屏幕像素。角色自己的 offsetX 在这里另外加上。 */
+  nudgeX?: number
 }
 
 export function drawCharacter(
@@ -104,7 +97,9 @@ export function drawCharacter(
     const imageNo = clip.sequence[slot] ?? 1
     const frame = images[imageNo - 1]
     if (frame && (frame.naturalWidth || 0) > 0) {
-      drawSprite(ctx, frame, { ...playing, frames: 1, fps: 0, frameDurations: undefined }, wideGuestDest(dest), now, 'fill')
+      const tableCenterX = playback?.tableCenterX ?? dest.x + dest.w / 2
+      const placed = sequencedGuestDest(dest, tableCenterX, clip.bodyCenterX, (playback?.nudgeX ?? 0) + (clip.offsetX ?? 0))
+      drawSprite(ctx, frame, { ...playing, frames: 1, fps: 0, frameDurations: undefined }, placed, now, 'fill')
       return true
     }
   }
