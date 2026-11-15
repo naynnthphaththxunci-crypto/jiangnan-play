@@ -29,6 +29,8 @@ import avatarUrl from './assets/hecheng/avatar.webp'
 import avatarFrameUrl from './assets/hecheng/avatar_frame.webp'
 import levelBadgeUrl from './assets/hecheng/level_badge.webp'
 import selectFrameUrl from './assets/hecheng/select_frame.webp'
+import readyCellUrl from './assets/hecheng/ready_cell.webp'
+import orderTickUrl from './assets/hecheng/order_tick.webp'
 
 export const HECHENG_ART = {
   bg: bgUrl,
@@ -62,6 +64,8 @@ export const HECHENG_ART = {
   avatarFrame: avatarFrameUrl,
   levelBadge: levelBadgeUrl,
   selectFrame: selectFrameUrl,
+  readyCell: readyCellUrl,
+  orderTick: orderTickUrl,
 } as const
 
 export type HechengArtId = keyof typeof HECHENG_ART

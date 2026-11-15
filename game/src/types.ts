@@ -182,6 +182,12 @@ export interface Economy {
   selectBreathTimes: number
   /** 选中框相对格子的大小。1 是正好一格，1.16 是大一圈。 */
   selectFrameScale: number
+  /** 订单勾相对 PSD 的大小。1 是 140 格上的 68×56。 */
+  tickScale: number
+  /** 勾左上角相对格子左上角的横坐标，按 140 的格子计。 */
+  tickOffsetX: number
+  /** 勾左上角相对格子左上角的纵坐标，按 140 的格子计。 */
+  tickOffsetY: number
   /** 订单条拖过边界后，最多还能被拉出这么多像素。 */
   orderOverscroll: number
   /** 松手后订单条弹回边界的毫秒数。 */

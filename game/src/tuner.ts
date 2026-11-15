@@ -125,6 +125,42 @@ export const SLIDERS: SliderSpec[] = [
     text: (v) => `${Math.round(v * 100)}%`,
   },
   {
+    id: 'tickScale',
+    label: '打勾大小',
+    min: 0.5,
+    max: 1.8,
+    step: 0.02,
+    get: (c) => c.economy.tickScale ?? 1,
+    set: (c, v) => {
+      c.economy.tickScale = Math.round(v * 100) / 100
+    },
+    text: (v) => `${Math.round(v * 100)}%`,
+  },
+  {
+    id: 'tickOffsetX',
+    label: '打勾偏移X',
+    min: 0,
+    max: 140,
+    step: 1,
+    get: (c) => c.economy.tickOffsetX ?? 78,
+    set: (c, v) => {
+      c.economy.tickOffsetX = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)}`,
+  },
+  {
+    id: 'tickOffsetY',
+    label: '打勾偏移Y',
+    min: 0,
+    max: 140,
+    step: 1,
+    get: (c) => c.economy.tickOffsetY ?? 91,
+    set: (c, v) => {
+      c.economy.tickOffsetY = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)}`,
+  },
+  {
     id: 'orderOverscroll',
     label: '订单越界拖动上限',
     min: 0,

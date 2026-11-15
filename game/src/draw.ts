@@ -51,6 +51,7 @@ import { hechengImage, speedArtId } from './hechengArt'
 import { selectBreathScale, selectFrameRect } from './selectFrame'
 import { curtainBambooPlace, curtainBitmaps, curtainDrop, curtainPlace } from './curtain'
 import { designToScreen } from './hechengLayout'
+import { orderTickPlace } from './orderTick'
 import { COMIC_FONT, comicCursor, comicFontReady, comicPanelImage, comicPrompt, comicSilaImage, wrapComicText } from './comic'
 import { SLIDERS } from './tuner'
 import { COLS, ROWS, type ComicEnter, type GameConfig, type GameState, type Item, type OpeningScript } from './types'
@@ -1116,6 +1117,19 @@ function cellBox(frame: Frame, row: number, col: number): Rect {
   return cellRect(frame, row, col)
 }
 
+function drawReadyCell(ctx: CanvasRenderingContext2D, box: Rect): void {
+  const img = hechengImage('readyCell')
+  if (!img || (img.naturalWidth || 0) <= 0) return
+  ctx.drawImage(img as CanvasImageSource, box.x, box.y, box.w, box.h)
+}
+
+function drawOrderTick(ctx: CanvasRenderingContext2D, box: Rect, scale: number, offsetX: number, offsetY: number): void {
+  const img = hechengImage('orderTick')
+  if (!img || (img.naturalWidth || 0) <= 0) return
+  const place = orderTickPlace(box, scale, offsetX, offsetY)
+  ctx.drawImage(img as CanvasImageSource, place.image.x, place.image.y, place.image.w, place.image.h)
+}
+
 function drawSelectFrame(ctx: CanvasRenderingContext2D, box: Rect, frameScale: number): void {
   const img = hechengImage('selectFrame')
   if (!img || (img.naturalWidth || 0) <= 0) return
@@ -1155,17 +1169,13 @@ function drawBoard(model: RenderModel): void {
       const radius = Math.max(6, (box.w - pad * 2) * 0.18)
       if (!wood) {
         roundRect(ctx, box.x + pad, box.y + pad, box.w - pad * 2, box.h - pad * 2, radius)
-        ctx.fillStyle = readyCells.has(key) ? theme.ready : (row + col) % 2 === 0 ? theme.cellLight : theme.cellDark
+        ctx.fillStyle = (row + col) % 2 === 0 ? theme.cellLight : theme.cellDark
         ctx.fill()
         ctx.lineWidth = 1
         ctx.strokeStyle = theme.cellLine
         ctx.stroke()
-      } else if (readyCells.has(key)) {
-        roundRect(ctx, box.x + pad, box.y + pad, box.w - pad * 2, box.h - pad * 2, radius)
-        ctx.lineWidth = 2
-        ctx.strokeStyle = theme.ready
-        ctx.stroke()
       }
+      if (readyCells.has(key) && !hidden.has(key)) drawReadyCell(ctx, box)
       const hover = fx.hover?.kind === 'cell' && fx.hover.row === row && fx.hover.col === col
       if (highlights.has(key) || hover) {
         ctx.lineWidth = 2.5
@@ -1257,16 +1267,7 @@ function drawBoard(model: RenderModel): void {
         if (producerCanSpawn(cfg, item, realNow)) drawSpawnBolt(ctx, box)
         else if (cooling) drawSpawnClock(ctx, box, cooling.left, cooling.total)
       }
-      if (checks.has(key)) {
-        const r = Math.max(5, box.w * 0.16)
-        const cx = box.x + box.w - r - 1
-        const cy = box.y + box.h - r - 1
-        ctx.beginPath()
-        ctx.fillStyle = '#2c7a58'
-        ctx.arc(cx, cy, r, 0, Math.PI * 2)
-        ctx.fill()
-        text(ctx, '✓', cx, cy, r * 1.35, PAL.white)
-      }
+      if (checks.has(key)) drawOrderTick(ctx, box, cfg.economy.tickScale ?? 1, cfg.economy.tickOffsetX ?? 78, cfg.economy.tickOffsetY ?? 91)
     }
   }
   if (model.selected && !fx.drag) {

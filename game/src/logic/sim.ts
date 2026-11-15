@@ -1503,16 +1503,42 @@ function takeMatches(state: GameState, order: Order): void {
 
 export function orderMarks(state: GameState): { check: string[]; ready: string[] } {
   const check: string[] = []
-  const ready = new Set<string>()
+  const pool = new Map<string, Pos[]>()
   eachCell(state.board, (item, row, col) => {
     if (!item || item.kind !== 'product' || lockAt(state, row, col)) return
+    const key = `${item.line}:${item.level}`
+    const list = pool.get(key)
+    if (list) list.push({ row, col })
+    else pool.set(key, [{ row, col }])
     const hit = state.orders.some((order) =>
       order.slots.some((slot) => slot.line === item.line && slot.level === item.level),
     )
     if (hit) check.push(`${row},${col}`)
   })
+  const ready = new Set<string>()
+  const left = new Map<string, Pos[]>()
+  for (const [key, cells] of pool) left.set(key, cells.slice())
   for (const order of state.orders) {
-    for (const pos of orderTakeCells(state, order)) ready.add(`${pos.row},${pos.col}`)
+    const need = new Map<string, number>()
+    for (const slot of order.slots) {
+      const key = `${slot.line}:${slot.level}`
+      need.set(key, (need.get(key) ?? 0) + 1)
+    }
+    let enough = true
+    for (const [key, count] of need) {
+      if ((left.get(key)?.length ?? 0) < count) {
+        enough = false
+        break
+      }
+    }
+    if (!enough) continue
+    for (const [key, count] of need) {
+      const cells = left.get(key) ?? []
+      for (let i = 0; i < count; i++) {
+        const pos = cells.shift()
+        if (pos) ready.add(`${pos.row},${pos.col}`)
+      }
+    }
   }
   return { check, ready: [...ready] }
 }

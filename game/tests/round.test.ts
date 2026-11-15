@@ -226,6 +226,36 @@ describe('第三轮教学、订单和布局', () => {
     expect(orderSatisfied(state, part)).toBe(false)
   })
 
+  it('同一颗棋子只记给一个订单，凑不齐的那单不变绿', () => {
+    const { state } = boot()
+    state.phase = 'play'
+    state.locks = []
+    state.board = state.board.map((row) => row.map(() => null))
+    state.board[2][1] = makeProduct(state, 'food', 3)
+    state.board[2][2] = makeProduct(state, 'tea', 3)
+    state.orders = [
+      { id: 'share', customerId: 'xiaotao', big: false, slots: [{ line: 'food', level: 3, filled: false }] },
+      {
+        id: 'pair',
+        customerId: 'scholar',
+        big: false,
+        slots: [
+          { line: 'food', level: 3, filled: false },
+          { line: 'tea', level: 3, filled: false },
+        ],
+      },
+    ]
+    const marks = orderMarks(state)
+    expect(marks.ready).toEqual(['2,1'])
+    expect(marks.check).toEqual(expect.arrayContaining(['2,1', '2,2']))
+    expect(marks.ready).not.toContain('2,2')
+    state.board[2][3] = makeProduct(state, 'food', 3)
+    state.board[3][0] = makeProduct(state, 'food', 3)
+    const both = orderMarks(state)
+    expect(both.ready).toEqual(expect.arrayContaining(['2,1', '2,2', '2,3']))
+    expect(both.ready).not.toContain('3,0')
+  })
+
   it('软提示按交单、解锁、合并、母棋的顺序', () => {
     const { state, cfg } = boot()
     state.phase = 'play'
