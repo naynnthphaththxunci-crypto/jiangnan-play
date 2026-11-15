@@ -471,30 +471,6 @@ export const SLIDERS: SliderSpec[] = [
     text: (v) => v.toFixed(2),
   },
   {
-    id: 'ajiangFrameMs',
-    label: '阿桨帧时长',
-    min: 40,
-    max: 400,
-    step: 10,
-    get: (c) => c.economy.ajiangFrameMs ?? 150,
-    set: (c, v) => {
-      c.economy.ajiangFrameMs = v
-    },
-    text: (v) => `${Math.round(v)} 毫秒`,
-  },
-  {
-    id: 'baoZero',
-    label: '0秒帧时长',
-    min: 16,
-    max: 70,
-    step: 1,
-    get: (c) => c.economy.baoZeroFrameMs ?? 33,
-    set: (c, v) => {
-      c.economy.baoZeroFrameMs = v
-    },
-    text: (v) => `${Math.round(v)} 毫秒`,
-  },
-  {
     id: 'testGuests',
     label: '测试：指定订单客人',
     min: 0,

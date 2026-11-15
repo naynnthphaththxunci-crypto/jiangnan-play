@@ -1328,7 +1328,7 @@ function maxOrderLevel(state: GameState, line: string): number {
   return 3
 }
 
-const GUEST_ROTATION = ['boatman', 'embroider', 'fisherman', 'squire', 'scholar', 'teaGuest', 'siamese', 'bossDaughter']
+const GUEST_ROTATION = ['boatman', 'embroider', 'fisherman', 'squire', 'scholar', 'siamese', 'bossDaughter']
 
 /** 调参打开时，订单区固定带上阿桨和鲍大叔，方便看序列帧。默认关闭。 */
 export function applyTestGuests(state: GameState, cfg: GameConfig): void {
@@ -1358,7 +1358,7 @@ function nextGuest(state: GameState): string {
     const id = GUEST_ROTATION[(state.orderCounter + step) % GUEST_ROTATION.length]
     if (id && !busy.has(id)) return id
   }
-  return GUEST_ROTATION[state.orderCounter % GUEST_ROTATION.length] ?? 'teaGuest'
+  return GUEST_ROTATION[state.orderCounter % GUEST_ROTATION.length] ?? 'boatman'
 }
 
 function pickWeightedLine(state: GameState, cfg: GameConfig, rng: Rng, lines: string[]): string {

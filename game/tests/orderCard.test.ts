@@ -111,7 +111,7 @@ describe('订单卡', () => {
 
   it('奖励气泡和托盘不盖住客人的脸', () => {
     const view = frame({ orderCount: 2, orderSlots: [1, 1] })
-    for (const id of ['teaGuest', 'scholar', 'squire', 'fisherman']) {
+    for (const id of ['scholar', 'squire', 'fisherman']) {
       const spec = portraitConfig(id)
       for (let i = 0; i < view.orderGuests.length; i++) {
         const face = faceOf(view.orderGuests[i]!, spec.content, spec.face)
@@ -159,7 +159,7 @@ describe('订单卡', () => {
 
   it('六位客人有抠好的立绘，浣熊仍是占位，棋盘颜色在配置里', () => {
     const cfg = defaultConfig()
-    for (const id of ['teaGuest', 'scholar', 'boatman', 'squire', 'fisherman', 'siamese', 'bossDaughter']) {
+    for (const id of ['scholar', 'boatman', 'squire', 'fisherman', 'siamese', 'bossDaughter']) {
       expect(cfg.characters.find((entry) => entry.id === id)?.portrait).toBe(id)
       expect(PORTRAITS[id]).toContain(id)
     }

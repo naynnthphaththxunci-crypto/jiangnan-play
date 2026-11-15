@@ -202,7 +202,7 @@ describe('第三轮教学、订单和布局', () => {
       { id: 'full', customerId: 'xiaotao', big: false, slots: [{ line: 'food', level: 3, filled: false }] },
       {
         id: 'part',
-        customerId: 'teaGuest',
+        customerId: 'scholar',
         big: false,
         slots: [
           { line: 'tea', level: 3, filled: false },

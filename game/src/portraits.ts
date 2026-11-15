@@ -1,9 +1,8 @@
-import teaGuest from './assets/guests/teaGuest.png'
-import scholar from './assets/guests/scholar.png'
-import boatman from './assets/guests/boatman.webp'
-import squire from './assets/guests/squire.webp'
-import fisherman from './assets/guests/fisherman.webp'
-import siamese from './assets/guests/siamese.png'
+import scholar from './assets/guests/scholar/1.webp'
+import boatman from './assets/guests/boatman/1.webp'
+import squire from './assets/guests/squire/1.webp'
+import fisherman from './assets/guests/fisherman/1.webp'
+import siamese from './assets/guests/siamese/1.webp'
 import bossDaughter from './assets/guests/bossDaughter.webp'
 import ruyue from './assets/guests/ruyue.png'
 import xiaotao from './assets/guests/xiaotao.png'
@@ -14,7 +13,6 @@ import portraitsJson from './data/portraits.json'
 import type { NormBox } from './types'
 
 export const PORTRAITS: Record<string, string> = {
-  teaGuest,
   scholar,
   /** 晴娘订单立绘用老板女儿的 1024 原画，名字仍是晴娘。 */
   embroider: bossDaughter,

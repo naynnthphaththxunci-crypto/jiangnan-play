@@ -793,8 +793,6 @@ function drawHecheng(model: RenderModel): void {
     if ((who || firstOrder) && portrait && portraitReady(portrait)) {
       drawCharacter(ctx, firstOrder ? 'xiaotao' : who?.portrait, portrait, guest, realNow, 'contain', {
         startedAt: guestSeen.get(order.id),
-        frameMs: cfg.economy.ajiangFrameMs,
-        zeroFrameMs: cfg.economy.baoZeroFrameMs,
       })
     }
   })

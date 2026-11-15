@@ -39,7 +39,7 @@ describe('订单', () => {
     state.orders = [
       {
         id: 'mix',
-        customerId: 'teaGuest',
+        customerId: 'scholar',
         big: false,
         slots: [
           { line: 'food', level: 3, filled: false },
@@ -138,7 +138,7 @@ describe('订单', () => {
     expect(big?.slots[0].level).toBe(6)
   })
 
-  it('八位客人轮流下单，同时在场不重复', () => {
+  it('七位客人轮流下单，同时在场不重复', () => {
     const { state, cfg } = boot()
     state.phase = 'play'
     state.level = 5
@@ -147,7 +147,7 @@ describe('订单', () => {
     cfg.economy.chestOrderChance = 0
     state.orders = []
     const seen = new Set<string>()
-    const roster = ['boatman', 'embroider', 'fisherman', 'squire', 'scholar', 'teaGuest', 'siamese', 'bossDaughter']
+    const roster = ['boatman', 'embroider', 'fisherman', 'squire', 'scholar', 'siamese', 'bossDaughter']
     for (let turn = 0; turn < roster.length; turn++) {
       const ids = state.orders.map((order) => order.customerId)
       expect(new Set(ids).size, ids.join(',')).toBe(ids.length)
