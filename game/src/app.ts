@@ -1178,7 +1178,10 @@ export function startGame(platform: Platform): void {
       const ended = contains(hole, ux, uy)
       const quick = platform.now() - pointer.downAt < 450
       if (ended || travel <= 64 || quick) {
-        activate(pointer.hit)
+        const spot = guideSpot(state, cfg)
+        if (spot === 'reward') activate({ kind: 'reward' })
+        else if (spot === 'chest' && state.chestCell) activate({ kind: 'cell', row: state.chestCell.row, col: state.chestCell.col })
+        else activate(pointer.hit)
         return
       }
     }
@@ -1317,6 +1320,7 @@ export function startGame(platform: Platform): void {
       } else orderScroll = orderAnim.from + (orderAnim.to - orderAnim.from) * easeOutCubic(Math.min(1, t))
     }
     if (guideSpot(state, cfg) === 'reward') {
+      frame = makeFrame()
       const target = chestTarget(frame)
       if (target) {
         const next = revealOrderTarget(orderScroll, target, frame.w, frame.orderMaxScroll)

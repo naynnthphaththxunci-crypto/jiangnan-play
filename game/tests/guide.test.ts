@@ -16,9 +16,9 @@ import {
   makePotion,
   makeProducer,
   makeProduct,
-  makeRewardBox,
+  makeChest,
   mulberry32,
-  openRewardBox,
+  openChest,
   openSmilePrize,
   pokeGift,
   refreshGuide,
@@ -132,7 +132,7 @@ describe('强制引导', () => {
     const state = createGame(1, cfg)
     state.phase = 'play'
     state.locks = []
-    state.rewards = [makeRewardBox(state, cfg, mulberry32(1), 'blue')]
+    state.rewards = [makeChest(state)]
     state.chestLesson = 1
     const rewardHole = guideHole(board, state, cfg)!
     expect(rewardHole.x).toBeLessThanOrEqual(board.rewardTray.x + 0.5)
@@ -178,35 +178,38 @@ describe('强制引导', () => {
     const normal = createGame(1, cfg)
     normal.phase = 'play'
     normal.locks = []
-    normal.rewards = [makeProduct(normal, 'food', 2), makeRewardBox(normal, cfg, mulberry32(1), 'blue')]
+    normal.rewards = [makeProduct(normal, 'food', 2), makeChest(normal)]
     normal.chestLesson = 1
+    const energyBefore = normal.energy
     resolveGuides(normal, cfg)
-    expect(normal.rewards[0]?.kind).toBe('rewardBox')
+    expect(normal.rewards[0]?.kind).toBe('chest')
     expect(takeReward(normal).ok).toBe(true)
+    expect(normal.energy).toBe(energyBefore)
     expect(normal.chestLesson).toBe(2)
-    expect(openRewardBox(normal, normal.chestCell!, cfg, mulberry32(1)).ok).toBe(true)
+    expect(openChest(normal, normal.chestCell!, cfg, mulberry32(1)).ok).toBe(true)
     expect(normal.chestLesson).toBe(3)
 
     const few = createGame(2, cfg)
     few.phase = 'play'
     few.locks = []
     fill(few, 1)
-    few.rewards = [makeRewardBox(few, cfg, mulberry32(2), 'blue')]
+    few.rewards = [makeChest(few)]
     few.chestLesson = 1
     expect(takeReward(few).ok).toBe(true)
     expect(few.chestLesson).toBe(2)
     fill(few, 0)
-    expect(openRewardBox(few, few.chestCell!, cfg, mulberry32(2)).ok).toBe(true)
-    expect(few.chestLesson).toBe(3)
+    expect(openChest(few, few.chestCell!, cfg, mulberry32(2)).reason).toBe('full')
+    expect(few.chestLesson).toBe(2)
+    expect(few.board[few.chestCell!.row]?.[few.chestCell!.col]?.kind).toBe('chest')
 
     const full = createGame(3, cfg)
     full.phase = 'play'
     fill(full, 0)
-    full.rewards = [makeRewardBox(full, cfg, mulberry32(3), 'blue')]
+    full.rewards = [makeChest(full)]
     full.chestLesson = 1
     expect(takeReward(full).reason).toBe('full')
     expect(full.chestLesson).toBe(3)
-    expect(full.rewards.some((item) => item.kind === 'rewardBox')).toBe(true)
+    expect(full.rewards.some((item) => item.kind === 'chest')).toBe(true)
     expect(guideSpot(full, cfg)).toBeNull()
 
     const stuck = hydrate(serialize(full, cfg), defaultConfig())
@@ -214,7 +217,7 @@ describe('强制引导', () => {
     const mid = createGame(4, cfg)
     mid.phase = 'play'
     mid.locks = []
-    mid.rewards = [makeRewardBox(mid, cfg, mulberry32(4), 'blue')]
+    mid.rewards = [makeChest(mid)]
     mid.chestLesson = 1
     const resumed = hydrate(serialize(mid, cfg), defaultConfig())
     expect(resumed?.chestLesson).toBe(1)
@@ -469,7 +472,7 @@ describe('强制引导', () => {
     const live = createGame(3, cfg)
     live.phase = 'play'
     live.chestLesson = 1
-    live.rewards = [makeRewardBox(live, cfg, mulberry32(3), 'blue')]
+    live.rewards = [makeChest(live)]
     dismissStuckGuide(live, cfg)
     expect(live.chestLesson).toBe(3)
     expect(guideIsLocking(live, cfg)).toBe(false)

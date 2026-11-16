@@ -124,7 +124,7 @@ await page.evaluate(() => {
   window.__JIANGNAN__.state.levelModal = {
     level: 2,
     rewards: [
-      { id: 'blue', name: '蓝宝箱' },
+      { id: 'chest', name: '体力宝箱' },
       { id: 'purple', name: '紫礼盒' },
       { id: 'bag', name: '购物袋' },
     ],

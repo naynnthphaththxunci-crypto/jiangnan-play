@@ -187,11 +187,6 @@
   "giftCooldownMs": 30000,
   "purpleBoxCount": 5,
   "bagBoxCount": 3,
-  "blueBoxPotions": [
-    20,
-    10,
-    10
-  ],
   "storageCapacity": 8,
   "producerMaxLevel": 10,
   "producerSpawnLevel": 4,

@@ -49,7 +49,7 @@ await page.evaluate(() => {
   const game = window.__JIANGNAN__
   const state = game.state
   state.rewards = [
-    { uid: 'r1', kind: 'rewardBox', box: 'blue' },
+    { uid: 'r1', kind: 'chest' },
     { uid: 'r2', kind: 'potion', tier: 3 },
     { uid: 'r3', kind: 'gem', tier: 2 },
   ]

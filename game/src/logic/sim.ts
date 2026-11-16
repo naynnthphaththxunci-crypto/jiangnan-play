@@ -291,25 +291,29 @@ export function rewardName(cfg: GameConfig, item: Item): string {
   if (item.kind === 'gem') return gemName(cfg, item.tier)
   if (item.kind === 'rewardBox') {
     if (item.box === 'smile') return `笑脸 ×${item.n ?? 1}`
-    return item.box === 'blue' ? '蓝宝箱' : item.box === 'purple' ? '紫礼盒' : '购物袋'
+    return item.box === 'purple' ? '紫礼盒' : '购物袋'
   }
   return cfg.items.chestName
 }
 
 export function takeReward(state: GameState): ActionResult {
-  const item = state.rewards[0]
+  const chestAt = state.rewards.findIndex((item) => item.kind === 'chest')
+  const index = chestAt >= 0 ? chestAt : 0
+  const item = state.rewards[index]
   if (!item) return { ok: false, reason: 'empty', events: [] }
   if (item.kind === 'rewardBox' && item.box === 'smile') {
-    state.rewards.shift()
+    state.rewards.splice(index, 1)
     state.smiles += item.n ?? 1
     return { ok: true, events: [{ type: 'toast', text: `笑脸 +${item.n ?? 1}` }] }
   }
+  const before = state.energy
   const spot = findEmpty(state)[0]
   if (!spot) {
     resolveGuides(state, undefined)
     return { ok: false, reason: 'full', events: [{ type: 'toast', text: '棋盘已满' }] }
   }
-  state.rewards.shift()
+  state.rewards.splice(index, 1)
+  state.energy = before
   state.board[spot.row][spot.col] = item
   if (item.kind === 'product') noteUnlock(state, item.line, item.level)
   if (item.kind === 'producer') state.hasProducer[item.producerId] = true
@@ -1839,8 +1843,8 @@ export function infoCaption(cfg: GameConfig, item: Item, now = 0): { title: stri
     }
   }
   if (item.kind === 'rewardBox') {
-    const title = item.box === 'blue' ? '蓝宝箱' : item.box === 'purple' ? '紫礼盒' : '购物袋'
-    return { title: `${title}（奖励）`, usage: item.box === 'blue' ? '点开得到体力瓶。' : '点开得到一些棋子。' }
+    const title = item.box === 'purple' ? '紫礼盒' : '购物袋'
+    return { title: `${title}（奖励）`, usage: '点开得到一些棋子。' }
   }
   return { title: `${cfg.items.chestName}（宝箱）`, usage: '再点一次，出一瓶体力。出完这只宝箱就消失。' }
 }
@@ -2101,7 +2105,7 @@ export function claimLevelModal(state: GameState, cfg: GameConfig, rng: Rng): Ac
       if (state.chestLesson === 0) state.chestLesson = 1
       queueReward(state, chest)
       events.push({ type: 'grant', kind: 'chest', name: reward.name, row: -1, col: -1, pending: true })
-    } else if (reward.id === 'blue' || reward.id === 'purple' || reward.id === 'bag') {
+    } else if (reward.id === 'purple' || reward.id === 'bag') {
       queueReward(state, makeRewardBox(state, cfg, rng, reward.id))
       events.push({ type: 'grant', kind: 'box', name: reward.name, row: -1, col: -1, pending: true })
     }
@@ -2118,8 +2122,7 @@ export function claimLevelModal(state: GameState, cfg: GameConfig, rng: Rng): Ac
   return { ok: true, events }
 }
 
-function rollBoxDrops(state: GameState, cfg: GameConfig, rng: Rng, box: 'blue' | 'purple' | 'bag'): LootDrop[] {
-  if (box === 'blue') return cfg.economy.blueBoxPotions.map((energy) => ({ item: makePotion(state, tierForEnergy(cfg, energy)) }))
+function rollBoxDrops(state: GameState, cfg: GameConfig, rng: Rng, box: 'purple' | 'bag'): LootDrop[] {
   const count = box === 'purple' ? cfg.economy.purpleBoxCount : cfg.economy.bagBoxCount
   const drops: LootDrop[] = []
   const goods = box === 'purple' ? Math.max(0, count - 2) : count
@@ -2136,7 +2139,7 @@ function rollBoxDrops(state: GameState, cfg: GameConfig, rng: Rng, box: 'blue' |
   return drops
 }
 
-export function makeRewardBox(state: GameState, cfg: GameConfig, rng: Rng, box: 'blue' | 'purple' | 'bag'): Item {
+export function makeRewardBox(state: GameState, cfg: GameConfig, rng: Rng, box: 'purple' | 'bag'): Item {
   const item: Item = { uid: nextUid(state, 'g'), kind: 'rewardBox', box, drops: rollBoxDrops(state, cfg, rng, box) }
   if (state.chestLesson === 0) state.chestLesson = 1
   return item
@@ -2153,7 +2156,6 @@ export function openRewardBox(state: GameState, pos: Pos, cfg: GameConfig, rng: 
   if (!item.drops) item.drops = rollBoxDrops(state, cfg, rng, item.box)
   const left = popLoot(state, cfg, pos, item.drops)
   if (left <= 0) state.board[pos.row][pos.col] = null
-  if (state.chestLesson === 2) state.chestLesson = 3
   return { ok: true, events: [{ type: 'openChest', row: pos.row, col: pos.col, count: 1 }] }
 }
 
@@ -2218,7 +2220,7 @@ export function guideSpot(state: GameState, cfg?: GameConfig): GuideSpot | null 
 }
 
 function isLootBox(item: Item | null | undefined): boolean {
-  return !!item && (item.kind === 'chest' || (item.kind === 'rewardBox' && item.box !== 'smile'))
+  return item?.kind === 'chest'
 }
 
 function findBoardBox(state: GameState): Pos | null {
@@ -2278,8 +2280,20 @@ export function dismissStuckGuide(state: GameState, cfg: GameConfig): void {
   state.notice = null
 }
 
+function promoteOldBlueBox(item: Item): Item {
+  if (item.kind === 'rewardBox' && (item as { box?: string }).box === 'blue') return { uid: item.uid, kind: 'chest' }
+  return item
+}
+
 export function resolveGuides(state: GameState, cfg?: GameConfig): string[] {
   const notes: string[] = []
+  state.rewards = state.rewards.map(promoteOldBlueBox)
+  state.pending = state.pending.map(promoteOldBlueBox)
+  state.board.forEach((row) => {
+    row.forEach((item, col) => {
+      if (item) row[col] = promoteOldBlueBox(item)
+    })
+  })
   const empty = findEmpty(state).length
   if (state.chestLesson === 1) {
     const index = state.rewards.findIndex((item) => isLootBox(item))
@@ -2736,12 +2750,13 @@ export function hydrate(raw: string, cfg: GameConfig): GameState | null {
     state.storageLesson ??= state.level >= (cfg.economy.storageUnlockLevel ?? 5) ? 4 : 0
     state.storageOpen = state.level >= (cfg.economy.storageUnlockLevel ?? 5)
     state.sale ??= null
-    const fixProducer = (item: Item | null) => {
+    const fixItem = (item: Item | null, write: (next: Item | null) => void) => {
       if (item?.kind === 'producer' && (item.level == null || item.level < 1)) item.level = 1
+      if (item?.kind === 'rewardBox' && (item as { box?: string }).box === 'blue') write({ uid: item.uid, kind: 'chest' })
     }
-    for (const row of state.board) for (const item of row) fixProducer(item)
-    for (const item of state.pending) fixProducer(item)
-    for (const item of state.rewards) fixProducer(item)
+    state.board.forEach((row) => row.forEach((item, c) => fixItem(item, (next) => { row[c] = next })))
+    state.pending.forEach((item, i) => fixItem(item, (next) => { if (next) state.pending[i] = next }))
+    state.rewards.forEach((item, i) => fixItem(item, (next) => { if (next) state.rewards[i] = next }))
     for (const lock of state.locks) if (!lock.veil) lock.veil = 'half'
     state.hasProducer ||= {}
     state.locks ||= []
@@ -2873,8 +2888,8 @@ export function describeAt(cfg: GameConfig, state: GameState, pos: Pos): { title
     }
   }
   if (item.kind === 'rewardBox') {
-    const text = item.box === 'blue' ? cfg.copy.blue : item.box === 'purple' ? cfg.copy.purple : cfg.copy.bag
-    const title = item.box === 'blue' ? '蓝宝箱' : item.box === 'purple' ? '紫礼盒' : '购物袋'
+    const text = item.box === 'purple' ? cfg.copy.purple : cfg.copy.bag
+    const title = item.box === 'purple' ? '紫礼盒' : '购物袋'
     return { title, level: '奖励', text }
   }
   return { title: cfg.items.chestName, level: '宝箱', text: cfg.copy.chest }

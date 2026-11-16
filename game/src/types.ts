@@ -265,7 +265,6 @@ export interface Economy {
   spawnTable: { mult: 1 | 2 | 4 | 8; cost: number; enabled: boolean; weights: { level: number; p: number }[] }[]
   purpleBoxCount: number
   bagBoxCount: number
-  blueBoxPotions: number[]
   storageCapacity: number
 }
 
@@ -296,7 +295,6 @@ export interface GameConfig {
     gift: string
     potion: string
     chest: string
-    blue: string
     purple: string
     bag: string
     bagPiece: string
@@ -353,7 +351,7 @@ export interface ChestItem {
 export interface RewardBoxItem {
   uid: string
   kind: 'rewardBox'
-  box: 'blue' | 'purple' | 'bag' | 'smile'
+  box: 'purple' | 'bag' | 'smile'
   n?: number
   drops?: LootDrop[]
 }

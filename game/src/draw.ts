@@ -345,14 +345,13 @@ function drawItem(
     }
   } else if (item.kind === 'potion') {
     const energy = item.energy ?? cfg.items.potions.find((p) => p.tier === item.tier)?.energy ?? 0
-    const r = box.w * (0.18 + item.tier * 0.035)
-    ctx.fillStyle = PAL.potion
-    roundRect(ctx, cx - r * 0.62, cy - r * 0.15, r * 1.24, r * 1.15, r * 0.28)
+    const bolt = iconBoltImage()
+    if (bolt && (bolt.naturalWidth || 0) > 0) drawFittedSprite(ctx, bolt, box, 0.62)
+    const badge = Math.max(14, box.w * 0.32)
+    roundRect(ctx, box.x + box.w - badge - 1, box.y + box.h - badge - 1, badge, badge * 0.72, 4)
+    ctx.fillStyle = 'rgba(42,33,24,0.82)'
     ctx.fill()
-    roundRect(ctx, cx - r * 0.24, cy - r * 0.85, r * 0.48, r * 0.62, r * 0.1)
-    ctx.fill()
-    drawNum(ctx, String(energy), cx, cy + r * 0.35, Math.min(r * 0.7, box.w * 0.28))
-    text(ctx, '体力', cx, box.y + box.h * 0.84, Math.max(10, box.w * 0.14), PAL.ink)
+    text(ctx, String(energy), box.x + box.w - badge / 2 - 1, box.y + box.h - badge * 0.36 - 1, badge * 0.42, '#fff6e4')
   } else if (item.kind === 'gem') {
     const amount = gemAmount(cfg, item.tier)
     const r = box.w * (0.16 + item.tier * 0.04)
@@ -360,22 +359,24 @@ function drawItem(
     drawLevelShape(ctx, item.tier + 2, cx, cy, r)
     drawNum(ctx, String(amount), cx, cy, r * 0.7)
     text(ctx, '钻石', cx, box.y + box.h * 0.84, Math.max(10, box.w * 0.14), PAL.ink)
+  } else if (item.kind === 'chest') {
+    const art = hechengImage('chestIcon')
+    if (art && (art.naturalWidth || 0) > 0) drawFittedSprite(ctx, art, box, 0.9)
+    const left = item.drops?.length ?? 5
+    const badge = Math.max(14, box.w * 0.3)
+    roundRect(ctx, box.x + box.w - badge - 1, box.y + 2, badge, badge * 0.72, 4)
+    ctx.fillStyle = 'rgba(42,33,24,0.82)'
+    ctx.fill()
+    text(ctx, String(left), box.x + box.w - badge / 2 - 1, box.y + badge * 0.36 + 2, badge * 0.46, '#fff6e4')
   } else if (item.kind === 'rewardBox') {
-    const fill = item.box === 'blue' ? '#3a6ea5' : item.box === 'purple' ? '#7a4ea3' : '#e07a3d'
-    const label = item.box === 'blue' ? '蓝箱' : item.box === 'purple' ? '紫盒' : '购物袋'
+    const fill = item.box === 'purple' ? '#7a4ea3' : '#e07a3d'
+    const label = item.box === 'purple' ? '紫盒' : '购物袋'
     const side = box.w * 0.58
     roundRect(ctx, cx - side / 2, cy - side / 2, side, side, 6)
     ctx.fillStyle = fill
     ctx.fill()
     text(ctx, label, cx, cy, Math.max(10, box.w * 0.16), PAL.white)
     if (item.drops) text(ctx, `×${item.drops.length}`, cx, box.y + box.h * 0.84, Math.max(10, box.w * 0.14), PAL.ink)
-  } else {
-    const side = box.w * 0.52
-    roundRect(ctx, cx - side / 2, cy - side / 2, side, side, 6)
-    ctx.fillStyle = PAL.chest
-    ctx.fill()
-    text(ctx, item.drops ? `×${item.drops.length}` : '箱', cx, cy - 2, side * 0.42, PAL.white)
-    text(ctx, cfg.items.chestName, cx, box.y + box.h * 0.84, Math.max(10, box.w * 0.14), PAL.ink)
   }
   ctx.restore()
 }
