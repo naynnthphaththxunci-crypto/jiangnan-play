@@ -151,7 +151,10 @@ export interface Economy {
   startEnergy: number
   startCoins: number
   xpPerTask: number
+  /** 每一级升级要的经验。第 0 项是 1 级升 2 级。表后面的级按上一项再加 15。 */
   levelTaskThresholds: number[]
+  /** 体力瓶 1 到 5 级，相对普通棋子最大格内尺寸的比例。 */
+  potionScales: number[]
   levelRewards: { level: number; rewards: LevelRewardEntry[] }[]
   freeRefill: number
   adEnergy: number

@@ -102,7 +102,7 @@ describe('Allen 11-06 母棋、剧情和暂存', () => {
     expect(completeOrder(state, 'one', cfg, rng, 20).ok).toBe(true)
     expect(state.storageOpen).toBe(false)
     expect(state.storageLesson).toBe(0)
-    state.xp = cfg.economy.levelTaskThresholds[3] * cfg.economy.xpPerTask
+    state.xp = 210
     reconcileLevel(state, cfg, rng)
     expect(state.level).toBe(5)
     expect(state.storageOpen).toBe(true)

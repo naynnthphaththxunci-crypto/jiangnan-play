@@ -42,7 +42,7 @@ import {
   taskStep,
   tutorialLine,
 } from './logic/sim'
-import { itemSprite, producerBoltPlace, producerPieceName, producerPlace, producerSprite, PRODUCER_CELL_W, spriteContent, type ArtBox } from './itemArt'
+import { itemSprite, PIECE_FILL, potionSprite, producerBoltPlace, producerPieceName, producerPlace, producerSprite, PRODUCER_CELL_W, spriteContent, type ArtBox } from './itemArt'
 import tutorialHandUrl from './assets/ui/tutorial_hand.png'
 import iconBoltUrl from './assets/ui/stamina_bolt.webp'
 import { firstOrderGuestPortrait, guestPortrait, portraitReady } from './portraits'
@@ -273,6 +273,12 @@ function placedRect(box: Rect, place: ArtBox): Rect {
   }
 }
 
+function potionPieceFill(cfg: GameConfig, tier: number): number {
+  const scales = cfg.economy.potionScales ?? [0.7, 0.77, 0.85, 0.92, 1]
+  const index = Math.min(scales.length, Math.max(1, tier)) - 1
+  return PIECE_FILL * (scales[index] ?? 1)
+}
+
 function drawFittedSprite(
   ctx: CanvasRenderingContext2D,
   sprite: CanvasImageSource & { complete?: boolean; naturalWidth?: number; naturalHeight?: number; src?: string },
@@ -319,7 +325,7 @@ function drawItem(
   const piece = item.kind === 'product' || item.kind === 'producer' ? item : null
   const sprite = piece ? itemSprite(piece.line, piece.level) : null
   if (sprite && piece) {
-    drawFittedSprite(ctx, sprite, box, 0.85)
+    drawFittedSprite(ctx, sprite, box, PIECE_FILL)
     const badge = Math.max(12, box.w * 0.28)
     roundRect(ctx, box.x + box.w - badge - 2, box.y + 2, badge, badge * 0.72, 4)
     ctx.fillStyle = 'rgba(42,33,24,0.82)'
@@ -344,14 +350,8 @@ function drawItem(
       text(ctx, formatMs(item.cooldownUntil - now), cx, box.y + box.h * 0.82, Math.max(9, box.w * 0.14), PAL.danger)
     }
   } else if (item.kind === 'potion') {
-    const energy = item.energy ?? cfg.items.potions.find((p) => p.tier === item.tier)?.energy ?? 0
-    const bolt = iconBoltImage()
-    if (bolt && (bolt.naturalWidth || 0) > 0) drawFittedSprite(ctx, bolt, box, 0.62)
-    const badge = Math.max(14, box.w * 0.32)
-    roundRect(ctx, box.x + box.w - badge - 1, box.y + box.h - badge - 1, badge, badge * 0.72, 4)
-    ctx.fillStyle = 'rgba(42,33,24,0.82)'
-    ctx.fill()
-    text(ctx, String(energy), box.x + box.w - badge / 2 - 1, box.y + box.h - badge * 0.36 - 1, badge * 0.42, '#fff6e4')
+    const art = potionSprite(item.tier)
+    if (art) drawFittedSprite(ctx, art, box, potionPieceFill(cfg, item.tier))
   } else if (item.kind === 'gem') {
     const amount = gemAmount(cfg, item.tier)
     const r = box.w * (0.16 + item.tier * 0.04)
@@ -836,9 +836,8 @@ function drawHecheng(model: RenderModel): void {
       roundRect(ctx, cover.x, cover.y, cover.w, cover.h, 8)
       ctx.fillStyle = '#f6e4c4'
       ctx.fill()
-      const rewardSize = Math.max(8, payRect.h * 0.22)
-      text(ctx, `+${pay.smiles}`, payRect.x + payRect.w * 0.78, payRect.y + payRect.h * 0.34, rewardSize, '#6a3a22', 'right', 'middle', 700)
-      text(ctx, `+${pay.coins}`, payRect.x + payRect.w * 0.78, payRect.y + payRect.h * 0.62, rewardSize, '#6a3a22', 'right', 'middle', 700)
+      const rewardSize = Math.max(10, payRect.h * 0.28)
+      text(ctx, `+${pay.coins}`, payRect.x + payRect.w * 0.72, payRect.y + payRect.h * 0.48, rewardSize, '#6a3a22', 'right', 'middle', 700)
     }
     if (orderSatisfied(state, order)) {
       const btn = frame.completes[index]
@@ -1433,8 +1432,17 @@ function drawInfo(model: RenderModel): void {
     }
   } else if (item) {
     const info = infoCaption(cfg, item, model.realNow)
-    text(ctx, info.title, bar.x + 12, bar.y + bar.h * 0.38, 16, PAL.ink, 'left')
-    text(ctx, info.usage, bar.x + 12, bar.y + bar.h * 0.72, 12, PAL.soft, 'left')
+    let textX = bar.x + 12
+    if (item.kind === 'potion') {
+      const art = potionSprite(item.tier)
+      const side = bar.h * 0.92
+      if (art) {
+        drawFittedSprite(ctx, art, { x: bar.x + 6, y: bar.y + (bar.h - side) / 2, w: side, h: side }, PIECE_FILL)
+        textX = bar.x + side + 14
+      }
+    }
+    text(ctx, info.title, textX, bar.y + bar.h * 0.38, 16, PAL.ink, 'left')
+    text(ctx, info.usage, textX, bar.y + bar.h * 0.72, 12, PAL.soft, 'left')
   }
   if (frame.rushBtn.w > 0) {
     const free = atStep(state, cfg, 'giftRush')
@@ -2078,15 +2086,19 @@ function drawChainPop(model: RenderModel): void {
     const x = card.x + 18 + col * 62
     const y = card.y + 70
     roundRect(ctx, x, y, 54, 54, 8)
-    ctx.fillStyle = tier === pop.tier ? (gems ? '#d23b62' : PAL.potion) : '#d9c7a4'
+    ctx.fillStyle = tier === pop.tier ? (gems ? '#d23b62' : '#fff6e8') : '#d9c7a4'
     ctx.fill()
     if (tier === pop.tier) {
       ctx.lineWidth = 3
       ctx.strokeStyle = '#3d6ea8'
       ctx.stroke()
     }
+    if (!gems) {
+      const art = potionSprite(tier)
+      if (art) drawFittedSprite(ctx, art, { x, y, w: 54, h: 54 }, potionPieceFill(cfg, tier))
+    }
     const value = gems ? gemAmount(cfg, tier) : potionEnergy(cfg, tier)
-    text(ctx, String(value), x + 27, y + 27, 14, PAL.white)
+    if (gems) text(ctx, String(value), x + 27, y + 27, 14, PAL.white)
   }
   const amount = gems ? `${gemAmount(cfg, pop.tier)}颗钻石` : `${potionEnergy(cfg, pop.tier)}点体力`
   text(ctx, cfg.copy.infoChain.replace('{amount}', amount), card.x + card.w / 2, card.y + card.h - 28, 12, PAL.ink)

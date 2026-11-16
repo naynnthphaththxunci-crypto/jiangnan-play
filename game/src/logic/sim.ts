@@ -1464,10 +1464,6 @@ export function generateOrder(state: GameState, cfg: GameConfig, rng: Rng): Orde
 }
 
 export function fillOrders(state: GameState, cfg: GameConfig, rng: Rng): void {
-  if (state.level < 3) {
-    const need = xpThresholds(cfg)[1]
-    if (need != null && state.xp + cfg.economy.orderXp >= need) return
-  }
   let guard = 0
   while (state.orders.length < cfg.orders.maxActive && guard < 8) {
     const order = generateOrder(state, cfg, rng)
@@ -1562,13 +1558,8 @@ export function orderMarks(state: GameState): { check: string[]; ready: string[]
 
 export function orderPayout(order: Order, cfg: GameConfig): { coins: number; xp: number; smiles: number } {
   let coins = orderReward(order, cfg)
-  let xp = order.big ? cfg.economy.bigOrderXp : cfg.economy.orderXp
-  const smiles = order.big || order.chest ? 2 : 1
-  if (order.chest) {
-    coins = Math.round(coins * cfg.economy.chestRewardTimes)
-    xp = Math.round(xp * cfg.economy.chestRewardTimes)
-  }
-  return { coins, xp, smiles }
+  if (order.chest) coins = Math.round(coins * cfg.economy.chestRewardTimes)
+  return { coins, xp: 0, smiles: 0 }
 }
 
 function makeBag(state: GameState): Item {
@@ -1999,16 +1990,23 @@ export function cnLevel(level: number): string {
 }
 
 export function levelForTaskCount(count: number, cfg: GameConfig): number {
-  let level = 1
-  const thresholds = cfg.economy.levelTaskThresholds
-  for (let i = 0; i < thresholds.length; i++) {
-    if (count >= thresholds[i]) level = i + 2
-  }
-  return level
+  return levelForXp(count * (cfg.economy.xpPerTask || 15), cfg)
 }
 
+/** 累计经验。数组里是每一级要的经验，后面的级按上一级再加 15。 */
 export function xpThresholds(cfg: GameConfig): number[] {
-  return cfg.economy.levelTaskThresholds.map((count) => count * cfg.economy.xpPerTask)
+  const costs = cfg.economy.levelTaskThresholds.length ? cfg.economy.levelTaskThresholds : [30]
+  const out: number[] = []
+  let sum = 0
+  let prev = 0
+  const limit = Math.max(costs.length, 24)
+  for (let i = 0; i < limit; i++) {
+    const delta = i < costs.length ? costs[i]! : prev + 15
+    prev = delta
+    sum += delta
+    out.push(sum)
+  }
+  return out
 }
 
 export function levelForXp(xp: number, cfg: GameConfig): number {

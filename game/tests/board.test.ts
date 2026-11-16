@@ -108,9 +108,9 @@ describe('锁格与笑脸', () => {
       },
     ]
     const pay = orderPayout(state.orders[0], cfg)
-    expect(pay.smiles).toBe(2)
+    expect(pay.smiles).toBe(0)
     expect(pay.coins).toBe(Math.round(8 * 3.5))
-    expect(pay.xp).toBe(Math.round(6 * 3.5))
+    expect(pay.xp).toBe(0)
     state.board[0][0] = makeProduct(state, 'food', 3)
     completeOrder(state, 'box', cfg, rng, 1)
     const bonus = [...state.board.flat(), ...state.pending, ...state.rewards].filter((item) => item?.kind === 'product' && item.level >= 3)

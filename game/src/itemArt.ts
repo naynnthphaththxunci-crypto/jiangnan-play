@@ -1,9 +1,29 @@
 import producerArt from './data/producerArt.json'
 
 const raw = import.meta.glob('./assets/items/*.png', { eager: true, import: 'default' }) as Record<string, string>
+const potionRaw = import.meta.glob('./assets/items/energy_*.webp', { eager: true, import: 'default' }) as Record<string, string>
 const producerRaw = import.meta.glob('./assets/producers/*.webp', { eager: true, import: 'default' }) as Record<string, string>
 
 const sprites = new Map<string, CanvasImageSource & { complete?: boolean; naturalWidth?: number }>()
+const potionSprites = new Map<number, CanvasImageSource & { complete?: boolean; naturalWidth?: number }>()
+
+for (const [path, url] of Object.entries(potionRaw)) {
+  const match = path.match(/energy_(\d+)\.webp$/)
+  if (!match || typeof url !== 'string') continue
+  const host = globalThis as { Image?: new () => HTMLImageElement; document?: Document }
+  if (!host.document || typeof host.Image !== 'function') continue
+  const img = new host.Image()
+  img.src = url
+  potionSprites.set(Number(match[1]), img)
+}
+
+/** 普通棋子格内最大填充。体力瓶按等级乘在这个尺寸上。 */
+export const PIECE_FILL = 0.85
+
+export function potionSprite(tier: number): (CanvasImageSource & { complete?: boolean; naturalWidth?: number }) | null {
+  const img = potionSprites.get(tier)
+  return usable(img) ? img ?? null : null
+}
 
 const producerSprites = new Map<string, CanvasImageSource & { complete?: boolean; naturalWidth?: number }>()
 
@@ -30,7 +50,7 @@ for (const [path, url] of Object.entries(raw)) {
 export function itemImageElements(): HTMLImageElement[] {
   const Ctor = (globalThis as { HTMLImageElement?: typeof HTMLImageElement }).HTMLImageElement
   if (!Ctor) return []
-  return [...sprites.values()].filter((img): img is HTMLImageElement => img instanceof Ctor)
+  return [...sprites.values(), ...potionSprites.values()].filter((img): img is HTMLImageElement => img instanceof Ctor)
 }
 
 const ART_LINE: Record<string, string> = {

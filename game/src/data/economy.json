@@ -6,13 +6,25 @@
   "startCoins": 0,
   "xpPerTask": 15,
   "levelTaskThresholds": [
-    2,
-    4,
-    6,
-    8,
-    10,
-    11,
-    12
+    30,
+    45,
+    60,
+    75,
+    75,
+    90,
+    105,
+    120,
+    135,
+    150,
+    165,
+    180
+  ],
+  "potionScales": [
+    0.7,
+    0.77,
+    0.85,
+    0.92,
+    1
   ],
   "levelRewards": [
     {
@@ -165,8 +177,8 @@
   "hitStopMs": 70,
   "snapStrength": 0.75,
   "dailyChestFromDay": 2,
-  "orderXp": 6,
-  "bigOrderXp": 12,
+  "orderXp": 0,
+  "bigOrderXp": 0,
   "chestRewardTimes": 3.5,
   "chestBonusItems": 6,
   "chestOrderChance": 0.08,

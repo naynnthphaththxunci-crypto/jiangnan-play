@@ -66,19 +66,19 @@ describe('第十轮开局和前期', () => {
     const state = createGame(1, cfg)
     state.phase = 'play'
     state.locks = []
-    state.xp = cfg.economy.levelTaskThresholds[0] * cfg.economy.xpPerTask
+    state.xp = 30
     reconcileLevel(state, cfg, () => 0)
     expect(state.levelModal?.rewards.map((reward) => reward.id)).toEqual(['chest', 'food', 'pack'])
     claimLevelModal(state, cfg, () => 0)
     expect(state.gems).toBe(100)
-    state.xp = cfg.economy.levelTaskThresholds[1] * cfg.economy.xpPerTask
+    state.xp = 75
     reconcileLevel(state, cfg, () => 0)
     claimLevelModal(state, cfg, () => 0)
     expect(state.shopOpen).toBe(true)
     expect(state.rewards.some((item) => item.kind === 'producer' && item.producerId === 'bev' && item.level === 1)).toBe(true)
     expect(claimShopDaily(state, cfg, 1).ok).toBe(true)
     expect(claimShopPack(state, cfg).ok).toBe(true)
-    state.xp = cfg.economy.levelTaskThresholds[2] * cfg.economy.xpPerTask
+    state.xp = 135
     reconcileLevel(state, cfg, () => 0)
     expect(state.level).toBe(4)
     expect(cfg.economy.smileGoal).toBe(6)
@@ -158,7 +158,7 @@ describe('第十轮开局和前期', () => {
     const granted = createGame(2, cfg)
     granted.phase = 'play'
     granted.locks = []
-    granted.xp = cfg.economy.levelTaskThresholds[2] * cfg.economy.xpPerTask
+    granted.xp = 135
     reconcileLevel(granted, cfg, () => 0)
     while (granted.levelModal) claimLevelModal(granted, cfg, () => 0)
     const level1 = [...granted.rewards, ...granted.board.flat()].find(

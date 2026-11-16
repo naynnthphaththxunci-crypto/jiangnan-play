@@ -56,7 +56,7 @@ describe('订单', () => {
     state.board[0][1] = makeProduct(state, 'bev', 3)
     expect(orderSatisfied(state, state.orders[0])).toBe(true)
     const done = completeOrder(state, 'mix', cfg, rng, 2)
-    expect(done.events[0]).toMatchObject({ type: 'deliver', coins: 16, smiles: 1, xp: 6 })
+    expect(done.events[0]).toMatchObject({ type: 'deliver', coins: 16, smiles: 0, xp: 0 })
     expect(state.board[0][0]).toBeNull()
     expect(state.board[0][1]).toBeNull()
     expect(state.energy).toBe(100)
@@ -79,14 +79,15 @@ describe('订单', () => {
       },
     ]
     expect(orderReward(state.orders[0], cfg)).toBe(80)
-    expect(orderPayout(state.orders[0], cfg).smiles).toBe(2)
+    expect(orderPayout(state.orders[0], cfg).smiles).toBe(0)
+    expect(orderPayout(state.orders[0], cfg).xp).toBe(0)
     state.locks = []
     state.board[0][0] = makeProduct(state, 'food', 6)
     const result = completeOrder(state, 'big', cfg, rng, 3)
     expect(result.events[0]).toMatchObject({
       big: true,
       coins: 80,
-      smiles: 2,
+      smiles: 0,
       dialogue: '这一桌，员外我包下了。',
     })
     expect(state.coins).toBe(80)

@@ -14,20 +14,6 @@ export interface SliderSpec {
   text(value: number): string
 }
 
-function setThreshold(index: number): (cfg: GameConfig, value: number) => void {
-  return (cfg, value) => {
-    const next = cfg.economy.levelTaskThresholds.slice()
-    next[index] = Math.round(value)
-    for (let i = 1; i < next.length; i++) {
-      if (next[i] <= next[i - 1]) next[i] = next[i - 1] + 1
-    }
-    for (let i = next.length - 2; i >= 0; i--) {
-      if (next[i] >= next[i + 1]) next[i] = next[i + 1] - 1
-    }
-    cfg.economy.levelTaskThresholds = next
-  }
-}
-
 export function resetSlider(cfg: GameConfig, index: number): void {
   const spec = SLIDERS[index]
   if (!spec) return
@@ -278,7 +264,7 @@ export const SLIDERS: SliderSpec[] = [
   },
   {
     id: 'xp',
-    label: '每件经验',
+    label: '任务经验',
     min: 5,
     max: 40,
     step: 1,
@@ -288,76 +274,34 @@ export const SLIDERS: SliderSpec[] = [
     },
     text: (v) => `${Math.round(v)}`,
   },
-  {
-    id: 'lv2',
-    label: '二级门槛',
-    min: 1,
-    max: 8,
-    step: 1,
-    get: (c) => c.economy.levelTaskThresholds[0] ?? 2,
-    set: setThreshold(0),
-    text: (v) => `${Math.round(v)} 件`,
-  },
-  {
-    id: 'lv3',
-    label: '三级门槛',
-    min: 2,
-    max: 12,
-    step: 1,
-    get: (c) => c.economy.levelTaskThresholds[1] ?? 5,
-    set: setThreshold(1),
-    text: (v) => `${Math.round(v)} 件`,
-  },
-  {
-    id: 'lv4',
-    label: '四级门槛',
-    min: 3,
-    max: 16,
-    step: 1,
-    get: (c) => c.economy.levelTaskThresholds[2] ?? 9,
-    set: setThreshold(2),
-    text: (v) => `${Math.round(v)} 件`,
-  },
-  {
-    id: 'lv5',
-    label: '五级门槛',
-    min: 4,
-    max: 20,
-    step: 1,
-    get: (c) => c.economy.levelTaskThresholds[3] ?? 12,
-    set: setThreshold(3),
-    text: (v) => `${Math.round(v)} 件`,
-  },
-  {
-    id: 'lv6',
-    label: '六级门槛',
-    min: 4,
-    max: 24,
-    step: 1,
-    get: (c) => c.economy.levelTaskThresholds[4] ?? 10,
-    set: setThreshold(4),
-    text: (v) => `${Math.round(v)} 件`,
-  },
-  {
-    id: 'lv7',
-    label: '七级门槛',
-    min: 4,
-    max: 24,
-    step: 1,
-    get: (c) => c.economy.levelTaskThresholds[5] ?? 11,
-    set: setThreshold(5),
-    text: (v) => `${Math.round(v)} 件`,
-  },
-  {
-    id: 'lv8',
-    label: '八级门槛',
-    min: 4,
-    max: 24,
-    step: 1,
-    get: (c) => c.economy.levelTaskThresholds[6] ?? 12,
-    set: setThreshold(6),
-    text: (v) => `${Math.round(v)} 件`,
-  },
+  ...[30, 45, 60, 75, 75, 90, 105, 120, 135, 150, 165, 180].map((fallback, index) => ({
+    id: `lvxp${index + 2}`,
+    label: `${index + 1}升${index + 2}级经验`,
+    min: 15,
+    max: 400,
+    step: 15,
+    get: (c: GameConfig) => c.economy.levelTaskThresholds[index] ?? fallback,
+    set: (c: GameConfig, v: number) => {
+      const next = c.economy.levelTaskThresholds.slice()
+      next[index] = Math.round(v)
+      c.economy.levelTaskThresholds = next
+    },
+    text: (v: number) => `${Math.round(v)} 经验`,
+  })),
+  ...[0.7, 0.77, 0.85, 0.92, 1].map((fallback, index) => ({
+    id: `potionScale${index + 1}`,
+    label: `体力瓶${index + 1}级大小`,
+    min: 0.4,
+    max: 1.2,
+    step: 0.01,
+    get: (c: GameConfig) => c.economy.potionScales?.[index] ?? fallback,
+    set: (c: GameConfig, v: number) => {
+      const next = (c.economy.potionScales ?? [0.7, 0.77, 0.85, 0.92, 1]).slice()
+      next[index] = Math.round(v * 100) / 100
+      c.economy.potionScales = next
+    },
+    text: (v: number) => `${Math.round(v * 100)}%`,
+  })),
   {
     id: 'earlyUntil',
     label: '前期订单到',
@@ -609,18 +553,6 @@ export const SLIDERS: SliderSpec[] = [
       c.economy.adDailyMax = v
     },
     text: (v) => `${Math.round(v)} 次`,
-  },
-  {
-    id: 'orderXp',
-    label: '交单经验',
-    min: 0,
-    max: 40,
-    step: 1,
-    get: (c) => c.economy.orderXp,
-    set: (c, v) => {
-      c.economy.orderXp = v
-    },
-    text: (v) => `${Math.round(v)}`,
   },
   {
     id: 'chestTimes',

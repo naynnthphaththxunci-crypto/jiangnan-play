@@ -63,9 +63,10 @@ describe('修缮', () => {
     expect(allTasks(cfg)).toHaveLength(12)
     expect(cfg.buildings.steps.map((step) => step.tasks.length)).toEqual([4, 4, 4])
     expect(hostessCostume(cfg)).toBe('布衣')
-    expect(cfg.economy.levelTaskThresholds).toEqual([2, 4, 6, 8, 10, 11, 12])
+    expect(cfg.economy.levelTaskThresholds.slice(0, 5)).toEqual([30, 45, 60, 75, 75])
     expect(cfg.economy.xpPerTask).toBe(15)
-    expect(levelForTaskCount(12, cfg)).toBe(8)
+    expect(levelForTaskCount(2, cfg)).toBe(2)
+    expect(levelForTaskCount(5, cfg)).toBe(3)
   })
 
   it('铜钱不够、跳着做、重复做都不算', () => {
@@ -111,7 +112,7 @@ describe('修缮', () => {
     expect(state.phase).toBe('play')
     expect(state.openingStep).toBe(cfg.copy.tutorial.length)
     expect(state.coins).toBe(0)
-    expect(state.xp).toBe(21)
+    expect(state.xp).toBe(15)
     expect(state.level).toBe(1)
     expect(state.orders).toHaveLength(3)
     expect(state.tasksDone).toEqual(['t1'])
@@ -127,24 +128,15 @@ describe('修缮', () => {
     expect(owned.some((item) => item?.kind === 'chest')).toBe(true)
     expect(findProducer(state, 'bev')).toBeNull()
 
-    finish(state, cfg, 2)
-    expect(state.tasksDone).toHaveLength(4)
+    finish(state, cfg, 3)
+    expect(state.tasksDone).toHaveLength(5)
     expect(state.level).toBe(3)
     expect(
       findProducer(state, 'bev') ||
         state.rewards.some((item) => item.kind === 'producer' && item.producerId === 'bev'),
     ).toBeTruthy()
 
-    const decor = nextTask(state, cfg)
-    expect(decor?.id).toBe('t5')
-    finish(state, cfg, 1)
-    expect(state.level).toBe(3)
     expect(state.xp).toBe(75)
-    expect(
-      findProducer(state, 'bev') ||
-        state.rewards.some((item) => item.kind === 'producer' && item.producerId === 'bev'),
-    ).toBeTruthy()
-
     const choiceTask = nextTask(state, cfg)
     expect(choiceTask?.id).toBe('t6')
     const rng = mulberry32(9)
@@ -173,7 +165,7 @@ describe('修缮', () => {
       while (state.levelModal) claimLevelModal(state, cfg, rng)
     }
     expect(state.tasksDone).toHaveLength(12)
-    expect(state.level).toBe(8)
+    expect(state.level).toBe(4)
     expect(state.xp).toBe(180)
     expect(
       findProducer(state, 'bev') || state.rewards.some((item) => item.kind === 'producer' && item.producerId === 'bev'),
@@ -183,7 +175,7 @@ describe('修缮', () => {
 
   it('调低门槛会立刻升级发奖，存档能带回体力和门槛', () => {
     const { state, cfg, rng } = boot()
-    cfg.economy.levelTaskThresholds = [1, 5, 9, 12]
+    cfg.economy.levelTaskThresholds = [10, 100, 100, 100]
     state.coins = 8
     buildTask(state, 't1', null, cfg, rng, 1)
     expect(state.level).toBe(2)
@@ -196,7 +188,7 @@ describe('修缮', () => {
     const loaded = hydrate(raw, next)
     expect(loaded?.level).toBe(2)
     expect(loaded?.tasksDone).toEqual(['t1'])
-    expect(next.economy.levelTaskThresholds).toEqual([1, 5, 9, 12])
+    expect(next.economy.levelTaskThresholds).toEqual([10, 100, 100, 100])
     expect(next.economy.energyMax).toBe(100)
     expect(hydrate('{', next)).toBeNull()
   })

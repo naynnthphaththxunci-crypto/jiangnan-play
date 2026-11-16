@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { defaultConfig } from '../src/config'
 import {
   applyFreeRefill,
+  buildTask,
   buyEnergyWithGems,
   claimLevelModal,
   completeOrder,
+  confirmDecor,
   createGame,
   dropItem,
   findEmpty,
@@ -14,11 +16,13 @@ import {
   makePotion,
   makeProducer,
   mulberry32,
+  nextTask,
   orderCraftable,
   orderSatisfied,
   queueReward,
   sellItem,
   syncEnergy,
+  taskPrice,
   takeReward,
   tapConsumable,
   tapProducer,
@@ -173,6 +177,12 @@ function playToLevelFive(): {
       const result = completeOrder(state, ready.id, cfg, rng, now)
       if (!result.ok) throw new Error(`交单失败 ${result.reason}`)
       delivers += 1
+      const task = nextTask(state, cfg)
+      if (task && state.coins >= taskPrice(task, cfg)) {
+        const choice = task.choices?.[0]?.id ?? null
+        buildTask(state, task.id, choice, cfg, rng, now)
+        if (state.decorate) confirmDecor(state, cfg)
+      }
       while (state.levelModal) claimLevelModal(state, cfg, rng)
       continue
     }
