@@ -122,6 +122,7 @@ describe('第六轮', () => {
     const cfg = defaultConfig()
     const state = createGame(1, cfg)
     state.phase = 'play'
+    state.lesson = 'free'
     state.coins = 0
     refreshGuide(state, cfg, 'house')
     expect(state.guide).toBe('backBtn')

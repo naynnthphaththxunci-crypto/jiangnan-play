@@ -888,9 +888,6 @@ export function tapProducer(state: GameState, pos: Pos, cfg: GameConfig, rng: Rn
     else state.board[pos.row][pos.col] = null
   }
   if (atStep(state, cfg, 'produce')) advanceTutorial(state, cfg)
-  if (state.lesson === 'focus' && state.orders.some((order) => order.scripted && orderSatisfied(state, order))) {
-    state.lesson = 'deliver'
-  }
   if (spot && state.mintStep === 'produce' && item.producerId === 'bev') {
     const mints = occupied(state).filter((cell) => cell.item.kind === 'product' && cell.item.line === 'mint')
     const pair = mints.find((cell, index) =>
@@ -934,10 +931,10 @@ function spawnFromProducer(state: GameState, cfg: GameConfig, item: ProducerItem
   const useSide = !!side && item.level >= (cfg.economy.producerSideLevel ?? 5) && rng() >= (cfg.economy.producerMainChance ?? 0.7)
   const line = useSide && side ? side : main
   const cap = lineCap(cfg, line)
-  const level = Math.min(cap, rollSpawnLevel(cfg, kind === 'plant' ? 1 : mult, rng))
+  let level = Math.min(cap, rollSpawnLevel(cfg, kind === 'plant' ? 1 : mult, rng))
   if (state.lesson === 'focus' && item.producerId === 'food') {
-    const need = state.orders.find((order) => order.scripted)?.slots.find((slot) => slot.line === 'food')
-    if (need && !findProduct(state, 'food', need.level)) return makeProduct(state, 'food', need.level)
+    const need = state.orders.find((order) => order.scripted)?.slots.find((slot) => slot.line === 'food')?.level ?? 3
+    level = Math.min(level, Math.max(1, need - 1))
   }
   return makeProduct(state, line, Math.max(1, level))
 }
@@ -1216,6 +1213,10 @@ export function dropItem(state: GameState, from: Pos, to: Pos, cfg?: GameConfig)
       state.board[from.row][from.col] = null
       noteUnlock(state, other.line, level)
       if (cfg && (atStep(state, cfg, 'merge') || atStep(state, cfg, 'bagMerge'))) advanceTutorial(state, cfg)
+      if (state.lesson === 'focus') {
+        const need = state.orders.find((order) => order.scripted)?.slots.find((slot) => slot.line === other.line)
+        if (need && level >= need.level) state.lesson = 'deliver'
+      }
       if (state.mintStep === 'merge' && other.line === 'mint') {
         const ready = state.orders.some((order) => order.slots.some((slot) => slot.line === 'mint') && orderSatisfied(state, order))
         state.mintStep = ready ? 'deliver' : 'produce'
@@ -2590,6 +2591,12 @@ export function buildTask(
 }
 
 export function refreshGuide(state: GameState, cfg: GameConfig, view: 'board' | 'house'): void {
+  if (state.lesson && state.lesson !== 'free') {
+    if (state.guide === 'buildTalk' || state.guide === 'backTalk' || state.guide === 'buildBtn' || state.guide === 'repairBtn' || state.guide === 'backBtn') {
+      state.guide = 'none'
+    }
+    return
+  }
   if (state.phase !== 'play' || state.decorate || state.buildStory) {
     if (state.decorate && (state.guide === 'repairBtn' || state.guide === 'backBtn')) state.guide = 'none'
     return

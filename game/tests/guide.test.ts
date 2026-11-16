@@ -295,6 +295,7 @@ describe('强制引导', () => {
     const rich = () => {
       const state = createGame(1, cfg)
       state.phase = 'play'
+      state.lesson = 'free'
       state.coins = 99999
       return state
     }

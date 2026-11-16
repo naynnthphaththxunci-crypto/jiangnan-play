@@ -731,6 +731,10 @@ export function startGame(platform: Platform): void {
         state.lesson = 'free'
         state.phase = 'play'
         state.openingStep = cfg.copy.tutorial.length
+        const task = nextTask(state, cfg)
+        if (task) state.guidedTask = task.id
+        state.guide = 'none'
+        state.notice = null
       }
       beginCurtain('board')
       return
@@ -944,6 +948,24 @@ export function startGame(platform: Platform): void {
     comicAudio.sync(cfg.opening, state.storyStep, state.phase === 'story')
   }
 
+  function pressLessonTarget(x: number, y: number): boolean {
+    const hit = hitTest(frame, x, y)
+    if (state.lesson === 'book' && hit?.kind === 'storyBook') {
+      state.guide = 'none'
+      state.notice = null
+      state.lesson = 'home2'
+      beginCurtain('house')
+      return true
+    }
+    if (state.lesson === 'deliver' && hit?.kind === 'complete') {
+      const order = state.orders[hit.index]
+      if (!order) return false
+      present(completeOrder(state, order.id, cfg, rng, platform.now()))
+      return true
+    }
+    return false
+  }
+
   function pressHomeBuild(x: number, y: number): boolean {
     if (view !== 'house') return false
     if (state.lesson !== 'home1' && state.lesson !== 'home3') return false
@@ -953,6 +975,10 @@ export function startGame(platform: Platform): void {
       state.lesson = 'free'
       state.phase = 'play'
       state.openingStep = cfg.copy.tutorial.length
+      const task = nextTask(state, cfg)
+      if (task) state.guidedTask = task.id
+      state.guide = 'none'
+      state.notice = null
     }
     beginCurtain('board')
     return true
@@ -977,7 +1003,8 @@ export function startGame(platform: Platform): void {
     if (lesson === 'focus') {
       if (hit.kind !== 'cell') return true
       const item = state.board[hit.row]?.[hit.col]
-      return !(item?.kind === 'producer' && item.producerId === 'food' && item.level >= 4)
+      if (item?.kind === 'producer' && item.producerId === 'food' && item.level >= 4) return false
+      return !(item?.kind === 'product' && item.line === 'food')
     }
     if (lesson === 'deliver') return hit.kind !== 'complete'
     if (lesson === 'book') return hit.kind !== 'storyBook'
@@ -1019,6 +1046,7 @@ export function startGame(platform: Platform): void {
       return
     }
     if (pressHomeBuild(x, y)) return
+    if (pressLessonTarget(x, y)) return
     if (settingsOpen && view === 'house' && hitTest(frame, x, y)?.kind !== 'settings') {
       settingsOpen = false
       settingsAt = platform.now()

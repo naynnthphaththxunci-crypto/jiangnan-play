@@ -1931,7 +1931,7 @@ function lessonDialogBox(model: RenderModel): Rect | null {
     box.y = Math.max(frame.hud.y + frame.hud.h + 4, top - box.h - 12)
   }
   if (lesson === 'merge' || lesson === 'mergeC' || lesson === 'mergeD' || lesson === 'focus') {
-    const holes = lesson === 'focus' ? [focusRect(model)].filter((rect): rect is Rect => !!rect) : tutorialHoles(model)
+    const holes = lesson === 'focus' ? focusCells(model).map((cell) => cellRect(frame, cell.row, cell.col)) : tutorialHoles(model)
     if (holes.length) above(holes)
     else box.y = frame.board.y - box.h - 8
     return box
@@ -1952,10 +1952,10 @@ function lessonDialogBox(model: RenderModel): Rect | null {
   return null
 }
 
-function focusRect(model: RenderModel): Rect | null {
-  const { frame, state, cfg } = model
-  let row = cfg.board.roles.producer.row
-  let col = cfg.board.roles.producer.col
+function focusCells(model: RenderModel): { row: number; col: number }[] {
+  const { state, cfg } = model
+  let row = cfg.board.roles.mergeD?.row ?? cfg.board.roles.producer.row
+  let col = cfg.board.roles.mergeD?.col ?? cfg.board.roles.producer.col
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
       const item = state.board[r]?.[c]
@@ -1966,37 +1966,26 @@ function focusRect(model: RenderModel): Rect | null {
     }
   }
   const cells = [{ row, col }]
-  for (const [dr, dc] of [
-    [1, 0],
-    [-1, 0],
-    [0, 1],
-    [0, -1],
-  ]) {
-    const nr = row + dr
-    const nc = col + dc
-    if (nr < 0 || nc < 0 || nr >= ROWS || nc >= COLS) continue
-    const lock = lockAt(state, nr, nc)
-    if (!lock || lock.veil === 'half') cells.push({ row: nr, col: nc })
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      if (dr === 0 && dc === 0) continue
+      const nr = row + dr
+      const nc = col + dc
+      if (nr < 0 || nc < 0 || nr >= ROWS || nc >= COLS) continue
+      const lock = lockAt(state, nr, nc)
+      if (!lock || lock.veil === 'half') cells.push({ row: nr, col: nc })
+    }
   }
-  const rects = cells.map((cell) => cellRect(frame, cell.row, cell.col))
-  const x = Math.min(...rects.map((rect) => rect.x))
-  const y = Math.min(...rects.map((rect) => rect.y))
-  const right = Math.max(...rects.map((rect) => rect.x + rect.w))
-  const bottom = Math.max(...rects.map((rect) => rect.y + rect.h))
-  return { x: x - 6, y: y - 6, w: right - x + 12, h: bottom - y + 12 }
+  return cells
 }
 
-function punchHole(ctx: CanvasRenderingContext2D, view: Rect, hole: Rect | null): void {
+function punchCells(ctx: CanvasRenderingContext2D, view: Rect, holes: Rect[]): void {
   ctx.save()
   ctx.fillStyle = 'rgba(0,0,0,0.6)'
   ctx.beginPath()
   ctx.rect(view.x, view.y, view.w, view.h)
-  if (hole && hole.w > 0) {
-    ctx.moveTo(hole.x + hole.w, hole.y)
-    ctx.arcTo(hole.x, hole.y, hole.x, hole.y + hole.h, 10)
-    ctx.arcTo(hole.x, hole.y + hole.h, hole.x + hole.w, hole.y + hole.h, 10)
-    ctx.arcTo(hole.x + hole.w, hole.y + hole.h, hole.x + hole.w, hole.y, 10)
-    ctx.arcTo(hole.x + hole.w, hole.y, hole.x + hole.w, hole.y + hole.h, 10)
+  for (const hole of holes) {
+    if (hole.w > 0 && hole.h > 0) ctx.rect(hole.x, hole.y, hole.w, hole.h)
   }
   ctx.fill('evenodd')
   ctx.restore()
@@ -2013,27 +2002,34 @@ function drawLesson(model: RenderModel): void {
     return
   }
   if (lesson === 'talk1') {
-    punchHole(ctx, { x: 0, y: 0, w: frame.w, h: frame.h }, null)
+    punchCells(ctx, { x: 0, y: 0, w: frame.w, h: frame.h }, [])
     const box = lessonDialogBox(model)
     if (box) paintHomeImg(ctx, 'tut1', box)
     return
   }
   if (lesson === 'focus') {
-    const hole = focusRect(model)
-    const board = {
-      x: frame.board.x,
-      y: frame.board.y,
-      w: frame.board.cell * COLS,
-      h: frame.board.cell * ROWS,
-    }
-    punchHole(ctx, board, hole)
+    const cells = focusCells(model)
+    const holes = cells.map((cell) => cellRect(frame, cell.row, cell.col))
+    punchCells(ctx, { x: 0, y: 0, w: frame.w, h: frame.h }, holes)
     const box = lessonDialogBox(model)
     if (box) paintHomeImg(ctx, 'tut4', box)
-    if (hole) paintHand(ctx, hole.x + hole.w / 2, hole.y + hole.h * 0.45, frame.board.cell)
+    const pair = foodMergePair(state)
+    if (pair) {
+      const a = cellRect(frame, pair[0].row, pair[0].col)
+      const b = cellRect(frame, pair[1].row, pair[1].col)
+      const t = (Math.sin(model.realNow / 280) + 1) / 2
+      paintHand(ctx, a.x + a.w / 2 + (b.x - a.x) * t, a.y + a.h / 2 + (b.y - a.y) * t, frame.board.cell)
+    } else {
+      const producer = cells[0]
+      if (producer) {
+        const rect = cellRect(frame, producer.row, producer.col)
+        paintHand(ctx, rect.x + rect.w / 2, rect.y + rect.h / 2, frame.board.cell)
+      }
+    }
     return
   }
   if (lesson === 'deliver') {
-    punchHole(ctx, { x: 0, y: 0, w: frame.w, h: frame.h }, null)
+    punchCells(ctx, { x: 0, y: 0, w: frame.w, h: frame.h }, [])
     paintLiftedOrder(model, 0)
     const box = lessonDialogBox(model)
     if (box) paintHomeImg(ctx, 'tut5', box)
@@ -2042,7 +2038,7 @@ function drawLesson(model: RenderModel): void {
     return
   }
   if (lesson === 'book') {
-    punchHole(ctx, { x: 0, y: 0, w: frame.w, h: frame.h }, null)
+    punchCells(ctx, { x: 0, y: 0, w: frame.w, h: frame.h }, [])
     if (frame.storyBtn.w > 0) {
       blit(ctx, 'chestFrame', frame.storyBtn)
       blit(ctx, 'book', frame.bookIcon)
@@ -2053,6 +2049,22 @@ function drawLesson(model: RenderModel): void {
     if (frame.storyBtn.w > 0) paintHand(ctx, frame.storyBtn.x + frame.storyBtn.w / 2, frame.storyBtn.y + frame.storyBtn.h / 2, frame.board.cell)
   }
   void cfg
+}
+
+function foodMergePair(state: GameState): [{ row: number; col: number }, { row: number; col: number }] | null {
+  const found: { row: number; col: number; level: number }[] = []
+  for (let row = 0; row < ROWS; row++) {
+    for (let col = 0; col < COLS; col++) {
+      const item = state.board[row]?.[col]
+      if (item?.kind === 'product' && item.line === 'food' && !lockAt(state, row, col)) found.push({ row, col, level: item.level })
+    }
+  }
+  for (let i = 0; i < found.length; i++) {
+    for (let j = i + 1; j < found.length; j++) {
+      if (found[i]?.level === found[j]?.level) return [found[i]!, found[j]!]
+    }
+  }
+  return null
 }
 
 function paintLiftedOrder(model: RenderModel, index: number): void {
@@ -2344,6 +2356,7 @@ function drawMintGuide(model: RenderModel): void {
 
 function drawGuide(model: RenderModel): void {
   const { ctx, frame, state, cfg, realNow } = model
+  if (state.lesson && state.lesson !== 'free') return
   if (state.phase === 'opening') return
   const forced = guideHole(frame, state, cfg)
   const guide = state.guide
@@ -2386,6 +2399,7 @@ function drawGuide(model: RenderModel): void {
 }
 
 function drawNotice(model: RenderModel): void {
+  if (model.state.lesson && model.state.lesson !== 'free') return
   const notice = model.state.notice
   if (!notice) return
   const { ctx, frame } = model
