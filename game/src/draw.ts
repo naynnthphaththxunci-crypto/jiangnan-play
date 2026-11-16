@@ -53,6 +53,7 @@ import { curtainBambooPlace, curtainBitmaps, curtainDrop, curtainPlace } from '.
 import { designToScreen } from './hechengLayout'
 import { orderTickPlace } from './orderTick'
 import { COMIC_FONT, comicCursor, comicFontReady, comicPanelImage, comicPrompt, comicSilaImage, wrapComicText } from './comic'
+import { openingFilm } from './openingFilm'
 import { SLIDERS } from './tuner'
 import { COLS, ROWS, type ComicEnter, type GameConfig, type GameState, type Item, type OpeningScript } from './types'
 
@@ -103,8 +104,11 @@ export function render(model: RenderModel): void {
   ctx.clearRect(0, 0, frame.w, frame.h)
   ctx.fillStyle = frame.mode === 'board' ? '#000' : PAL.paper
   ctx.fillRect(0, 0, frame.w, frame.h)
-  if (frame.mode === 'story') drawStory(model)
-  else if (frame.mode === 'house') {
+  if (frame.mode === 'story') {
+    drawStory(model)
+    return
+  }
+  if (frame.mode === 'house') {
     drawHud(model)
     drawHouse(model)
   } else {
@@ -382,58 +386,10 @@ function drawItem(
 }
 
 function drawStory(model: RenderModel): void {
-  const { ctx, frame, state, cfg, realNow, fx } = model
-  ctx.fillStyle = '#000'
-  ctx.fillRect(0, 0, frame.w, frame.h)
-  const cursor = comicCursor(cfg.opening, state.storyStep)
-  const script = cfg.opening
-  if (cursor) {
-    if (fx.comicFadeAt === 0) fx.comicFadeAt = realNow
-    const pageBeats = script.pages[cursor.page]?.beats ?? []
-    if (pageBeats.some((beat) => beat.enter === 'slow-push') && fx.pagePushAt === 0) fx.pagePushAt = realNow
-    const pageW = script.width
-    const pageH = script.height
-    const scale = Math.min(frame.w / pageW, frame.h / pageH)
-    let ox = (frame.w - pageW * scale) / 2
-    let oy = (frame.h - pageH * scale) / 2
-    const shakeStart = fx.shakeUntil - 460
-    if (fx.shakeUntil > realNow && realNow >= shakeStart) {
-      const t = 1 - (fx.shakeUntil - realNow) / 460
-      const amp = (1 - t) * 8 * scale
-      ox += Math.sin(t * 26) * amp
-      oy += Math.cos(t * 21) * amp * 0.65
-    }
-    const prev = fx.comicFrom >= 0 ? comicCursor(script, fx.comicFrom) : null
-    const turnMs = 350
-    const turnAge = realNow - fx.comicFadeAt
-    const turning = !!prev && prev.page !== cursor.page && turnAge >= 0 && turnAge < turnMs
-    const turnT = turning ? easeOutCubic(turnAge / turnMs) : 1
-    const arrivedByTurn = !!prev && prev.page !== cursor.page
-    ctx.save()
-    ctx.translate(ox, oy)
-    ctx.scale(scale, scale)
-    if (turning && prev) {
-      ctx.save()
-      ctx.translate(-turnT * pageW, 0)
-      paintComicPanels(ctx, script, prev.page, prev.index, realNow, fx.comicFadeAt, fx.silaAt, false, realNow - 10000)
-      ctx.restore()
-      ctx.save()
-      ctx.translate((1 - turnT) * pageW, 0)
-      paintComicPanels(ctx, script, cursor.page, cursor.index, realNow, fx.comicFadeAt, fx.silaAt, false, fx.pagePushAt)
-      paintStoryBubble(ctx, script, state.storyStep, fx.comicFrom, fx.comicFadeAt, realNow)
-      ctx.restore()
-    } else {
-      paintComicPanels(ctx, script, cursor.page, cursor.index, realNow, fx.comicFadeAt, fx.silaAt, !arrivedByTurn, fx.pagePushAt)
-      paintStoryBubble(ctx, script, state.storyStep, fx.comicFrom, fx.comicFadeAt, realNow)
-    }
-    ctx.restore()
-  }
-  if (model.comicHand !== 'off') paintComicHand(ctx, frame, model.comicHand === 'first')
-  paintMute(ctx, frame.muteBtn, state.soundMuted)
-  button(ctx, frame.skip, '跳过', 'ghost')
+  openingFilm().draw(model.ctx, model.frame.w, model.frame.h, model.realNow, model.cfg)
 }
 
-function paintStoryBubble(
+export function paintStoryBubble(
   ctx: CanvasRenderingContext2D,
   script: OpeningScript,
   step: number,
@@ -456,7 +412,7 @@ function paintStoryBubble(
   }
 }
 
-function paintComicPanels(
+export function paintComicPanels(
   ctx: CanvasRenderingContext2D,
   script: OpeningScript,
   pageIndex: number,
@@ -557,7 +513,7 @@ function enterPose(enter: ComicEnter | undefined, age: number, ms: number): { al
   return rest
 }
 
-function paintMute(ctx: CanvasRenderingContext2D, rect: Rect, muted: boolean): void {
+export function paintMute(ctx: CanvasRenderingContext2D, rect: Rect, muted: boolean): void {
   if (rect.w <= 0) return
   roundRect(ctx, rect.x, rect.y, rect.w, rect.h, 10)
   ctx.fillStyle = PAL.white
@@ -685,7 +641,7 @@ function paintComicBubble(
   ctx.restore()
 }
 
-function paintComicHand(ctx: CanvasRenderingContext2D, frame: Frame, caption: boolean): void {
+export function paintComicHand(ctx: CanvasRenderingContext2D, frame: Frame, caption: boolean): void {
   const x = frame.w / 2
   const y = frame.h * 0.42
   const hand = Math.max(54, frame.w * 0.16)

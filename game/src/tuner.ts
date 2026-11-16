@@ -303,6 +303,30 @@ export const SLIDERS: SliderSpec[] = [
     text: (v: number) => `${Math.round(v * 100)}%`,
   })),
   {
+    id: 'openingHitPad',
+    label: '进门热区',
+    min: 0,
+    max: 360,
+    step: 10,
+    get: (c) => c.economy.openingHitPad ?? 160,
+    set: (c, v) => {
+      c.economy.openingHitPad = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)}`,
+  },
+  {
+    id: 'openingDimMs',
+    label: '开场压暗时长',
+    min: 0,
+    max: 2000,
+    step: 50,
+    get: (c) => c.economy.openingDimMs ?? 600,
+    set: (c, v) => {
+      c.economy.openingDimMs = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)} 毫秒`,
+  },
+  {
     id: 'earlyUntil',
     label: '前期订单到',
     min: 1,

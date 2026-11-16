@@ -155,6 +155,10 @@ export interface Economy {
   levelTaskThresholds: number[]
   /** 体力瓶 1 到 5 级，相对普通棋子最大格内尺寸的比例。 */
   potionScales: number[]
+  /** 进门查看热区在文字和手外面再扩这么多，按 1080 画布像素。 */
+  openingHitPad: number
+  /** 对话压暗从 0 到 60% 的毫秒数。 */
+  openingDimMs: number
   levelRewards: { level: number; rewards: LevelRewardEntry[] }[]
   freeRefill: number
   adEnergy: number

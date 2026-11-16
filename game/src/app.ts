@@ -1,6 +1,7 @@
 import { tutorialHand } from './coach'
 import { SIDE_ICON_LEVEL } from './hechengLayout'
 import { comicCursor, silaJustShown } from './comic'
+import { openingFilm } from './openingFilm'
 import { createComicAudio } from './comicAudio'
 import { createSfx, type Sfx } from './audio'
 import { defaultConfig, resetEconomy } from './config'
@@ -255,7 +256,7 @@ export function startGame(platform: Platform): void {
       guestCanvasScale: cfg.economy.guestCanvasScale,
       showHint: false,
       showSheet: false,
-      showSkip: state.phase === 'story' || state.buildStory != null,
+      showSkip: state.buildStory != null,
       showDaily: current === 'board' && state.phase === 'play' && canClaimDaily(state, platform.now(), cfg),
       showHouseBtn: true,
       showStorage: state.storageLesson >= 4,
@@ -941,6 +942,14 @@ export function startGame(platform: Platform): void {
     lastInput = platform.now()
     if (curtain) return
     frame = makeFrame()
+    if (state.phase === 'story' && !tuner) {
+      if (openingFilm().tap(x, y, platform.now(), cfg) === 'enter') {
+        openingFilm().stop()
+        skipStory(state)
+        mark()
+      }
+      return
+    }
     if (state.buildStory) {
       if (hitTest(frame, x, y)?.kind === 'skip') state.buildStory = null
       else advanceBuildStory(state, cfg)
@@ -1031,24 +1040,6 @@ export function startGame(platform: Platform): void {
         }
       }
     } else if (!overlay && hole && hit.kind !== 'tune' && !contains(hole, x, y)) {
-      return
-    }
-    if (state.phase === 'story' && !tuner) {
-      if (hit.kind === 'mute') {
-        state.soundMuted = !state.soundMuted
-        comicAudio.setMuted(state.soundMuted)
-        sfx.setMuted(state.soundMuted)
-        mark()
-      } else if (hit.kind === 'skip') {
-        skipStory(state)
-        comicAudio.sync(cfg.opening, state.storyStep, false)
-        sfx.ui()
-        mark()
-      } else if (hit.kind === 'hotspot') {
-        stepStory()
-        sfx.ui()
-        mark()
-      }
       return
     }
     if (view === 'board' && state.phase === 'play' && state.storageLesson === 1) {
@@ -1475,6 +1466,9 @@ export function startGame(platform: Platform): void {
     },
     audioTrace() {
       return comicAudio.trace()
+    },
+    film() {
+      return openingFilm().status()
     },
     audioReady() {
       return comicAudio.whenReady()

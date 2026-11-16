@@ -26,6 +26,8 @@
     0.92,
     1
   ],
+  "openingHitPad": 160,
+  "openingDimMs": 600,
   "levelRewards": [
     {
       "level": 2,
