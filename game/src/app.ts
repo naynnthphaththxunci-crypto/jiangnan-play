@@ -1,7 +1,7 @@
 import { tutorialHand } from './coach'
 import { SIDE_ICON_LEVEL } from './hechengLayout'
 import { comicCursor, silaJustShown } from './comic'
-import { openingFilm } from './openingFilm'
+import { openingFilm, replayOpeningFilm } from './openingFilm'
 import { createComicAudio } from './comicAudio'
 import { createSfx, type Sfx } from './audio'
 import { defaultConfig, resetEconomy } from './config'
@@ -709,6 +709,9 @@ export function startGame(platform: Platform): void {
       tuner = false
       selected = null
       chain = null
+      orderScroll = 0
+      replayOpeningFilm(platform.now())
+      saveNow()
       toast('已从剧情重开')
       mark()
       return
@@ -946,6 +949,7 @@ export function startGame(platform: Platform): void {
       if (openingFilm().tap(x, y, platform.now(), cfg) === 'enter') {
         openingFilm().stop()
         skipStory(state)
+        saveNow()
         mark()
       }
       return

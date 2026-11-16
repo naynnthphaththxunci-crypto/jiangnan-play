@@ -80,6 +80,7 @@ class OpeningFilm {
   private tense: HTMLAudioElement | null = null
   private tenseWanted = false
   private kicking = false
+  private holdIntro = false
   private view = { w: 390, h: 844 }
   private readonly images = {
     label: loadImage(labelUrl),
@@ -170,6 +171,40 @@ class OpeningFilm {
     this.tenseWanted = false
   }
 
+  /** 调试重开：进度、底乐、遮罩、对话和按钮都回到 01 的第 0 秒。 */
+  replay(now: number): void {
+    this.stage = 'intro'
+    this.dialog = 0
+    this.doorAt = now
+    this.dimAt = 0
+    this.tapFadeAt = 0
+    this.restartAt = 0
+    this.tenseFadeAt = 0
+    this.tenseWanted = false
+    this.pending = null
+    this.holdIntro = true
+    if (this.tense) {
+      this.tense.pause()
+      this.tense.volume = 1
+      try {
+        this.tense.currentTime = 0
+      } catch {
+        /* 还没载入时忽略 */
+      }
+    }
+    for (const video of [this.v2, this.v3, this.v4]) video?.pause()
+    const intro = this.v1
+    if (!intro) return
+    intro.pause()
+    try {
+      intro.currentTime = 0
+    } catch {
+      /* 还没载入时忽略 */
+    }
+    this.shown = intro
+    void this.kick(intro, true)
+  }
+
   draw(ctx: CanvasRenderingContext2D, viewW: number, viewH: number, now: number, cfg: GameConfig): void {
     this.view = { w: viewW, h: viewH }
     this.ensure(now)
@@ -205,6 +240,17 @@ class OpeningFilm {
 
   private advance(now: number, _cfg: GameConfig): void {
     const intro = this.v1
+    if (this.holdIntro) {
+      if (!intro || intro.currentTime < 0.4) this.holdIntro = false
+      else {
+        try {
+          intro.currentTime = 0
+        } catch {
+          /* 还没载入时忽略 */
+        }
+        return
+      }
+    }
     if ((this.stage === 'intro' || this.stage === 'door') && intro && intro.paused && !intro.ended) void this.kick(intro, true)
     if (this.stage === 'intro' && intro && intro.currentTime >= DOOR_AT) this.enterDoor(now)
     if ((this.stage === 'intro' || this.stage === 'door') && intro?.ended) this.cue(this.v2)
@@ -390,4 +436,8 @@ export function openingFilm(): OpeningFilm {
 export function resetOpeningFilm(): void {
   film?.stop()
   film = null
+}
+
+export function replayOpeningFilm(now: number): void {
+  openingFilm().replay(now)
 }
