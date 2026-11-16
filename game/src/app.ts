@@ -2,6 +2,7 @@ import { tutorialHand } from './coach'
 import { SIDE_ICON_LEVEL } from './hechengLayout'
 import { comicCursor, silaJustShown } from './comic'
 import { openingFilm, replayOpeningFilm } from './openingFilm'
+import { buildHit } from './homeLayout'
 import { createComicAudio } from './comicAudio'
 import { createSfx, type Sfx } from './audio'
 import { defaultConfig, resetEconomy } from './config'
@@ -943,6 +944,20 @@ export function startGame(platform: Platform): void {
     comicAudio.sync(cfg.opening, state.storyStep, state.phase === 'story')
   }
 
+  function pressHomeBuild(x: number, y: number): boolean {
+    if (view !== 'house') return false
+    if (state.lesson !== 'home1' && state.lesson !== 'home3') return false
+    if (!contains(buildHit(frame.w, frame.h), x, y)) return false
+    if (state.lesson === 'home1') state.lesson = 'talk1'
+    else {
+      state.lesson = 'free'
+      state.phase = 'play'
+      state.openingStep = cfg.copy.tutorial.length
+    }
+    beginCurtain('board')
+    return true
+  }
+
   function guardLesson(x: number, y: number): boolean {
     const lesson = state.lesson
     if (!lesson || lesson === 'free' || lesson === 'merge' || lesson === 'mergeC' || lesson === 'mergeD') return false
@@ -1003,6 +1018,7 @@ export function startGame(platform: Platform): void {
       }
       return
     }
+    if (pressHomeBuild(x, y)) return
     if (settingsOpen && view === 'house' && hitTest(frame, x, y)?.kind !== 'settings') {
       settingsOpen = false
       settingsAt = platform.now()

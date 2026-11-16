@@ -57,6 +57,16 @@ export function homePlaces(viewW: number, viewH: number) {
   }
 }
 
+/** 建筑按钮热区比图片四周各大一圈，设计稿像素。 */
+export const BUILD_HIT_PAD = 28
+
+export function buildHit(viewW: number, viewH: number): HomeBox {
+  const fit = homeFit(viewW, viewH)
+  const build = sceneBox(fit, 912, 2112, 153, 163)
+  const pad = BUILD_HIT_PAD * fit.scale
+  return { x: build.x - pad, y: build.y - pad, w: build.w + pad * 2, h: build.h + pad * 2 }
+}
+
 /** 箭头朝建筑按钮来回戳，返回设计稿上的位移。 */
 export function arrowPoke(now: number): { x: number; y: number } {
   const fromX = 668 + 235 / 2

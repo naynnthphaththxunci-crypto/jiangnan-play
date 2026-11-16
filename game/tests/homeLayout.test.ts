@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { homeFit, homePlaces } from '../src/homeLayout'
+import { buildHit, homeFit, homePlaces } from '../src/homeLayout'
 
 describe('主场景适配', () => {
   it('高手机按宽铺满，矮手机从顶部裁，宽屏左右留黑', () => {
@@ -25,5 +25,10 @@ describe('主场景适配', () => {
     expect(places.build.y).toBeCloseTo(places.fit.y + 2112 * places.fit.scale, 2)
     expect(places.settings.y).toBeCloseTo(248 * places.fit.scale, 2)
     expect(places.dialog.y).toBeCloseTo(places.fit.y + 819 * places.fit.scale, 2)
+    const hit = buildHit(390, 700)
+    expect(hit.x).toBeLessThan(places.build.x)
+    expect(hit.y).toBeLessThan(places.build.y)
+    expect(hit.x + hit.w).toBeGreaterThan(places.build.x + places.build.w)
+    expect(hit.y + hit.h).toBeGreaterThan(places.build.y + places.build.h)
   })
 })

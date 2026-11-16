@@ -1,4 +1,4 @@
-import { homePlaces } from './homeLayout'
+import { buildHit, homePlaces } from './homeLayout'
 import type { GameConfig, GameState, NormBox } from './types'
 import { COLS, ROWS } from './types'
 import { SLIDERS } from './tuner'
@@ -768,7 +768,7 @@ export function hitTest(frame: Frame, x: number, y: number): Hit | null {
     const home = homePlaces(frame.w, frame.h)
     if (contains(home.settings, x, y)) return { kind: 'settings' }
     if (contains(home.shop, x, y)) return { kind: 'shop' }
-    if (contains(home.build, x, y)) return { kind: 'back' }
+    if (contains(buildHit(frame.w, frame.h), x, y)) return { kind: 'back' }
     return { kind: 'swallow' }
   }
   if (frame.shop) {
