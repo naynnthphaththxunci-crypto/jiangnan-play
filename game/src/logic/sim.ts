@@ -375,13 +375,22 @@ export function atStep(state: GameState, cfg: GameConfig, id: string): boolean {
 
 export function advanceTutorial(state: GameState, cfg: GameConfig): void {
   if (state.phase !== 'opening') return
+  const currentId = cfg.copy.tutorial[state.openingStep]?.id
   const next = state.openingStep + 1
   if (next >= cfg.copy.tutorial.length) {
+    if (currentId === 'mergeD' && state.board.some((row) => row.some((item) => item?.kind === 'producer' && item.producerId === 'food' && item.level >= 4))) {
+      state.openingStep = next
+      state.lesson = 'focus'
+      return
+    }
     state.phase = 'play'
     state.openingStep = cfg.copy.tutorial.length
+    if (state.lesson !== 'free') state.lesson = 'free'
     return
   }
   state.openingStep = next
+  const id = cfg.copy.tutorial[next]?.id
+  if (id === 'merge' || id === 'mergeC' || id === 'mergeD') state.lesson = id
 }
 
 export function advanceDialogue(state: GameState, cfg: GameConfig): boolean {
@@ -565,6 +574,8 @@ export function createGame(now: number, cfg: GameConfig): GameState {
     locks: [],
     phase: 'story',
     openingStep: 0,
+    lesson: 'home1',
+    storyBookOn: false,
     storyStep: 0,
     storySeen: false,
     soundMuted: false,
@@ -877,6 +888,9 @@ export function tapProducer(state: GameState, pos: Pos, cfg: GameConfig, rng: Rn
     else state.board[pos.row][pos.col] = null
   }
   if (atStep(state, cfg, 'produce')) advanceTutorial(state, cfg)
+  if (state.lesson === 'focus' && state.orders.some((order) => order.scripted && orderSatisfied(state, order))) {
+    state.lesson = 'deliver'
+  }
   if (spot && state.mintStep === 'produce' && item.producerId === 'bev') {
     const mints = occupied(state).filter((cell) => cell.item.kind === 'product' && cell.item.line === 'mint')
     const pair = mints.find((cell, index) =>
@@ -921,6 +935,10 @@ function spawnFromProducer(state: GameState, cfg: GameConfig, item: ProducerItem
   const line = useSide && side ? side : main
   const cap = lineCap(cfg, line)
   const level = Math.min(cap, rollSpawnLevel(cfg, kind === 'plant' ? 1 : mult, rng))
+  if (state.lesson === 'focus' && item.producerId === 'food') {
+    const need = state.orders.find((order) => order.scripted)?.slots.find((slot) => slot.line === 'food')
+    if (need && !findProduct(state, 'food', need.level)) return makeProduct(state, 'food', need.level)
+  }
   return makeProduct(state, line, Math.max(1, level))
 }
 
@@ -1618,7 +1636,11 @@ export function completeOrder(
   logAction(state, now, 'order')
   const dialogue = order.big || order.chest ? talkOf(cfg, order.customerId, true) : undefined
   state.orders = state.orders.filter((entry) => entry.id !== orderId)
-  if (state.phase === 'play') fillOrders(state, cfg, rng)
+  if (state.phase === 'play' || state.lesson === 'deliver') fillOrders(state, cfg, rng)
+  if (order.scripted && state.lesson === 'deliver') {
+    state.lesson = 'book'
+    state.storyBookOn = true
+  }
   arrangeOrders(state, now)
   if (order.chest) grantMaterials(state, cfg, rng, cfg.economy.chestBonusItems)
   if (state.mintStep === 'deliver' && order.slots.some((slot) => slot.line === 'mint')) state.mintStep = 'off'
@@ -1784,6 +1806,7 @@ export function advanceStory(state: GameState, cfg: GameConfig): void {
     state.storyStep = storyLength(cfg)
     state.phase = 'opening'
     state.openingStep = 0
+    state.lesson = 'home1'
     return
   }
   state.storyStep = next
@@ -1794,6 +1817,7 @@ export function skipStory(state: GameState): void {
   state.storySeen = true
   state.phase = 'opening'
   state.openingStep = 0
+  state.lesson = 'home1'
 }
 
 export const INFO_EMPTY = '点击棋子，在这里查看详细信息。'
@@ -2731,6 +2755,11 @@ export function hydrate(raw: string, cfg: GameConfig): GameState | null {
     state.producerLesson ??= null
     state.newestLine ??= null
     state.storyStep ??= 0
+    state.lesson ??= state.phase === 'play' ? 'free' : state.phase === 'opening' ? (cfg.copy.tutorial[state.openingStep]?.id as GameState['lesson']) || 'merge' : 'home1'
+    if (state.lesson !== 'home1' && state.lesson !== 'talk1' && state.lesson !== 'merge' && state.lesson !== 'mergeC' && state.lesson !== 'mergeD' && state.lesson !== 'focus' && state.lesson !== 'deliver' && state.lesson !== 'book' && state.lesson !== 'home2' && state.lesson !== 'home3' && state.lesson !== 'free') {
+      state.lesson = 'free'
+    }
+    state.storyBookOn ??= state.phase === 'play' && ((state.stats?.ordersDone ?? 0) > 0 || state.level >= 5)
     state.soundMuted ??= false
     if (state.phase === 'story' && state.storyStep >= storyLength(cfg)) {
       state.storySeen = true

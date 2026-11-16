@@ -39,8 +39,6 @@ import {
   sellPriceOf,
   smilesVisible,
   taskPrice,
-  taskStep,
-  tutorialLine,
 } from './logic/sim'
 import { itemSprite, PIECE_FILL, potionSprite, producerBoltPlace, producerPieceName, producerPlace, producerSprite, PRODUCER_CELL_W, spriteContent, type ArtBox } from './itemArt'
 import tutorialHandUrl from './assets/ui/tutorial_hand.png'
@@ -50,6 +48,8 @@ import { drawAvatar, drawCharacter } from './cast'
 import { hechengImage, speedArtId } from './hechengArt'
 import { selectBreathScale, selectFrameRect } from './selectFrame'
 import { curtainBambooPlace, curtainBitmaps, curtainDrop, curtainPlace } from './curtain'
+import { arrowPoke, homePlaces, type HomeBox } from './homeLayout'
+import { homeArt, type HomeArtId } from './homeArt'
 import { designToScreen } from './hechengLayout'
 import { orderTickPlace } from './orderTick'
 import { COMIC_FONT, comicCursor, comicFontReady, comicPanelImage, comicPrompt, comicSilaImage, wrapComicText } from './comic'
@@ -97,6 +97,8 @@ export interface RenderModel {
   curtain: { progress: number } | null
   /** 调参里「全部恢复默认」正在等第二次确认。 */
   confirmReset?: boolean
+  settingsOpen?: boolean
+  settingsAt?: number
 }
 
 export function render(model: RenderModel): void {
@@ -109,7 +111,6 @@ export function render(model: RenderModel): void {
     return
   }
   if (frame.mode === 'house') {
-    drawHud(model)
     drawHouse(model)
   } else {
     drawHecheng(model)
@@ -120,6 +121,7 @@ export function render(model: RenderModel): void {
     drawInfo(model)
     drawSheet(model)
     drawTutorial(model)
+    drawLesson(model)
     drawStorageLesson(model)
     drawHand(model)
   }
@@ -911,7 +913,7 @@ function drawHecheng(model: RenderModel): void {
   }
 }
 
-function drawHud(model: RenderModel): void {
+export function drawHud(model: RenderModel): void {
   const { ctx, frame, state, cfg, realNow, animNow, fx } = model
   ctx.fillStyle = PAL.paperDeep
   ctx.fillRect(0, 0, frame.w, frame.hud.y + frame.hud.h)
@@ -1443,7 +1445,9 @@ function drawInfo(model: RenderModel): void {
 function drawTutorial(model: RenderModel): void {
   const { ctx, frame, state, cfg, realNow } = model
   if (state.phase !== 'opening') return
+  if (state.lesson === 'talk1' || state.lesson === 'focus' || state.lesson === 'deliver' || state.lesson === 'book' || state.lesson === 'home1' || state.lesson === 'home2' || state.lesson === 'home3') return
   const step = currentTutorial(cfg, state)
+  if (!step) return
   if (step?.id === 'giftRush') {
     const hole = guideHole(frame, state, cfg) ?? frame.rushBtn
     if (hole.w <= 0) return
@@ -1475,17 +1479,6 @@ function drawTutorial(model: RenderModel): void {
   }
   ctx.fill('evenodd')
   ctx.restore()
-  const dialogue = step?.type === '对话'
-  const card = dialogue
-    ? { x: 12, y: frame.dock.y - 112, w: frame.w - 24, h: 100 }
-    : { x: 12, y: frame.dock.y - 88, w: frame.w - 24, h: 76 }
-  roundRect(ctx, card.x, card.y, card.w, card.h, 12)
-  ctx.fillStyle = PAL.white
-  ctx.fill()
-  const lines = wrap(ctx, tutorialLine(cfg, state.openingStep), card.w - 24, 15)
-  lines.slice(0, 3).forEach((line, i) => text(ctx, line, card.x + 12, card.y + 20 + i * 20, 15, PAL.ink, 'left'))
-  if (dialogue) text(ctx, '点击任意处继续', card.x + card.w / 2, card.y + card.h - 16, 13, PAL.soft)
-  if (step?.id === 'enter') button(ctx, frame.enterBtn, '进厨房', 'primary')
   const pose = tutorialHand(cfg, state, frame, realNow)
   if (pose?.visible) paintHand(ctx, pose.x, pose.y, frame.board.cell)
 }
@@ -1777,7 +1770,7 @@ function drawSheet(model: RenderModel): void {
   button(ctx, frame.sheetBtn, `${task?.name ?? '挂招牌'} · ${price} 铜钱`, afford ? 'primary' : 'ghost')
 }
 
-function worldToScreen(frame: Frame, cam: RenderModel['cam'], x: number, y: number): { x: number; y: number } {
+export function worldToScreen(frame: Frame, cam: RenderModel['cam'], x: number, y: number): { x: number; y: number } {
   const cx = frame.map.x + frame.map.w / 2
   const cy = frame.map.y + frame.map.h / 2
   return { x: cx + (x - cam.x) * cam.scale, y: cy + (y - cam.y) * cam.scale }
@@ -1823,7 +1816,7 @@ function swatchOf(id: string | null | undefined): { label: string; fill: string 
   return SWATCHES.find((entry) => entry.id === id) ?? null
 }
 
-function partLook(state: GameState, cfg: GameConfig, part: Part): { label: string; fill: string } {
+export function partLook(state: GameState, cfg: GameConfig, part: Part): { label: string; fill: string } {
   const task = part.task ? allTasks(cfg).find((entry) => entry.id === part.task) : null
   const preview = state.decorate && state.decorate.taskId === part.task ? task?.choices?.[state.decorate.index]?.id : null
   const chosen = preview ?? (part.task ? state.styles[part.task] : null)
@@ -1832,102 +1825,268 @@ function partLook(state: GameState, cfg: GameConfig, part: Part): { label: strin
   return { label: part.label, fill: part.fill }
 }
 
-function drawHouse(model: RenderModel): void {
-  const { ctx, frame, state, cfg, cam } = model
+function paintHomeImg(ctx: CanvasRenderingContext2D, id: HomeArtId, box: HomeBox, alpha = 1): void {
+  const img = homeArt[id]
+  if (!img || alpha <= 0 || (img.naturalWidth || 0) <= 0) return
   ctx.save()
-  ctx.beginPath()
-  ctx.rect(frame.map.x, frame.map.y, frame.map.w, frame.map.h)
-  ctx.clip()
-  ctx.fillStyle = '#efe2cc'
-  ctx.fillRect(frame.map.x, frame.map.y, frame.map.w, frame.map.h)
-  ctx.strokeStyle = '#e4d3b4'
-  ctx.lineWidth = 1
-  for (let x = 80; x <= 1520; x += 80) {
-    const a = worldToScreen(frame, cam, x, 80)
-    const b = worldToScreen(frame, cam, x, 1900)
-    ctx.beginPath()
-    ctx.moveTo(a.x, a.y)
-    ctx.lineTo(b.x, b.y)
-    ctx.stroke()
-  }
-  for (let y = 80; y <= 1900; y += 80) {
-    const a = worldToScreen(frame, cam, 80, y)
-    const b = worldToScreen(frame, cam, 1520, y)
-    ctx.beginPath()
-    ctx.moveTo(a.x, a.y)
-    ctx.lineTo(b.x, b.y)
-    ctx.stroke()
-  }
-  const edgeA = worldToScreen(frame, cam, 120, 180)
-  const edgeB = worldToScreen(frame, cam, 1480, 1860)
-  ctx.strokeStyle = PAL.ink
-  ctx.lineWidth = 2
-  ctx.strokeRect(edgeA.x, edgeA.y, edgeB.x - edgeA.x, edgeB.y - edgeA.y)
-  const title = worldToScreen(frame, cam, 700, 280)
-  text(ctx, '温记茶楼', title.x, title.y, 22, PAL.ink)
-  text(ctx, '拖动查看 · 滚轮或双指缩放', title.x, title.y + 26, 12, PAL.soft, 'center', 'middle', 500)
-
-  const done = new Set(state.tasksDone)
-  const upcoming = nextTask(state, cfg)
-  for (const part of PARTS) {
-    const built = part.task == null || done.has(part.task)
-    const isNext = part.task != null && part.task === upcoming?.id
-    const look = partLook(state, cfg, part)
-    const label = look.label
-    const fill = look.fill
-    const p = worldToScreen(frame, cam, part.x, part.y)
-    const w = part.w * cam.scale
-    const h = part.h * cam.scale
-    roundRect(ctx, p.x, p.y, w, h, 4)
-    if (built) {
-      ctx.fillStyle = fill
-      ctx.fill()
-      ctx.lineWidth = 1.5
-      ctx.strokeStyle = PAL.ink
-      ctx.stroke()
-      text(ctx, label, p.x + w / 2, p.y + h / 2, Math.max(11, Math.min(16, h * 0.38)), part.task === 't1' || part.task === 't12' ? PAL.white : PAL.ink)
-    } else {
-      ctx.setLineDash(isNext ? [5, 3] : [3, 4])
-      ctx.lineWidth = isNext ? 2 : 1
-      ctx.strokeStyle = isNext ? PAL.danger : PAL.soft
-      ctx.stroke()
-      ctx.setLineDash([])
-      text(ctx, label, p.x + w / 2, p.y + h / 2, 12, isNext ? PAL.danger : PAL.soft, 'center', 'middle', 500)
-    }
-  }
+  ctx.globalAlpha = alpha
+  ctx.drawImage(img, box.x, box.y, box.w, box.h)
   ctx.restore()
-
-  button(ctx, frame.backBtn, '返回', 'ghost')
-  const short = upcoming && state.coins < taskPrice(upcoming, cfg) && !state.decorate
-  if (short) paintHand(ctx, frame.backBtn.x + frame.backBtn.w * 0.7, frame.backBtn.y + frame.backBtn.h * 0.75, frame.board.cell || Math.round(frame.w / 7))
-  button(ctx, frame.zoomIn, '＋', 'ghost')
-  button(ctx, frame.zoomOut, '－', 'ghost')
-  button(ctx, frame.zoomReset, '复位', 'ghost')
-
-  roundRect(ctx, frame.taskPanel.x, frame.taskPanel.y, frame.taskPanel.w, frame.taskPanel.h, 12)
-  ctx.fillStyle = PAL.white
-  ctx.fill()
-  ctx.strokeStyle = PAL.ink
-  ctx.lineWidth = 1.5
-  ctx.stroke()
-  button(ctx, frame.tuneBtn, '调参', 'ghost')
-  const costume = hostessCostume(cfg)
-  text(ctx, `掌柜 温如月 · ${costume}`, frame.taskPanel.x + 12, frame.taskPanel.y + 20, 12, PAL.soft, 'left')
-  if (!upcoming) {
-    text(ctx, '十二件小活都做完了', frame.taskPanel.x + frame.taskPanel.w / 2, frame.taskPanel.y + 70, 18, PAL.ink)
-    return
-  }
-  const meta = taskStep(cfg, upcoming.id)
-  text(ctx, meta ? `${meta.stepName} · ${meta.index}/${meta.total}` : '', frame.taskPanel.x + 12, frame.taskPanel.y + 42, 12, PAL.soft, 'left')
-  text(ctx, upcoming.name, frame.taskPanel.x + 12, frame.taskPanel.y + 66, 18, PAL.ink, 'left')
-  const price = taskPrice(upcoming, cfg)
-  text(ctx, `${price} 铜钱`, frame.taskPanel.x + frame.taskPanel.w - 12, frame.taskPanel.y + 66, 14, state.coins >= price ? PAL.coin : PAL.danger, 'right')
-  if (frame.buildBtn.w > 0 && !state.decorate) {
-    button(ctx, frame.buildBtn, '修缮', state.coins >= price ? 'primary' : 'ghost')
-  }
-  drawDecorPopup(model)
 }
 
+function drawHouse(model: RenderModel): void {
+  const { ctx, frame, state, cfg, realNow } = model
+  const home = homePlaces(frame.w, frame.h)
+  ctx.fillStyle = '#000'
+  ctx.fillRect(0, 0, frame.w, frame.h)
+  paintHomeImg(ctx, 'bg', home.bg)
+  paintHomeImg(ctx, 'storage', home.storage)
+  paintHomeImg(ctx, 'build', home.build)
+  const avatar = home.avatar
+  const avatarArt = {
+    x: avatar.x + (12 / 149) * avatar.w,
+    y: avatar.y + (15 / 149) * avatar.h,
+    w: (125 / 149) * avatar.w,
+    h: (126 / 149) * avatar.h,
+  }
+  const badge = {
+    x: avatar.x + (102 / 149) * avatar.w,
+    y: avatar.y + (100 / 149) * avatar.h,
+    w: (47 / 149) * avatar.w,
+    h: (47 / 149) * avatar.h,
+  }
+  const portrait = hechengImage('avatar')
+  if (portrait) drawAvatar(ctx, portrait, avatarArt, realNow)
+  blit(ctx, 'avatarFrame', avatar)
+  blit(ctx, 'levelBadge', badge)
+  const levelText = String(state.level)
+  const levelSize = badge.w * (levelText.length >= 3 ? 0.34 : 0.46)
+  ctx.lineWidth = Math.max(2, levelSize * 0.16)
+  ctx.strokeStyle = '#6a3a22'
+  ctx.font = `700 ${Math.round(levelSize)}px ${FONT}`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.strokeText(levelText, badge.x + badge.w / 2, badge.y + badge.h / 2)
+  ctx.fillStyle = '#fffaf2'
+  ctx.fillText(levelText, badge.x + badge.w / 2, badge.y + badge.h / 2)
+  blit(ctx, 'energy', home.energy)
+  blit(ctx, 'coin', home.coin)
+  blit(ctx, 'gem', home.gem)
+  const num = (rect: Rect, value: string) => {
+    text(ctx, value, rect.x + rect.w * 0.58 + 1, rect.y + rect.h / 2 + 1, rect.h * 0.42, 'rgba(40,24,12,0.45)', 'center', 'middle', 700)
+    text(ctx, value, rect.x + rect.w * 0.58, rect.y + rect.h / 2, rect.h * 0.42, '#fffaf2', 'center', 'middle', 700)
+  }
+  num(home.energy, String(state.energy))
+  num(home.coin, String(Math.max(0, state.coins - model.fx.incoming)))
+  num(home.gem, String(state.gems))
+  paintHomeImg(ctx, 'settings', home.settings)
+  paintHomeImg(ctx, 'shop', home.shop)
+  paintHomeImg(ctx, 'badge', home.badgeSettings)
+  paintHomeImg(ctx, 'badge', home.badgeShop)
+  const lesson = state.lesson
+  const dim = lesson === 'home1' || lesson === 'home2' || lesson === 'home3'
+  if (dim) {
+    ctx.fillStyle = 'rgba(0,0,0,0.6)'
+    ctx.fillRect(0, 0, frame.w, frame.h)
+    const art = lesson === 'home2' ? 'home2' : lesson === 'home3' ? 'home3' : 'home1'
+    paintHomeImg(ctx, art, home.dialog)
+    if (lesson === 'home1' || lesson === 'home3') {
+      paintHomeImg(ctx, 'build', home.build)
+      const poke = arrowPoke(realNow)
+      paintHomeImg(ctx, 'arrow', {
+        x: home.arrow.x + poke.x * home.fit.scale,
+        y: home.arrow.y + poke.y * home.fit.scale,
+        w: home.arrow.w,
+        h: home.arrow.h,
+      })
+    }
+  }
+  const age = (realNow - (model.settingsAt ?? 0)) / 220
+  const eased = easeOutCubic(Math.max(0, Math.min(1, age)))
+  const menuT = model.settingsOpen ? eased : 1 - eased
+  if (menuT > 0.02) {
+    const menu = home.menu
+    const button = home.settings
+    const bx = button.x + button.w / 2
+    const by = button.y + button.h / 2
+    const cx = menu.x + menu.w / 2
+    const cy = menu.y + menu.h / 2
+    ctx.save()
+    ctx.translate(bx + (cx - bx) * menuT, by + (cy - by) * menuT)
+    ctx.scale(menuT, menuT)
+    const img = homeArt.menu
+    if (img && (img.naturalWidth || 0) > 0) ctx.drawImage(img, -menu.w / 2, -menu.h / 2, menu.w, menu.h)
+    ctx.restore()
+  }
+  void cfg
+}
+
+function lessonDialogBox(model: RenderModel): Rect | null {
+  const { frame, state, cfg } = model
+  const scale = frame.w / 1080
+  const box = { x: 47 * scale, y: 80, w: 986 * scale, h: 702 * scale }
+  const lesson = state.lesson
+  const above = (rects: Rect[]) => {
+    const top = Math.min(...rects.map((rect) => rect.y))
+    box.y = Math.max(frame.hud.y + frame.hud.h + 4, top - box.h - 12)
+  }
+  if (lesson === 'merge' || lesson === 'mergeC' || lesson === 'mergeD' || lesson === 'focus') {
+    const holes = lesson === 'focus' ? [focusRect(model)].filter((rect): rect is Rect => !!rect) : tutorialHoles(model)
+    if (holes.length) above(holes)
+    else box.y = frame.board.y - box.h - 8
+    return box
+  }
+  if (lesson === 'talk1') {
+    box.y = Math.max(frame.hud.y + frame.hud.h + 8, frame.board.y * 0.35)
+    return box
+  }
+  if (lesson === 'deliver') {
+    box.y = frame.orderClip.y + frame.orderClip.h + 8
+    return box
+  }
+  if (lesson === 'book' && frame.storyBtn.w > 0) {
+    box.y = frame.storyBtn.y + frame.storyBtn.h + 8
+    return box
+  }
+  void cfg
+  return null
+}
+
+function focusRect(model: RenderModel): Rect | null {
+  const { frame, state, cfg } = model
+  let row = cfg.board.roles.producer.row
+  let col = cfg.board.roles.producer.col
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const item = state.board[r]?.[c]
+      if (item?.kind === 'producer' && item.producerId === 'food' && item.level >= 4) {
+        row = r
+        col = c
+      }
+    }
+  }
+  const cells = [{ row, col }]
+  for (const [dr, dc] of [
+    [1, 0],
+    [-1, 0],
+    [0, 1],
+    [0, -1],
+  ]) {
+    const nr = row + dr
+    const nc = col + dc
+    if (nr < 0 || nc < 0 || nr >= ROWS || nc >= COLS) continue
+    const lock = lockAt(state, nr, nc)
+    if (!lock || lock.veil === 'half') cells.push({ row: nr, col: nc })
+  }
+  const rects = cells.map((cell) => cellRect(frame, cell.row, cell.col))
+  const x = Math.min(...rects.map((rect) => rect.x))
+  const y = Math.min(...rects.map((rect) => rect.y))
+  const right = Math.max(...rects.map((rect) => rect.x + rect.w))
+  const bottom = Math.max(...rects.map((rect) => rect.y + rect.h))
+  return { x: x - 6, y: y - 6, w: right - x + 12, h: bottom - y + 12 }
+}
+
+function punchHole(ctx: CanvasRenderingContext2D, view: Rect, hole: Rect | null): void {
+  ctx.save()
+  ctx.fillStyle = 'rgba(0,0,0,0.6)'
+  ctx.beginPath()
+  ctx.rect(view.x, view.y, view.w, view.h)
+  if (hole && hole.w > 0) {
+    ctx.moveTo(hole.x + hole.w, hole.y)
+    ctx.arcTo(hole.x, hole.y, hole.x, hole.y + hole.h, 10)
+    ctx.arcTo(hole.x, hole.y + hole.h, hole.x + hole.w, hole.y + hole.h, 10)
+    ctx.arcTo(hole.x + hole.w, hole.y + hole.h, hole.x + hole.w, hole.y, 10)
+    ctx.arcTo(hole.x + hole.w, hole.y, hole.x + hole.w, hole.y + hole.h, 10)
+  }
+  ctx.fill('evenodd')
+  ctx.restore()
+}
+
+function drawLesson(model: RenderModel): void {
+  const { ctx, frame, state, cfg } = model
+  const lesson = state.lesson
+  if (!lesson || lesson === 'free' || lesson === 'home1' || lesson === 'home2' || lesson === 'home3') return
+  if (lesson === 'merge' || lesson === 'mergeC' || lesson === 'mergeD') {
+    const id = lesson === 'merge' ? 'tut2' : lesson === 'mergeC' ? 'tut3' : null
+    const box = lessonDialogBox(model)
+    if (id && box) paintHomeImg(ctx, id, box)
+    return
+  }
+  if (lesson === 'talk1') {
+    punchHole(ctx, { x: 0, y: 0, w: frame.w, h: frame.h }, null)
+    const box = lessonDialogBox(model)
+    if (box) paintHomeImg(ctx, 'tut1', box)
+    return
+  }
+  if (lesson === 'focus') {
+    const hole = focusRect(model)
+    const board = {
+      x: frame.board.x,
+      y: frame.board.y,
+      w: frame.board.cell * COLS,
+      h: frame.board.cell * ROWS,
+    }
+    punchHole(ctx, board, hole)
+    const box = lessonDialogBox(model)
+    if (box) paintHomeImg(ctx, 'tut4', box)
+    if (hole) paintHand(ctx, hole.x + hole.w / 2, hole.y + hole.h * 0.45, frame.board.cell)
+    return
+  }
+  if (lesson === 'deliver') {
+    punchHole(ctx, { x: 0, y: 0, w: frame.w, h: frame.h }, null)
+    paintLiftedOrder(model, 0)
+    const box = lessonDialogBox(model)
+    if (box) paintHomeImg(ctx, 'tut5', box)
+    const button = frame.completes[0]
+    if (button) paintHand(ctx, button.x + button.w / 2, button.y + button.h / 2, frame.board.cell)
+    return
+  }
+  if (lesson === 'book') {
+    punchHole(ctx, { x: 0, y: 0, w: frame.w, h: frame.h }, null)
+    if (frame.storyBtn.w > 0) {
+      blit(ctx, 'chestFrame', frame.storyBtn)
+      blit(ctx, 'book', frame.bookIcon)
+      blit(ctx, 'badgeSmall', frame.badgeStory)
+    }
+    const box = lessonDialogBox(model)
+    if (box) paintHomeImg(ctx, 'tut6', box)
+    if (frame.storyBtn.w > 0) paintHand(ctx, frame.storyBtn.x + frame.storyBtn.w / 2, frame.storyBtn.y + frame.storyBtn.h / 2, frame.board.cell)
+  }
+  void cfg
+}
+
+function paintLiftedOrder(model: RenderModel, index: number): void {
+  const { ctx, frame, state, cfg, realNow } = model
+  const order = state.orders[index]
+  const guest = frame.orderGuests[index]
+  if (!order || !guest) return
+  const who = cfg.characters.find((entry) => entry.id === order.customerId)
+  const firstOrder = order.scripted === true
+  const portrait = firstOrder ? firstOrderGuestPortrait() : guestPortrait(who?.portrait)
+  if ((who || firstOrder) && portrait && portraitReady(portrait)) {
+    const table = frame.tableSlots[index]
+    drawCharacter(ctx, firstOrder ? 'xiaotao' : who?.portrait, portrait, guest, realNow, 'contain', {
+      tableCenterX: table ? table.x + table.w / 2 : guest.x + guest.w / 2,
+      nudgeX: cfg.economy.guestNudgeX ?? 0,
+    })
+  }
+  const plate = frame.tableSlots[index]
+  if (plate) blit(ctx, 'plate', plate)
+  order.slots.forEach((slot, slotIndex) => {
+    const icon = frame.orderIcons.find((entry) => entry.order === index && entry.slot === slotIndex)
+    if (!icon) return
+    const sprite = itemSprite(slot.line, slot.level)
+    if (sprite) drawFittedSprite(ctx, sprite, icon.rect, 1)
+  })
+  const payRect = frame.orderRewards[index]
+  if (payRect) {
+    blit(ctx, 'bubble', payRect)
+    const pay = orderPayout(order, cfg)
+    text(ctx, `+${pay.coins}`, payRect.x + payRect.w * 0.72, payRect.y + payRect.h * 0.48, Math.max(10, payRect.h * 0.28), '#6a3a22', 'right', 'middle', 700)
+  }
+  const button = frame.completes[index]
+  if (button && orderSatisfied(state, order)) blit(ctx, 'complete', button)
+}
 function flyerPoint(flyer: Flyer, animNow: number): { x: number; y: number } {
   const t = Math.min(1, Math.max(0, (animNow - flyer.birth) / Math.max(1, flyer.dur)))
   const eased = flyer.ease === 'spawn' ? easeOutBack(t) : easeOutCubic(t)
@@ -2060,7 +2219,7 @@ function drawChainPop(model: RenderModel): void {
   text(ctx, cfg.copy.infoChain.replace('{amount}', amount), card.x + card.w / 2, card.y + card.h - 28, 12, PAL.ink)
 }
 
-function drawDecorPopup(model: RenderModel): void {
+export function drawDecorPopup(model: RenderModel): void {
   const pick = model.state.decorate
   if (!pick || model.frame.mode !== 'house') return
   const { ctx, frame } = model

@@ -129,7 +129,7 @@ describe('Allen 11-06 母棋、剧情和暂存', () => {
     expect(lockAt(state, 4, 4)?.veil).toBe('half')
     expect(state.openingStep).toBe(2)
     expect(dropItem(state, { row: 4, col: 2 }, { row: 4, col: 3 }, cfg).ok).toBe(true)
-    expect(state.phase).toBe('play')
+    expect(state.lesson).toBe('focus')
     expect(state.board[4][3]?.kind === 'producer' && state.board[4][3].level).toBe(4)
   })
 

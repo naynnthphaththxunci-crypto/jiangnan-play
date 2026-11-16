@@ -1,3 +1,4 @@
+import { homePlaces } from './homeLayout'
 import type { GameConfig, GameState, NormBox } from './types'
 import { COLS, ROWS } from './types'
 import { SLIDERS } from './tuner'
@@ -304,6 +305,8 @@ export type Hit =
   | { kind: 'mute' }
   | { kind: 'hotspot' }
   | { kind: 'story' }
+  | { kind: 'storyBook' }
+  | { kind: 'settings' }
   | { kind: 'cell'; row: number; col: number }
   | { kind: 'order'; index: number }
   | { kind: 'orderIcon'; order: number; slot: number }
@@ -761,6 +764,13 @@ export function hitTest(frame: Frame, x: number, y: number): Hit | null {
   if (contains(frame.skip, x, y)) return { kind: 'skip' }
   if (frame.muteBtn.w > 0 && contains(frame.muteBtn, x, y)) return { kind: 'mute' }
   if (frame.mode === 'story') return { kind: 'hotspot' }
+  if (frame.mode === 'house') {
+    const home = homePlaces(frame.w, frame.h)
+    if (contains(home.settings, x, y)) return { kind: 'settings' }
+    if (contains(home.shop, x, y)) return { kind: 'shop' }
+    if (contains(home.build, x, y)) return { kind: 'back' }
+    return { kind: 'swallow' }
+  }
   if (frame.shop) {
     const shop = shopRects(frame)
     if (contains(shop.daily, x, y)) return { kind: 'shopDaily' }
@@ -777,7 +787,8 @@ export function hitTest(frame: Frame, x: number, y: number): Hit | null {
   if (contains(frame.energyPlus, x, y)) return { kind: 'refill' }
   const chest = chestTarget(frame)
   if (chest && contains(chest, x, y)) return { kind: 'reward' }
-  if (contains(frame.storyBtn, x, y) || contains(frame.taskBtn, x, y)) return { kind: 'swallow' }
+  if (contains(frame.storyBtn, x, y)) return { kind: 'storyBook' }
+  if (contains(frame.taskBtn, x, y)) return { kind: 'swallow' }
   if (contains(frame.multBtn, x, y)) return { kind: 'mult' }
   if (contains(frame.shopBtn, x, y)) return { kind: 'shop' }
   if (contains(frame.sheetSkip, x, y)) return { kind: 'skip' }
@@ -785,18 +796,6 @@ export function hitTest(frame: Frame, x: number, y: number): Hit | null {
   if (contains(frame.sheet, x, y)) return { kind: 'swallow' }
   if (contains(frame.enterBtn, x, y)) return { kind: 'enter' }
   if (contains(frame.dailyBtn, x, y)) return { kind: 'daily' }
-  if (frame.mode === 'house') {
-    if (contains(frame.backBtn, x, y)) return { kind: 'back' }
-    if (contains(frame.zoomIn, x, y)) return { kind: 'zoom', dir: 1 }
-    if (contains(frame.zoomOut, x, y)) return { kind: 'zoom', dir: -1 }
-    if (contains(frame.zoomReset, x, y)) return { kind: 'zoom', dir: 0 }
-    if (contains(frame.buildBtn, x, y)) return { kind: 'build' }
-    for (let i = 0; i < frame.choiceBtns.length; i++) {
-      if (contains(frame.choiceBtns[i], x, y)) return { kind: 'choice', index: i }
-    }
-    if (contains(frame.map, x, y)) return { kind: 'map' }
-    return { kind: 'swallow' }
-  }
   if ((frame.showStorage || frame.storageHot) && contains(frame.pendingBtn, x, y)) return { kind: 'pending' }
   if (chest && contains(chest, x, y)) return { kind: 'reward' }
   if (contains(frame.houseBtn, x, y)) return { kind: 'house' }

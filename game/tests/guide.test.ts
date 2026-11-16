@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { defaultConfig } from '../src/config'
+import { homePlaces } from '../src/homeLayout'
 import { cellRect, contains, guideHole, hitTest, layout, type LayoutInput } from '../src/layout'
 import { SIDE_ICON_LEVEL } from '../src/hechengLayout'
 import type { GameState } from '../src/types'
@@ -162,10 +163,10 @@ describe('强制引导', () => {
     const house = frame({ mode: 'house' })
     state.guide = 'repairBtn'
     expect(guideHole(house, state, cfg)).toBe(house.buildBtn)
-    expect(hitTest(house, house.buildBtn.x + 2, house.buildBtn.y + 2)?.kind).toBe('build')
+    const build = homePlaces(house.w, house.h).build
+    expect(hitTest(house, build.x + build.w / 2, build.y + build.h / 2)?.kind).toBe('back')
     state.guide = 'backBtn'
     expect(guideHole(house, state, cfg)).toBe(house.backBtn)
-    expect(hitTest(house, house.backBtn.x + 2, house.backBtn.y + 2)?.kind).toBe('back')
 
     state.guide = 'none'
     const rush = frame({ showRush: true })

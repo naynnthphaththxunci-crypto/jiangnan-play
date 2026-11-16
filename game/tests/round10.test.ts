@@ -41,7 +41,8 @@ describe('第十轮开局和前期', () => {
     expect(dropItem(state, { row: 4, col: 2 }, { row: 4, col: 3 }, cfg).ok).toBe(true)
     const made = state.board[4][3]
     expect(made?.kind === 'producer' && made.level).toBe(4)
-    expect(state.phase).toBe('play')
+    expect(state.lesson).toBe('focus')
+    expect(state.phase).toBe('opening')
   })
 
   it('订单写完整名字，8 倍默认关掉，1 到 4 级奖励和笑脸按新流程', () => {

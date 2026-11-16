@@ -151,7 +151,9 @@ export function startGame(platform: Platform): void {
   comicAudio.preload()
   comicAudio.setMuted(state.soundMuted)
   sfx.setMuted(state.soundMuted)
-  let view: 'board' | 'house' = 'board'
+  let view: 'board' | 'house' = state.lesson === 'home1' || state.lesson === 'home2' || state.lesson === 'home3' ? 'house' : 'board'
+  let settingsOpen = false
+  let settingsAt = 0
   let curtain: { to: 'board' | 'house'; started: number; freeze: number | null } | null = null
   let modal: 'energy' | null = null
   let tuner = false
@@ -271,7 +273,7 @@ export function startGame(platform: Platform): void {
       showEnter: atStep(state, cfg, 'enter'),
       showInfo: false,
       showShop: state.level >= 3,
-      showStory: state.level >= SIDE_ICON_LEVEL,
+      showStory: state.storyBookOn || state.lesson === 'book',
       showTask: state.level >= SIDE_ICON_LEVEL,
       showChest: state.rewards.length > 0,
       shop: activeOverlay(state) === 'shop',
@@ -723,7 +725,27 @@ export function startGame(platform: Platform): void {
       return
     }
     if (hit.kind === 'back') {
+      if (state.lesson === 'home1') state.lesson = 'talk1'
+      if (state.lesson === 'home3') {
+        state.lesson = 'free'
+        state.phase = 'play'
+        state.openingStep = cfg.copy.tutorial.length
+      }
       beginCurtain('board')
+      return
+    }
+    if (hit.kind === 'settings') {
+      settingsOpen = !settingsOpen
+      settingsAt = now
+      sfx.ui()
+      mark()
+      return
+    }
+    if (hit.kind === 'storyBook') {
+      if (state.lesson === 'book') {
+        state.lesson = 'home2'
+        beginCurtain('house')
+      }
       return
     }
     if (hit.kind === 'zoom') {
@@ -921,6 +943,32 @@ export function startGame(platform: Platform): void {
     comicAudio.sync(cfg.opening, state.storyStep, state.phase === 'story')
   }
 
+  function guardLesson(x: number, y: number): boolean {
+    const lesson = state.lesson
+    if (!lesson || lesson === 'free' || lesson === 'merge' || lesson === 'mergeC' || lesson === 'mergeD') return false
+    const hit = hitTest(frame, x, y) ?? { kind: 'swallow' as const }
+    if (hit.kind === 'tune') return false
+    if (lesson === 'home1' || lesson === 'home3') return hit.kind !== 'back'
+    if (lesson === 'home2') {
+      state.lesson = 'home3'
+      mark()
+      return true
+    }
+    if (lesson === 'talk1') {
+      state.lesson = 'merge'
+      mark()
+      return true
+    }
+    if (lesson === 'focus') {
+      if (hit.kind !== 'cell') return true
+      const item = state.board[hit.row]?.[hit.col]
+      return !(item?.kind === 'producer' && item.producerId === 'food' && item.level >= 4)
+    }
+    if (lesson === 'deliver') return hit.kind !== 'complete'
+    if (lesson === 'book') return hit.kind !== 'storyBook'
+    return false
+  }
+
   function beginCurtain(to: 'board' | 'house'): void {
     if (curtain) return
     if (to === view) return
@@ -949,9 +997,24 @@ export function startGame(platform: Platform): void {
       if (openingFilm().tap(x, y, platform.now(), cfg) === 'enter') {
         openingFilm().stop()
         skipStory(state)
+        view = 'house'
         saveNow()
         mark()
       }
+      return
+    }
+    if (settingsOpen && view === 'house' && hitTest(frame, x, y)?.kind !== 'settings') {
+      settingsOpen = false
+      settingsAt = platform.now()
+      mark()
+      return
+    }
+    if (guardLesson(x, y)) return
+    if (view === 'house' && hitTest(frame, x, y)?.kind === 'settings') {
+      settingsOpen = !settingsOpen
+      settingsAt = platform.now()
+      sfx.ui()
+      mark()
       return
     }
     if (state.buildStory) {
@@ -1303,7 +1366,7 @@ export function startGame(platform: Platform): void {
     applyTestGuests(state, cfg)
     resolveGuides(state, cfg)
     noteGuide(real)
-    if (guideIsLocking(state, cfg) && !openingMergeSticky() && real - guideSince > (cfg.economy.guideTimeoutMs ?? 3000)) {
+    if (guideIsLocking(state, cfg) && state.lesson === 'free' && !openingMergeSticky() && real - guideSince > (cfg.economy.guideTimeoutMs ?? 3000)) {
       dismissStuckGuide(state, cfg)
       mark()
     }
@@ -1406,6 +1469,8 @@ export function startGame(platform: Platform): void {
           state.phase !== 'story' ? 'off' : state.storyStep === 0 ? 'first' : real - lastInput >= 3000 ? 'idle' : 'off',
         curtain: curtain ? { progress: curtainProgress(real) } : null,
         confirmReset: confirmTunerReset,
+        settingsOpen,
+        settingsAt,
       })
     }
     if (dirty && real - lastSave > 500) saveNow()

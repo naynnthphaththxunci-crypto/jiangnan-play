@@ -497,6 +497,10 @@ export interface GameState {
   locks: CellLock[]
   phase: 'story' | 'opening' | 'play'
   openingStep: number
+  /** 开场视频之后的主场景和新手对话走到哪一步。 */
+  lesson: 'home1' | 'talk1' | 'merge' | 'mergeC' | 'mergeD' | 'focus' | 'deliver' | 'book' | 'home2' | 'home3' | 'free'
+  /** 剧情书在完成小桃第一单之后才出现。 */
+  storyBookOn: boolean
   storyStep: number
   storySeen: boolean
   soundMuted: boolean
