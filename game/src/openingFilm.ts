@@ -26,12 +26,13 @@ import {
   hitBox,
   openingHandPose,
   placeFilm,
+  tapPromptHand,
   toFilm,
   type FilmBox,
   type FilmFit,
 } from './openingLayout'
 
-type Stage = 'intro' | 'door' | 'talk' | 'rain' | 'restart'
+type Stage = 'intro' | 'door' | 'cue' | 'dim' | 'talk' | 'rain' | 'restart'
 
 const DOOR_AT = 3
 const TAP_FADE_MS = 280
@@ -65,6 +66,7 @@ class OpeningFilm {
   private stage: Stage = 'intro'
   private dialog = 0
   private doorAt = 0
+  private cueAt = 0
   private dimAt = 0
   private tapFadeAt = 0
   private restartAt = 0
@@ -146,9 +148,14 @@ class OpeningFilm {
     this.unlockSound()
     if (this.stage === 'intro') return 'none'
     if (this.stage === 'door') {
-      if (this.inDesign(x, y, doorHotspot(cfg.economy.openingHitPad ?? 160))) this.enterTalk(now)
+      if (this.inDesign(x, y, doorHotspot(cfg.economy.openingHitPad ?? 160))) this.enterCue(now)
       return 'none'
     }
+    if (this.stage === 'cue') {
+      this.beginDim(now)
+      return 'none'
+    }
+    if (this.stage === 'dim') return 'none'
     if (this.stage === 'talk') {
       if (this.dialog >= 3) this.enterRain(now)
       else this.dialog += 1
@@ -176,6 +183,7 @@ class OpeningFilm {
     this.stage = 'intro'
     this.dialog = 0
     this.doorAt = now
+    this.cueAt = 0
     this.dimAt = 0
     this.tapFadeAt = 0
     this.restartAt = 0
@@ -213,11 +221,17 @@ class OpeningFilm {
     ctx.fillStyle = '#000'
     ctx.fillRect(0, 0, viewW, viewH)
     this.paintVideo(ctx, fit)
-    if (this.stage === 'talk') {
+    if (this.stage === 'cue') {
+      this.paintImage(ctx, fit, this.images.tap, TAP_TEXT, 1)
+      this.paintHand(ctx, fit, this.images.hand, tapPromptHand(cfg.economy.openingTapHandX ?? 0, cfg.economy.openingTapHandY ?? 0), now, this.cueAt)
+      return
+    }
+    if (this.stage === 'dim' || this.stage === 'talk') {
       const ms = Math.max(1, cfg.economy.openingDimMs ?? 600)
       const alpha = Math.max(0, Math.min(0.6, ((now - this.dimAt) / ms) * 0.6))
       ctx.fillStyle = `rgba(0,0,0,${alpha})`
       ctx.fillRect(0, 0, viewW, viewH)
+      if (this.stage === 'dim') return
       this.paintImage(ctx, fit, this.images.dlg[this.dialog] ?? null, this.dialog % 2 === 0 ? DLG_RUYUE : DLG_ZHAO, 1)
       this.paintImage(ctx, fit, this.images.tap, TAP_TEXT, 1)
       return
@@ -238,7 +252,7 @@ class OpeningFilm {
     }
   }
 
-  private advance(now: number, _cfg: GameConfig): void {
+  private advance(now: number, cfg: GameConfig): void {
     const intro = this.v1
     if (this.holdIntro) {
       if (!intro || intro.currentTime < 0.4) this.holdIntro = false
@@ -254,6 +268,10 @@ class OpeningFilm {
     if ((this.stage === 'intro' || this.stage === 'door') && intro && intro.paused && !intro.ended) void this.kick(intro, true)
     if (this.stage === 'intro' && intro && intro.currentTime >= DOOR_AT) this.enterDoor(now)
     if ((this.stage === 'intro' || this.stage === 'door') && intro?.ended) this.cue(this.v2)
+    if (this.stage === 'dim' && now - this.dimAt >= Math.max(0, cfg.economy.openingDimMs ?? 600)) {
+      this.stage = 'talk'
+      this.dialog = 0
+    }
     if (this.stage === 'rain' && this.tapFadeAt > 0 && now - this.tapFadeAt >= TAP_FADE_MS) {
       this.stage = 'restart'
       this.restartAt = now
@@ -277,13 +295,18 @@ class OpeningFilm {
     }
   }
 
-  private enterTalk(now: number): void {
-    this.stage = 'talk'
+  private enterCue(now: number): void {
+    this.stage = 'cue'
+    this.cueAt = now
     this.dialog = 0
-    this.dimAt = now
     this.v1?.pause()
     this.v2?.pause()
     this.cue(this.v3)
+  }
+
+  private beginDim(now: number): void {
+    this.stage = 'dim'
+    this.dimAt = now
   }
 
   private enterRain(now: number): void {

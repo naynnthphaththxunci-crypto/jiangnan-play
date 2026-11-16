@@ -327,6 +327,30 @@ export const SLIDERS: SliderSpec[] = [
     text: (v) => `${Math.round(v)} 毫秒`,
   },
   {
+    id: 'openingTapHandX',
+    label: '继续手左右',
+    min: -160,
+    max: 160,
+    step: 1,
+    get: (c) => c.economy.openingTapHandX ?? 0,
+    set: (c, v) => {
+      c.economy.openingTapHandX = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)}`,
+  },
+  {
+    id: 'openingTapHandY',
+    label: '继续手上下',
+    min: -160,
+    max: 160,
+    step: 1,
+    get: (c) => c.economy.openingTapHandY ?? 0,
+    set: (c, v) => {
+      c.economy.openingTapHandY = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)}`,
+  },
+  {
     id: 'earlyUntil',
     label: '前期订单到',
     min: 1,

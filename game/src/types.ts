@@ -159,6 +159,9 @@ export interface Economy {
   openingHitPad: number
   /** 对话压暗从 0 到 60% 的毫秒数。 */
   openingDimMs: number
+  /** 「任意点击继续」那只手相对默认位置的微调，1080 画布像素。 */
+  openingTapHandX: number
+  openingTapHandY: number
   levelRewards: { level: number; rewards: LevelRewardEntry[] }[]
   freeRefill: number
   adEnergy: number

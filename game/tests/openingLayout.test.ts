@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BTN_RESTART, doorHotspot, filmFit, hitBox, openingHandPose, toFilm } from '../src/openingLayout'
+import { BTN_RESTART, TAP_TEXT, doorHotspot, filmFit, hitBox, openingHandPose, tapPromptHand, toFilm } from '../src/openingLayout'
 
 describe('开场视频铺满', () => {
   it('宽屏按宽铺满，矮屏从顶部裁', () => {
@@ -27,6 +27,18 @@ describe('开场视频铺满', () => {
     expect(hitBox(hot, door.x, door.y)).toBe(true)
     expect(hitBox(BTN_RESTART, 327, 1416)).toBe(true)
     expect(hitBox(BTN_RESTART, 100, 1416)).toBe(false)
+  })
+
+  it('继续手按重新开始那组的中心偏移摆到文字上', () => {
+    const hand = tapPromptHand()
+    const buttonCenter = BTN_RESTART.x + BTN_RESTART.w / 2
+    const textCenter = TAP_TEXT.x + TAP_TEXT.w / 2
+    expect(hand.x - textCenter).toBeCloseTo(340 - buttonCenter, 4)
+    expect(hand.y - (TAP_TEXT.y + TAP_TEXT.h / 2)).toBeCloseTo(1501 - (1416 + 169 / 2), 4)
+    expect(hand.w).toBe(157)
+    const nudged = tapPromptHand(6, -4)
+    expect(nudged.x).toBeCloseTo(hand.x + 6, 4)
+    expect(nudged.y).toBeCloseTo(hand.y - 4, 4)
   })
 
   it('手势按下时缩小，之后弹回', () => {

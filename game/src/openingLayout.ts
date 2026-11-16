@@ -61,6 +61,25 @@ export function doorHotspot(pad: number): FilmBox {
   return expandBox(unionBox(LABEL_JINMEN, HAND_DOOR), pad)
 }
 
+function boxCenter(box: FilmBox): { x: number; y: number } {
+  return { x: box.x + box.w / 2, y: box.y + box.h / 2 }
+}
+
+/**
+ * 「任意点击继续」上的手。
+ * 重新开始按钮中心到手图左上角的偏移，原样套到这行字的中心上。
+ */
+export function tapPromptHand(nudgeX = 0, nudgeY = 0): FilmBox {
+  const from = boxCenter(BTN_RESTART)
+  const to = boxCenter(TAP_TEXT)
+  return {
+    x: HAND_RESTART.x - from.x + to.x + nudgeX,
+    y: HAND_RESTART.y - from.y + to.y + nudgeY,
+    w: HAND_RESTART.w,
+    h: HAND_RESTART.h,
+  }
+}
+
 export function hitBox(box: FilmBox, x: number, y: number): boolean {
   return x >= box.x && y >= box.y && x < box.x + box.w && y < box.y + box.h
 }

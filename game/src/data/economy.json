@@ -28,6 +28,8 @@
   ],
   "openingHitPad": 160,
   "openingDimMs": 600,
+  "openingTapHandX": 0,
+  "openingTapHandY": 0,
   "levelRewards": [
     {
       "level": 2,
