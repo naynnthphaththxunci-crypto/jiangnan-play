@@ -26,6 +26,7 @@ import {
   orderMarks,
   orderPayout,
   orderSatisfied,
+  storyReady,
   slotChecked,
   pickHint,
   producerCanSpawn,
@@ -124,10 +125,12 @@ export function render(model: RenderModel): void {
     drawLesson(model)
     drawStorageLesson(model)
     drawHand(model)
+    drawSmileLesson(model)
   }
   if (frame.showHelp) drawHelp(model)
   const overlay = activeOverlay(model.state)
   if (overlay === 'level') drawLevelModal(model)
+  else if (overlay === 'gift') drawGiftModal(model)
   else if (overlay === 'smile') drawSmileModal(model)
   else if (overlay === 'story') drawStoryCard(model)
   else if (overlay === 'shop') drawShop(model)
@@ -389,6 +392,17 @@ function drawItem(
     ctx.fillStyle = 'rgba(42,33,24,0.82)'
     ctx.fill()
     text(ctx, String(left), box.x + box.w - badge / 2 - 1, box.y + badge * 0.36 + 2, badge * 0.46, '#fff6e4')
+    const label = item.box === 'welcome' ? '欢迎' : item.box === 'red' ? '红箱' : item.box === 'green' ? '绿箱' : item.box === 'smart' ? '聪明' : item.box === 'food' ? '食物' : item.box === 'meat' ? '肉箱' : '体力'
+    text(ctx, label, cx, box.y + box.h * 0.84, Math.max(9, box.w * 0.16), PAL.ink)
+    if (item.box === 'welcome' && item.readyAt && item.readyAt > now) {
+      const timer = formatMs(item.readyAt - now)
+      const tw = box.w * 0.72
+      const th = Math.max(14, box.h * 0.22)
+      roundRect(ctx, cx - tw / 2, box.y + 2, tw, th, 4)
+      ctx.fillStyle = 'rgba(42,24,12,0.88)'
+      ctx.fill()
+      text(ctx, timer, cx, box.y + 2 + th / 2, Math.max(9, box.w * 0.16), '#fffaf2')
+    }
   } else if (item.kind === 'rewardBox') {
     const fill = item.box === 'purple' ? '#7a4ea3' : '#e07a3d'
     const label = item.box === 'purple' ? '紫盒' : '购物袋'
@@ -802,16 +816,7 @@ function drawHecheng(model: RenderModel): void {
       }
     })
     const payRect = frame.orderRewards[index]
-    if (payRect) {
-      blit(ctx, 'bubble', payRect)
-      const pay = orderPayout(order, cfg)
-      const cover = { x: payRect.x + payRect.w * 0.4, y: payRect.y + payRect.h * 0.16, w: payRect.w * 0.5, h: payRect.h * 0.62 }
-      roundRect(ctx, cover.x, cover.y, cover.w, cover.h, 8)
-      ctx.fillStyle = '#f6e4c4'
-      ctx.fill()
-      const rewardSize = Math.max(10, payRect.h * 0.28)
-      text(ctx, `+${pay.coins}`, payRect.x + payRect.w * 0.72, payRect.y + payRect.h * 0.48, rewardSize, '#6a3a22', 'right', 'middle', 700)
-    }
+    if (payRect) drawPayBubble(ctx, payRect, orderPayout(order, cfg).coins)
     if (orderSatisfied(state, order)) {
       const btn = frame.completes[index]
       if (btn) blit(ctx, 'complete', btn)
@@ -844,9 +849,15 @@ function drawHecheng(model: RenderModel): void {
     }
   }
   if (frame.storyBtn.w > 0) {
+    const pulse = state.level >= 2 && storyReady(state, cfg) ? 1 + 0.08 * Math.sin(realNow / 180) : 1
+    ctx.save()
+    ctx.translate(frame.storyBtn.x + frame.storyBtn.w / 2, frame.storyBtn.y + frame.storyBtn.h / 2)
+    ctx.scale(pulse, pulse)
+    ctx.translate(-(frame.storyBtn.x + frame.storyBtn.w / 2), -(frame.storyBtn.y + frame.storyBtn.h / 2))
     blit(ctx, 'chestFrame', frame.storyBtn)
     blit(ctx, 'book', frame.bookIcon)
-    if (!state.storySeen) blit(ctx, 'badgeSmall', frame.badgeStory)
+    if (storyReady(state, cfg)) blit(ctx, 'badgeSmall', frame.badgeStory)
+    ctx.restore()
   }
   blit(ctx, 'energy', frame.energySlot)
   blit(ctx, 'coin', frame.coinSlot)
@@ -1237,6 +1248,15 @@ function drawBoard(model: RenderModel): void {
           )
         : 1
       drawItem(ctx, cfg, item, box, scale * breath, 1, realNow, unlimited && item.kind === 'producer')
+      if (item.kind === 'product' && item.tag === 'bubble') {
+        ctx.beginPath()
+        ctx.strokeStyle = 'rgba(120,190,230,0.95)'
+        ctx.lineWidth = 3
+        ctx.arc(box.x + box.w / 2, box.y + box.h / 2, box.w * 0.42, 0, Math.PI * 2)
+        ctx.stroke()
+        const left = item.bubbleUntil && item.bubbleUntil > realNow ? formatMs(item.bubbleUntil - realNow) : '气泡'
+        text(ctx, left, box.x + box.w / 2, box.y + box.h * 0.82, Math.max(8, box.w * 0.14), '#24556e')
+      }
       if (item.kind === 'producer' && producerTapCostsEnergy(cfg, item)) {
         const cooling = producerCooldown(cfg, item, realNow)
         if (producerCanSpawn(cfg, item, realNow)) drawSpawnBolt(ctx, box)
@@ -1640,6 +1660,46 @@ function drawHand(model: RenderModel): void {
   paintHand(model.ctx, pose.x, pose.y, model.frame.board.cell)
 }
 
+function drawPayBubble(ctx: CanvasRenderingContext2D, payRect: Rect, coins: number): void {
+  blit(ctx, 'bubble', payRect)
+  const cover = { x: payRect.x + payRect.w * 0.34, y: payRect.y + payRect.h * 0.12, w: payRect.w * 0.6, h: payRect.h * 0.7 }
+  roundRect(ctx, cover.x, cover.y, cover.w, cover.h, 8)
+  ctx.fillStyle = '#f6e4c4'
+  ctx.fill()
+  text(ctx, `+${coins}`, payRect.x + payRect.w * 0.72, payRect.y + payRect.h * 0.48, Math.max(10, payRect.h * 0.28), '#6a3a22', 'right', 'middle', 700)
+}
+
+function drawGiftModal(model: RenderModel): void {
+  const modal = model.state.giftModal
+  if (!modal) return
+  const { ctx, frame } = model
+  ctx.fillStyle = 'rgba(12,10,8,0.55)'
+  ctx.fillRect(0, 0, frame.w, frame.h)
+  const card = { x: 28, y: frame.h / 2 - 150, w: frame.w - 56, h: 270 }
+  roundRect(ctx, card.x, card.y, card.w, card.h, 14)
+  ctx.fillStyle = PAL.white
+  ctx.fill()
+  text(ctx, modal.title, card.x + card.w / 2, card.y + 36, 20, PAL.ink)
+  if (modal.mode === 'locked') {
+    const lines = wrap(ctx, modal.lockText || '下一档还没到', card.w - 36, 16)
+    lines.slice(0, 4).forEach((line, index) => text(ctx, line, card.x + 18, card.y + 90 + index * 24, 16, PAL.ink, 'left'))
+  } else {
+    modal.rewards.forEach((reward, index) => text(ctx, reward.name, card.x + card.w / 2, card.y + 84 + index * 28, 16, PAL.ink))
+  }
+  button(ctx, levelClaimRect(frame), modal.mode === 'locked' ? '知道了' : '领取', 'primary')
+}
+
+function drawSmileLesson(model: RenderModel): void {
+  if (model.state.smileLesson !== 'order') return
+  const { ctx, frame, state, cfg } = model
+  const index = state.orders.findIndex((order) => (order.paySmile ?? 0) > 0 || (order.smilePending ?? 0) > 0)
+  const hole = index >= 0 ? frame.orders[index] : frame.smileSlot
+  if (!hole || hole.w <= 0) return
+  text(ctx, '笑脸系统上线了。集满 6 个笑脸就能领奖励。', frame.w / 2, Math.max(36, hole.y - 18), 14, '#fffaf2')
+  paintHand(ctx, hole.x + hole.w / 2, hole.y + hole.h / 2, frame.board.cell)
+  void cfg
+}
+
 function drawLevelModal(model: RenderModel): void {
   const modal = model.state.levelModal
   if (!modal) return
@@ -1651,7 +1711,7 @@ function drawLevelModal(model: RenderModel): void {
   ctx.fillStyle = PAL.white
   ctx.fill()
   text(ctx, `升到${cnLevel(modal.level)}`, card.x + card.w / 2, card.y + 32, 20, PAL.ink)
-  modal.rewards.forEach((reward, index) => {
+  modal.rewards.filter((reward) => reward.id !== 'gift').forEach((reward, index) => {
     text(ctx, reward.name, card.x + card.w / 2, card.y + 72 + index * 28, 16, PAL.ink)
   })
   button(ctx, levelClaimRect(frame), '收下', 'primary')
@@ -1850,10 +1910,13 @@ function paintHomeImg(ctx: CanvasRenderingContext2D, id: HomeArtId, box: HomeBox
   ctx.restore()
 }
 
-function drawHostessBubble(ctx: CanvasRenderingContext2D, bubble: Rect, state: GameState, cfg: GameConfig): void {
-  const task = nextTask(state, cfg)
-  if (!task || bubble.w <= 0) return
-  const price = taskPrice(task, cfg)
+function drawHostessBubble(ctx: CanvasRenderingContext2D, bubble: Rect, state: GameState, cfg: GameConfig, now: number): void {
+  if (!storyReady(state, cfg) || bubble.w <= 0) return
+  const pulse = state.level >= 2 ? 1 + 0.08 * Math.sin(now / 180) : 1
+  ctx.save()
+  ctx.translate(bubble.x + bubble.w / 2, bubble.y + bubble.h / 2)
+  ctx.scale(pulse, pulse)
+  ctx.translate(-(bubble.x + bubble.w / 2), -(bubble.y + bubble.h / 2))
   ctx.fillStyle = '#fffaf2'
   ctx.strokeStyle = '#6a3a22'
   ctx.lineWidth = 2
@@ -1861,13 +1924,13 @@ function drawHostessBubble(ctx: CanvasRenderingContext2D, bubble: Rect, state: G
   ctx.roundRect(bubble.x, bubble.y, bubble.w, bubble.h, 16)
   ctx.fill()
   ctx.stroke()
-  text(ctx, String(price), bubble.x + bubble.w * 0.38, bubble.y + bubble.h / 2, bubble.h * 0.42, '#6a3a22', 'center', 'middle', 700)
-  const badge = Math.min(bubble.h * 0.46, 28)
+  const badge = Math.min(bubble.h * 0.7, 36)
   ctx.beginPath()
   ctx.fillStyle = '#d23b3b'
-  ctx.arc(bubble.x + bubble.w - badge, bubble.y + badge * 0.2, badge * 0.55, 0, Math.PI * 2)
+  ctx.arc(bubble.x + bubble.w / 2, bubble.y + bubble.h / 2, badge * 0.55, 0, Math.PI * 2)
   ctx.fill()
-  text(ctx, '!', bubble.x + bubble.w - badge, bubble.y + badge * 0.2, badge * 0.7, '#fffaf2', 'center', 'middle', 700)
+  text(ctx, '!', bubble.x + bubble.w / 2, bubble.y + bubble.h / 2, badge * 0.7, '#fffaf2', 'center', 'middle', 700)
+  ctx.restore()
 }
 
 function drawStoryCard(model: RenderModel): void {
@@ -1889,12 +1952,21 @@ function drawStoryCard(model: RenderModel): void {
   ctx.fillRect(rects.portrait.x, rects.portrait.y, rects.portrait.w, rects.portrait.h)
   text(ctx, '温如月', rects.portrait.x + rects.portrait.w / 2, rects.portrait.y + rects.portrait.h / 2, rects.portrait.w * 0.16, '#6a3a22', 'center', 'middle', 700)
   text(ctx, `剧情 ${no}`, rects.portrait.x + rects.portrait.w + 24, rects.card.y + 78, 28, '#3a2416', 'left', 'middle', 700)
-  text(ctx, '经验 15', rects.portrait.x + rects.portrait.w + 24, rects.card.y + 130, 20, '#8a5a32', 'left', 'middle', 700)
-  ctx.fillStyle = '#d23b3b'
-  ctx.beginPath()
-  ctx.arc(rects.close.x + rects.close.w / 2, rects.close.y + rects.close.h / 2, rects.close.w / 2, 0, Math.PI * 2)
-  ctx.fill()
-  text(ctx, '×', rects.close.x + rects.close.w / 2, rects.close.y + rects.close.h / 2, 18, '#fffaf2', 'center', 'middle', 700)
+  if (state.storyCard?.line) {
+    const lines = wrap(ctx, state.storyCard.line, rects.card.w - rects.portrait.w - 48, 16)
+    lines.slice(0, 3).forEach((line, index) => {
+      text(ctx, line, rects.portrait.x + rects.portrait.w + 24, rects.card.y + 124 + index * 24, 16, '#8a5a32', 'left', 'middle', 700)
+    })
+  } else {
+    text(ctx, '经验 15', rects.portrait.x + rects.portrait.w + 24, rects.card.y + 130, 20, '#8a5a32', 'left', 'middle', 700)
+  }
+  if (!state.storyForce) {
+    ctx.fillStyle = '#d23b3b'
+    ctx.beginPath()
+    ctx.arc(rects.close.x + rects.close.w / 2, rects.close.y + rects.close.h / 2, rects.close.w / 2, 0, Math.PI * 2)
+    ctx.fill()
+    text(ctx, '×', rects.close.x + rects.close.w / 2, rects.close.y + rects.close.h / 2, 18, '#fffaf2', 'center', 'middle', 700)
+  }
   ctx.fillStyle = '#3c8f4a'
   ctx.beginPath()
   ctx.roundRect(rects.start.x, rects.start.y, rects.start.w, rects.start.h, 12)
@@ -1952,7 +2024,7 @@ function drawHouse(model: RenderModel): void {
   paintHomeImg(ctx, 'badge', home.badgeSettings)
   paintHomeImg(ctx, 'badge', home.badgeShop)
   const lesson = state.lesson
-  if (lesson === 'free') drawHostessBubble(ctx, home.bubble, state, cfg)
+  if (lesson === 'free') drawHostessBubble(ctx, home.bubble, state, cfg, realNow)
   const dim = lesson === 'home1' || lesson === 'home2' || lesson === 'home3'
   if (dim) {
     ctx.fillStyle = 'rgba(0,0,0,0.6)'
@@ -2152,11 +2224,7 @@ function paintLiftedOrder(model: RenderModel, index: number): void {
     if (sprite) drawFittedSprite(ctx, sprite, icon.rect, 1)
   })
   const payRect = frame.orderRewards[index]
-  if (payRect) {
-    blit(ctx, 'bubble', payRect)
-    const pay = orderPayout(order, cfg)
-    text(ctx, `+${pay.coins}`, payRect.x + payRect.w * 0.72, payRect.y + payRect.h * 0.48, Math.max(10, payRect.h * 0.28), '#6a3a22', 'right', 'middle', 700)
-  }
+  if (payRect) drawPayBubble(ctx, payRect, orderPayout(order, cfg).coins)
   const button = frame.completes[index]
   if (button && orderSatisfied(state, order)) blit(ctx, 'complete', button)
 }

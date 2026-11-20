@@ -3,6 +3,7 @@ import { defaultConfig } from '../src/config'
 import { orderItemLabel } from '../src/format'
 import {
   activeOverlay,
+  claimGiftModal,
   claimLevelModal,
   claimShopDaily,
   claimShopPack,
@@ -68,6 +69,7 @@ describe('第十轮开局和前期', () => {
     reconcileLevel(state, cfg, () => 0)
     expect(state.levelModal?.rewards.map((reward) => reward.id)).toContain('food')
     claimLevelModal(state, cfg, () => 0)
+    while (state.giftModal) claimGiftModal(state, cfg, () => 0)
     expect(state.gems).toBe(50)
     state.xp = 75
     reconcileLevel(state, cfg, () => 0)

@@ -3,6 +3,7 @@ import { defaultConfig, hostessCostume } from '../src/config'
 import {
   allTasks,
   buildTask,
+  claimGiftModal,
   claimLevelModal,
   confirmDecor,
   completeOrder,
@@ -37,6 +38,8 @@ function finish(state: GameState, cfg: ReturnType<typeof defaultConfig>, n: numb
     if (!result.ok) throw new Error(result.reason ?? 'build failed')
     if (state.decorate) confirmDecor(state, cfg)
     while (state.levelModal) claimLevelModal(state, cfg, rng)
+    while (state.giftModal?.mode === 'claim') claimGiftModal(state, cfg, rng)
+    if (state.giftModal?.mode === 'locked') claimGiftModal(state, cfg, rng)
   }
 }
 
@@ -148,6 +151,7 @@ describe('修缮', () => {
     expect(state.level).toBe(2)
     expect(state.levelModal?.rewards.map((reward) => reward.id)).toContain('food')
     claimLevelModal(state, cfg, rng)
+    while (state.giftModal) claimGiftModal(state, cfg, rng)
     expect(state.gems).toBe(50)
     const raw = serialize(state, cfg)
     const next = defaultConfig()

@@ -3,6 +3,7 @@ import { BALANCE, earlyOrder, energyOfPieceLevel, parseRewardText, storyDef } fr
 import { defaultConfig } from '../src/config'
 import {
   buildTask,
+  claimGiftModal,
   claimLevelModal,
   completeOrder,
   createGame,
@@ -53,6 +54,11 @@ describe('1120 数值表', () => {
     expect(parseRewardText('花盆母棋3 ×1')[0]?.producerLevel).toBe(3)
     expect(parseRewardText('饮料母棋1 ×1')[0]?.producerLevel).toBe(1)
     expect(parseRewardText('玩具母棋（原文未写等级，【推断】1级）×1')[0]?.producerLevel).toBe(1)
+    expect(parseRewardText('老鼠玩具1 ×1')[0]).toMatchObject({ id: 'product', line: 'toy', pieceLevel: 1 })
+    expect(parseRewardText('狗2 ×1')[0]).toMatchObject({ id: 'product', line: 'dog', pieceLevel: 2 })
+    expect(parseRewardText('红色宝箱 ×1')[0]?.id).toBe('red')
+    expect(parseRewardText('欢迎礼盒 ×1')[0]?.id).toBe('welcome')
+    expect(parseRewardText('存钱罐（金猪）×1')[0]?.id).toBe('piggy')
   })
 
   it('开局教学盘沿用旧版：b4、b5 是 1 级，c5 半遮 2 级，d5 封着 3 级', () => {
@@ -76,7 +82,7 @@ describe('1120 数值表', () => {
     expect(state.orders).toEqual([])
   })
 
-  it('挂起还不能做的单，解锁后优先出', () => {
+  it('前期订单按编号出，线没开也不跳号', () => {
     const cfg = defaultConfig()
     const state = createGame(1, cfg)
     state.lesson = 'free'
@@ -84,12 +90,8 @@ describe('1120 数值表', () => {
     state.board[3][1] = makeProducer(state, 'food', cfg, 4)
     state.orderSeq = 5
     syncEarlyOrders(state, cfg)
-    expect(state.heldOrders[0]).toBe(5)
-    expect(state.orders.map((order) => order.earlyNo)).toEqual([9, 12])
-    state.orders = []
-    state.board[3][1] = makeProducer(state, 'food', cfg, 5)
-    syncEarlyOrders(state, cfg)
-    expect(state.orders[0]?.earlyNo).toBe(5)
+    expect(state.heldOrders).toEqual([])
+    expect(state.orders.map((order) => order.earlyNo)).toEqual([5, 6])
     expect(state.orders[0]?.payCoins).toBe(14)
   })
 
@@ -153,7 +155,8 @@ describe('1120 数值表', () => {
       log.push({ level: state.level, xp: state.xp, rewards })
     }
     expect(log[0]).toEqual({ level: 1, xp: 15, rewards: [] })
-    expect(log[1]).toEqual({ level: 2, xp: 0, rewards: expect.arrayContaining(['chest:', 'food:4', 'pack:']) })
+    expect(log[1]).toMatchObject({ level: 2, xp: 0 })
+    expect(log[1]?.rewards).toEqual(expect.arrayContaining(['chest:', 'welcome:', 'food:4', 'gift:']))
     expect(log[1]?.rewards.some((reward) => reward.startsWith('bev'))).toBe(false)
     expect(log[2]).toEqual({ level: 2, xp: 15, rewards: [] })
     expect(log[3]).toEqual({ level: 2, xp: 30, rewards: [] })
@@ -163,7 +166,11 @@ describe('1120 数值表', () => {
     expect(log[5]).toEqual({ level: 3, xp: 15, rewards: [] })
     expect(log[8]).toEqual({ level: 4, xp: 0, rewards: expect.arrayContaining(['chest:']) })
     expect(log[8]?.rewards.some((reward) => reward.startsWith('bev'))).toBe(false)
-    const bev = [...state.board.flat(), ...state.rewards].find((item) => item?.kind === 'producer' && item.producerId === 'bev')
+    const owned = [...state.board.flat(), ...state.rewards, ...state.pending]
+    expect(owned.some((item) => item?.kind === 'product' && item.line === 'toy' && item.level === 1)).toBe(true)
+    expect(owned.some((item) => item?.kind === 'producer' && item.producerId === 'piggy')).toBe(true)
+    expect(owned.some((item) => item?.kind === 'chest' && item.box === 'red')).toBe(true)
+    const bev = owned.find((item) => item?.kind === 'producer' && item.producerId === 'bev')
     expect(bev?.kind === 'producer' && bev.level).toBe(1)
     const before = state.xp
     state.locks = state.locks.filter((lock) => lock.row !== 0 || lock.col !== 0)
@@ -172,6 +179,31 @@ describe('1120 数值表', () => {
     expect(completeOrder(state, 'pay', cfg, rng, 9).ok).toBe(true)
     expect(state.xp).toBe(before)
     expect(state.level).toBe(4)
+  })
+
+  it('做到剧情 14 升到 5 级，子棋和红色宝箱都在', () => {
+    const cfg = defaultConfig()
+    const state = createGame(1, cfg)
+    state.lesson = 'free'
+    state.phase = 'play'
+    state.coins = 100_000
+    const rng = mulberry32(8)
+    const log: { level: number; xp: number }[] = []
+    for (let i = 0; i < 14; i++) {
+      const task = nextTask(state, cfg)
+      expect(buildTask(state, task!.id, null, cfg, rng, i).ok).toBe(true)
+      while (state.levelModal) claimLevelModal(state, cfg, rng)
+      while (state.giftModal) claimGiftModal(state, cfg, rng)
+      log.push({ level: state.level, xp: state.xp })
+    }
+    expect(log.map((row) => row.level)).toEqual([1, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5])
+    expect(log[13]).toEqual({ level: 5, xp: 0 })
+    const owned = [...state.board.flat(), ...state.rewards, ...state.pending]
+    expect(owned.some((item) => item?.kind === 'product' && item.line === 'mint' && item.level === 3)).toBe(true)
+    expect(owned.some((item) => item?.kind === 'product' && item.line === 'toy' && item.level === 1)).toBe(true)
+    expect(owned.some((item) => item?.kind === 'chest' && item.box === 'red')).toBe(true)
+    expect(owned.some((item) => item?.kind === 'producer' && item.producerId === 'piggy')).toBe(true)
+    expect(state.bubbleDue).toBe(true)
   })
 
   it('教学合出订单要的猫粮就进入交单，旧档带不回 4 级饮料母棋', () => {

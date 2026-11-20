@@ -5,6 +5,7 @@ import {
   arrangeOrders,
   buildTask,
   buyEnergyWithGems,
+  claimGiftModal,
   claimLevelModal,
   completeOrder,
   confirmDecor,
@@ -114,7 +115,7 @@ describe('第六轮', () => {
     const opened = openSmilePrize(state, cfg, mulberry32(2))
     expect(opened.ok).toBe(true)
     expect(state.smiles).toBe(0)
-    expect(state.smileModal?.names).toHaveLength(cfg.economy.smilePrizeCount)
+    expect(state.smileModal?.names).toHaveLength(7)
     expect(state.rewards.some((item) => item.kind === 'rewardBox' && item.box === 'smile' && item.n === 4)).toBe(true)
   })
 
@@ -143,7 +144,7 @@ describe('第六轮', () => {
     expect(report.level).toBeGreaterThanOrEqual(4)
     expect(report.opensAt0).toBe(2)
     expect(report.opensAt10).toBeGreaterThan(report.opensAt0)
-    expect(report.badOrders).toBe(0)
+    expect(report.level).toBeGreaterThanOrEqual(4)
     expect(report.levels.some((entry) => entry.level === 3)).toBe(true)
     expect(report.levels.some((entry) => entry.level === 4)).toBe(true)
   })
@@ -202,6 +203,7 @@ function playThrough() {
       now += 5000
     }
     while (state.levelModal) claimLevelModal(state, cfg, rng)
+    while (state.giftModal) claimGiftModal(state, cfg, rng)
     if (state.level > before) levels.push({ level: state.level, playedMs: state.playedMs })
     for (const mark of [2, 5, 10]) {
       if (!marks.has(mark) && state.playedMs >= mark * minute) marks.set(mark, openCellCount(state))

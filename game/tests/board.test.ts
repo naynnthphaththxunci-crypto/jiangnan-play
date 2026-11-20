@@ -85,10 +85,8 @@ describe('锁格与笑脸', () => {
     expect(opened.ok).toBe(true)
     expect(state.smiles).toBe(0)
     const names = state.smileModal?.names ?? []
-    expect(names.length).toBe(cfg.economy.smilePrizeCount)
-    const placed = [...state.board.flat(), ...state.pending, ...state.rewards].filter(
-      (item) => item?.kind === 'product' && item.line === 'food' && item.level >= 2 && item.level <= 3,
-    )
+    expect(names).toEqual(['基础猫粮粒', '基础猫粮粒', '酥脆猫粮饼', '酥脆猫粮饼', '滤纸手冲液', '滤纸手冲液', '浓缩咖啡液'])
+    const placed = [...state.board.flat(), ...state.pending, ...state.rewards].filter((item) => item?.kind === 'product')
     expect(placed.length).toBe(names.length)
   })
 

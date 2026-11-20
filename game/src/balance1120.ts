@@ -308,36 +308,103 @@ function splitRewardParts(text: string): string[] {
   return parts
 }
 
+const PIECES: [RegExp, string][] = [
+  [/老鼠玩具\s*(\d+)?/, 'toy'],
+  [/猫薄荷\s*(\d+)?/, 'mint'],
+  [/花草\s*(\d+)?/, 'plant'],
+  [/猫粮(?!母棋)\s*(\d+)?/, 'food'],
+  [/饮料(?!母棋)\s*(\d+)?/, 'bev'],
+  [/肉类(?!补给)\s*(\d+)?/, 'meat'],
+  [/猫窝(?!母棋)\s*(\d+)?/, 'bed'],
+  [/狗(?!窝)\s*(\d+)?/, 'dog'],
+  [/金币\s*(\d+)?/, 'coin'],
+]
+
+function copies(part: string, entry: LevelRewardEntry): LevelRewardEntry[] {
+  const count = Number(part.match(/×\s*(\d+)/)?.[1] ?? 1)
+  return Array.from({ length: Math.max(1, count) }, () => ({ ...entry }))
+}
+
+function parseBundle(part: string): LevelRewardEntry[] {
+  const bits = part.split(/[、,，]/).map((bit) => bit.trim()).filter(Boolean)
+  const out: LevelRewardEntry[] = []
+  for (const bit of bits) {
+    if (/卡包/.test(bit)) continue
+    out.push(...parsePart(bit).filter((entry) => entry.id !== 'gift' && entry.id !== 'note'))
+  }
+  return out
+}
+
+function parsePart(part: string): LevelRewardEntry[] {
+  const text = part.trim()
+  if (!text || /^[；;、\s]+$/.test(text)) return []
+  if (/卡包/.test(text)) return []
+  if (/新手大礼包/.test(text)) {
+    const bundle = parseBundle(text.replace(/.*?新手大礼包[:：]?/, ''))
+    return bundle.length ? [{ id: 'gift', name: '新手大礼包', bundle }] : []
+  }
+  if (/不做|开启|商店|卡牌|每日|弹窗|上锁|下一档/.test(text) && !/钻石|体力|母棋|宝箱|礼盒|渔货|狗窝|存钱罐|金猪/.test(text)) return []
+  if (/欢迎礼盒/.test(text)) return copies(text, { id: 'welcome', name: '欢迎礼盒' })
+  if (/食物礼盒|猫粮补给箱/.test(text)) return copies(text, { id: 'foodbox', name: '食物礼盒' })
+  if (/聪明宝箱/.test(text)) return copies(text, { id: 'smart', name: '聪明宝箱' })
+  if (/红色宝箱/.test(text)) return copies(text, { id: 'red', name: '红色宝箱' })
+  if (/绿色宝箱/.test(text)) return copies(text, { id: 'green', name: '绿色宝箱' })
+  if (/肉类补给箱|薯条礼包|薯条补给/.test(text)) return copies(text, { id: 'meatbox', name: '肉类补给箱' })
+  if (/存钱罐|金猪/.test(text)) return copies(text, { id: 'piggy', name: '金猪', producerLevel: 1 })
+  if (/体力宝箱/.test(text)) return copies(text, { id: 'chest', name: '体力宝箱' })
+  const gems = text.match(/钻石\s*×?\s*(\d+)/)
+  if (gems && !text.includes('宝箱')) return [{ id: 'pack', name: `钻石 ×${gems[1]}`, gems: Number(gems[1]) }]
+  const energy = text.match(/体力\s*(\d+)/)
+  if (energy && !text.includes('宝箱')) return [{ id: 'energy', name: `体力 ${energy[1]}`, energy: Number(energy[1]) }]
+  if (/宝箱|礼盒|补给箱/.test(text)) return copies(text, { id: 'chest', name: text.replace(/×\s*\d+/, '').trim() })
+  const producer = text.match(/(猫粮母棋|饮料母棋|玩具母棋|猫窝母棋|花盆母棋|渔网母棋|渔货|狗窝)\s*(\d+)?/)
+  if (producer) {
+    const id = PRODUCER_NAMES[producer[1] ?? ''] ?? 'food'
+    const level = Number(producer[2] ?? 1) || 1
+    return copies(text, { id, name: text, producerLevel: level })
+  }
+  for (const [pattern, line] of PIECES) {
+    const found = text.match(pattern)
+    if (!found) continue
+    const level = Number(found[1] ?? 1) || 1
+    return copies(text, { id: 'product', name: text, line, pieceLevel: level })
+  }
+  return [{ id: 'note', name: text.slice(0, 28) }]
+}
+
 /** 把剧情和升级奖励里的原文拆成能发放的条目。认不出的句子仍保留名字。 */
 export function parseRewardText(text: string): LevelRewardEntry[] {
   const parts = splitRewardParts(text)
-  const out: LevelRewardEntry[] = []
-  for (const part of parts) {
-    if (/不做|开启|商店|卡牌|每日|弹窗/.test(part) && !/钻石|体力|母棋|宝箱|渔货|狗窝/.test(part)) continue
-    const gems = part.match(/钻石\s*×?\s*(\d+)/)
-    if (gems && !part.includes('宝箱')) {
-      out.push({ id: 'pack', name: part, gems: Number(gems[1]) })
-      continue
-    }
-    const energy = part.match(/体力\s*(\d+)/)
-    if (energy && !part.includes('宝箱')) {
-      out.push({ id: 'energy', name: part, energy: Number(energy[1]) })
-      continue
-    }
-    if (/宝箱|礼盒|补给箱|存钱罐/.test(part)) {
-      const count = Number(part.match(/×\s*(\d+)/)?.[1] ?? 1)
-      for (let i = 0; i < count; i++) out.push({ id: 'chest', name: part.replace(/×\s*\d+/, '').trim() })
-      continue
-    }
-    const producer = part.match(/(猫粮母棋|饮料母棋|玩具母棋|猫窝母棋|花盆母棋|渔网母棋|渔货|狗窝)\s*(\d+)?/)
-    if (producer) {
-      const id = PRODUCER_NAMES[producer[1] ?? ''] ?? 'food'
-      const level = Number(producer[2] ?? 1)
-      const count = Number(part.match(/×\s*(\d+)/)?.[1] ?? 1)
-      for (let i = 0; i < count; i++) out.push({ id, name: part, producerLevel: level })
-      continue
-    }
-    out.push({ id: 'note', name: part })
-  }
+  const out = parts.flatMap((part) => parsePart(part))
   return out.length ? out : text ? [{ id: 'note', name: text.slice(0, 28) }] : []
+}
+
+/** 升级表 gift 字段：这一档要弹的礼包，以及领完后的上锁说明。 */
+export function parseLevelGift(gift: string): { rewards: LevelRewardEntry[]; lock: string } {
+  if (!gift || gift === '—' || /下一档在剧情/.test(gift)) return { rewards: [], lock: '' }
+  const lock = gift.match(/(再完成[^。；]*)|(达到[^。；]*)|(到达[^。；]*)/)?.[0]?.replace(/^弹窗：/, '') ?? ''
+  const rewards = parseRewardText(gift.replace(lock, '')).flatMap((entry) => (entry.id === 'gift' ? entry.bundle ?? [] : entry.id === 'note' ? [] : [entry]))
+  return { rewards, lock }
+}
+
+export function smileRoundReward(round: number): { line: string; level: number; count: number; name: string }[] {
+  const rows = BALANCE.smileRounds as unknown as { round: number; reward?: { line: string; level: number; count: number; name: string }[] }[]
+  const exact = rows.find((row) => row.round === round)
+  const last = rows[rows.length - 1]
+  return (exact ?? last)?.reward ?? []
+}
+
+export function smileRoundTarget(round: number): number | null {
+  const rows = BALANCE.smileRounds as unknown as { round: number; target: number }[]
+  return rows.find((row) => row.round === round)?.target ?? null
+}
+
+export function levelGiftText(level: number): string {
+  const row = (BALANCE.levels as { level: number; gift?: string }[]).find((entry) => entry.level === level)
+  return row?.gift ?? ''
+}
+
+export function storyNote(no: number): string {
+  const row = BALANCE.stories.find((story) => story.no === no) as { note?: string } | undefined
+  return row?.note ?? ''
 }

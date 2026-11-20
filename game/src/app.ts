@@ -95,6 +95,7 @@ import {
   skipOpening,
   settleGifts,
   skipStory,
+  storyReady,
   scrollOrders,
   snapOrderScroll,
   revealOrderTarget,
@@ -110,6 +111,8 @@ import {
   collectBoardProduct,
   dropItem,
   cycleSpawnMult,
+  buyBubble,
+  claimGiftModal,
   claimShopDaily,
   claimShopPack,
   tutorialAllowsInspect,
@@ -277,7 +280,7 @@ export function startGame(platform: Platform): void {
       showEnter: atStep(state, cfg, 'enter'),
       showInfo: false,
       showShop: state.level >= 3,
-      showStory: state.storyBookOn || state.lesson === 'book',
+      showStory: storyReady(state, cfg) || state.lesson === 'book',
       showTask: state.level >= SIDE_ICON_LEVEL,
       showChest: state.rewards.length > 0,
       shop: activeOverlay(state) === 'shop',
@@ -753,6 +756,9 @@ export function startGame(platform: Platform): void {
       if (state.lesson === 'book') {
         state.lesson = 'home2'
         beginCurtain('house')
+      } else if (storyReady(state, cfg)) {
+        openStoryCard(state, cfg)
+        mark()
       }
       return
     }
@@ -849,10 +855,14 @@ export function startGame(platform: Platform): void {
         const result = collectBoardProduct(state, hit, cfg)
         if (result.ok) selected = null
         present(result)
+      } else if (item.kind === 'product' && item.tag === 'bubble') {
+        const result = buyBubble(state, hit, cfg)
+        if (result.ok) selected = null
+        present(result)
       } else if (item.kind === 'rewardBox') present(openRewardBox(state, hit, cfg, rng))
       else if (item.kind === 'chest') {
         const seen = new Set(occupied(state).map((cell) => cell.item.uid))
-        const result = openChest(state, hit, cfg, rng)
+        const result = openChest(state, hit, cfg, rng, now)
         present(result)
         for (const cell of occupied(state)) {
           if (cell.item.kind === 'potion' && !seen.has(cell.item.uid)) {
@@ -1080,6 +1090,10 @@ export function startGame(platform: Platform): void {
       if (contains(levelClaimRect(frame), x, y)) present(claimLevelModal(state, cfg, rng))
       return
     }
+    if (overlay === 'gift') {
+      if (contains(levelClaimRect(frame), x, y)) present(claimGiftModal(state, cfg, rng))
+      return
+    }
     if (overlay === 'smile') {
       if (contains(smileDismissRect(frame), x, y)) state.smileModal = null
       return
@@ -1102,7 +1116,7 @@ export function startGame(platform: Platform): void {
     }
     if (overlay === 'story') {
       const card = storyCardRects(frame.w, frame.h)
-      if (contains(card.close, x, y)) closeStoryCard(state)
+      if (contains(card.close, x, y) && !state.storyForce) closeStoryCard(state)
       else if (contains(card.start, x, y)) {
         const task = nextTask(state, cfg)
         if (task) present(buildTask(state, task.id, null, cfg, rng, platform.now()))

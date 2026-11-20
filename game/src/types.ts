@@ -337,7 +337,9 @@ export interface ProductItem {
   kind: 'product'
   line: string
   level: number
-  tag?: 'bag'
+  tag?: 'bag' | 'bubble'
+  /** 气泡到期后变成 1 级金币。0 表示还没开始计时。 */
+  bubbleUntil?: number
 }
 
 export interface ProducerItem {
@@ -367,7 +369,11 @@ export interface LootDrop {
 export interface ChestItem {
   uid: string
   kind: 'chest'
+  box?: 'energy' | 'welcome' | 'red' | 'green' | 'smart' | 'food' | 'meat'
   drops?: LootDrop[]
+  /** 欢迎礼盒可以点开的时间。0 表示下一帧再开始计 2 分钟。 */
+  readyAt?: number
+  confirmGem?: boolean
 }
 
 export interface RewardBoxItem {
@@ -453,6 +459,16 @@ export interface LevelRewardEntry {
   producerLevel?: number
   energy?: number
   gems?: number
+  line?: string
+  pieceLevel?: number
+  bundle?: LevelRewardEntry[]
+}
+
+export interface GiftModal {
+  mode: 'claim' | 'locked'
+  title: string
+  rewards: LevelRewardEntry[]
+  lockText: string
 }
 
 export interface LevelModal {
@@ -519,8 +535,10 @@ export interface GameState {
   openingStep: number
   /** 开场视频之后的主场景和新手对话走到哪一步。 */
   lesson: 'home1' | 'talk1' | 'merge' | 'mergeC' | 'mergeD' | 'focus' | 'deliver' | 'book' | 'home2' | 'home3' | 'free'
-  /** 剧情书在完成小桃第一单之后才出现。 */
+  /** 金币够做下一则剧情时，合成页才画出剧情书。 */
   storyBookOn: boolean
+  /** 这张剧情卡不能关掉。订单 2 后的剧情 1、订单 4 后的剧情 2。 */
+  storyForce: boolean
   storyStep: number
   storySeen: boolean
   soundMuted: boolean
@@ -532,6 +550,14 @@ export interface GameState {
   playStartedAt: number
   levelModal: LevelModal | null
   levelQueue: LevelModal[]
+  giftModal: GiftModal | null
+  /** 4 级笑脸教学只走一次。 */
+  smileTaught: boolean
+  smileLesson: 'off' | 'order'
+  welcomeFreeUsed: boolean
+  /** 剧情 11 之后，回到合成页的下一次合成必掉一个气泡。 */
+  bubbleDue: boolean
+  bubbleDropped: boolean
   smileModal: { names: string[] } | null
   orderBias: string | null
   spawnMult: 1 | 2 | 4 | 8
@@ -555,7 +581,7 @@ export interface GameState {
   lateBlock: boolean
   smileRound: number
   /** 占位剧情任务框。有值就盖在当前页面上。 */
-  storyCard: { no: number } | null
+  storyCard: { no: number; line?: string } | null
   stats: {
     producerTaps: number
     ordersDone: number
