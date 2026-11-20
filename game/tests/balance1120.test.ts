@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BALANCE, cellPos, earlyOrder, energyOfPieceLevel, parseRewardText, storyDef } from '../src/balance1120'
+import { BALANCE, earlyOrder, energyOfPieceLevel, parseRewardText, storyDef } from '../src/balance1120'
 import { defaultConfig } from '../src/config'
 import { buildTask, createGame, fillOrders, makeProducer, maybeOfferStory, mulberry32, openStoryCard, syncEarlyOrders } from '../src/logic/sim'
 
@@ -37,21 +37,24 @@ describe('1120 数值表', () => {
     expect(parseRewardText('玩具母棋（原文未写等级，【推断】1级）×1')[0]?.producerLevel).toBe(1)
   })
 
-  it('开局盘 b4、b5 是 2 级猫粮母棋，c5 半遮 3 级', () => {
+  it('开局教学盘沿用旧版：b4、b5 是 1 级，c5 半遮 2 级，d5 封着 3 级', () => {
     const cfg = defaultConfig()
     const state = createGame(1, cfg)
-    const at = (cell: string) => {
-      const pos = cellPos(cell)
-      return { item: state.board[pos.row]?.[pos.col], lock: state.locks.find((lock) => lock.row === pos.row && lock.col === pos.col) }
-    }
-    const b4 = at('b4')
-    const b5 = at('b5')
-    const c5 = at('c5')
+    const at = (row: number, col: number) => ({
+      item: state.board[row]?.[col],
+      lock: state.locks.find((lock) => lock.row === row && lock.col === col),
+    })
+    const b4 = at(3, 1)
+    const b5 = at(4, 1)
+    const c5 = at(4, 2)
+    const d5 = at(4, 3)
     expect(b4.lock).toBeUndefined()
-    expect(b4.item?.kind === 'producer' && b4.item.level).toBe(2)
-    expect(b5.item?.kind === 'producer' && b5.item.level).toBe(2)
+    expect(b4.item?.kind === 'producer' && b4.item.level).toBe(1)
+    expect(b5.item?.kind === 'producer' && b5.item.level).toBe(1)
     expect(c5.lock?.veil).toBe('half')
-    expect(c5.lock?.buried).toMatchObject({ kind: 'producer', id: 'food', level: 3 })
+    expect(c5.lock?.buried).toMatchObject({ kind: 'producer', id: 'food', level: 2 })
+    expect(d5.lock?.veil).toBe('full')
+    expect(d5.lock?.buried).toMatchObject({ kind: 'producer', id: 'food', level: 3 })
     expect(state.orders).toEqual([])
   })
 

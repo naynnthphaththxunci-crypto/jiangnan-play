@@ -36,7 +36,8 @@ describe('第十轮开局和前期', () => {
     expect(dropItem(state, { row: 4, col: 1 }, { row: 4, col: 2 }, cfg).ok).toBe(true)
     expect(lockAt(state, 3, 3)?.veil).toBe('half')
     expect(lockAt(state, 5, 3)?.veil).toBe('half')
-    const made = state.board[4][2]
+    expect(dropItem(state, { row: 4, col: 2 }, { row: 4, col: 3 }, cfg).ok).toBe(true)
+    const made = state.board[4][3]
     expect(made?.kind === 'producer' && made.level).toBe(4)
     expect(state.lesson).toBe('focus')
     expect(state.phase).toBe('opening')

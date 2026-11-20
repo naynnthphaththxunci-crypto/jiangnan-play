@@ -28,7 +28,7 @@ describe('Allen 11-06 母棋、剧情和暂存', () => {
   it('六条链的母棋都能两两合成，最高到链尾，开局猫粮是 6 级', () => {
     const { state, cfg } = boot()
     const starter = state.board.flat().find((item) => item?.kind === 'producer' && item.producerId === 'food')
-    expect(starter && starter.kind === 'producer' && starter.level).toBe(2)
+    expect(starter && starter.kind === 'producer' && starter.level).toBe(1)
     expect(state.board.flat().some((item) => item?.kind === 'producer' && item.producerId !== 'food')).toBe(false)
     for (const id of ['food', 'toy', 'bev'] as const) {
       state.board[0][0] = makeProducer(state, id, cfg, 1)
@@ -123,11 +123,19 @@ describe('Allen 11-06 母棋、剧情和暂存', () => {
     state.openingStep = 0
     expect(dropItem(state, { row: 3, col: 1 }, { row: 4, col: 1 }, cfg).ok).toBe(true)
     expect(state.openingStep).toBe(1)
+    expect(state.lesson).toBe('mergeC')
     expect(dropItem(state, { row: 4, col: 1 }, { row: 4, col: 2 }, cfg).ok).toBe(true)
     expect(lockAt(state, 3, 3)?.veil).toBe('half')
     expect(lockAt(state, 5, 3)?.veil).toBe('half')
+    expect(state.lesson).toBe('mergeD')
+    expect(state.board[4][2]?.kind === 'producer' && state.board[4][2].level).toBe(3)
+    expect(dropItem(state, { row: 4, col: 2 }, { row: 4, col: 3 }, cfg).ok).toBe(true)
     expect(state.lesson).toBe('focus')
-    expect(state.board[4][2]?.kind === 'producer' && state.board[4][2].level).toBe(4)
+    expect(state.board[4][3]?.kind === 'producer' && state.board[4][3].level).toBe(4)
+    expect(state.orders.map((order) => order.earlyNo)).toEqual([1])
+    const spawned = tapProducer(state, { row: 4, col: 3 }, cfg, () => 0, 20)
+    expect(spawned.ok).toBe(true)
+    expect(spawned.events.some((event) => event.type === 'toast' && event.text === '没有空格了')).toBe(false)
   })
 
   it('开局不再弹出进厨房', () => {

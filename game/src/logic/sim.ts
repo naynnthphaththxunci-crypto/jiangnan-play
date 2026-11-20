@@ -15,7 +15,8 @@ import type {
 import { COLS, ROWS } from '../types'
 import { formatMs } from '../format'
 import { producerPieceName } from '../itemArt'
-import { BALANCE, cellPos, earlyOrder, parseRewardText, producerCode, storyDef, unitPrice } from '../balance1120'
+import openingBoard from '../data/openingBoard.json'
+import { BALANCE, earlyOrder, parseRewardText, storyDef, unitPrice } from '../balance1120'
 
 export function mulberry32(seed: number): Rng {
   let a = seed >>> 0
@@ -382,12 +383,6 @@ export function advanceTutorial(state: GameState, cfg: GameConfig): void {
   if (state.phase !== 'opening') return
   const currentId = cfg.copy.tutorial[state.openingStep]?.id
   const next = state.openingStep + 1
-  if (currentId === 'mergeC') {
-    state.openingStep = cfg.copy.tutorial.length
-    state.lesson = 'focus'
-    syncEarlyOrders(state, cfg)
-    return
-  }
   if (next >= cfg.copy.tutorial.length) {
     if (currentId === 'mergeD' && state.board.some((row) => row.some((item) => item?.kind === 'producer' && item.producerId === 'food' && item.level >= 4))) {
       state.openingStep = next
@@ -434,7 +429,7 @@ export function tutorialDropOk(state: GameState, cfg: GameConfig, from: Pos, to:
     if (!samePos(to, target) && !samePos(from, target)) return false
     const moving = samePos(to, target) ? from : to
     const item = state.board[moving.row]?.[moving.col]
-    return item?.kind === 'producer' && item.producerId === 'food' && item.level === 3
+    return item?.kind === 'producer' && item.producerId === 'food' && item.level === 2
   }
   if (step.id === 'mergeD') {
     const target = cfg.board.roles.mergeD
@@ -635,28 +630,33 @@ export function createGame(now: number, cfg: GameConfig): GameState {
   return state
 }
 
-function openingSpec(cell: (typeof BALANCE.openingBoard)[number]): { kind: 'product'; line: string; level: number } | { kind: 'producer'; id: string; level: number } {
-  if (cell.type === 'producer') return { kind: 'producer', id: producerCode(cell.id ?? 'p_food'), level: cell.level }
-  if (cell.type === 'coin') return { kind: 'product', line: 'coin', level: cell.level }
-  return { kind: 'product', line: cell.line ?? 'food', level: cell.level }
-}
-
 function applyOpening(state: GameState, cfg: GameConfig): void {
+  const cells = openingBoard as {
+    row: number
+    col: number
+    open: boolean
+    half: boolean
+    item: { kind: 'product'; line: string; level: number } | { kind: 'producer'; id: string; level: number }
+    prize?: CellLock['prize']
+  }[]
   const open: { row: number; col: number }[] = []
-  for (const cell of BALANCE.openingBoard) {
-    const { row, col } = cellPos(cell.cell)
-    const item = openingSpec(cell)
-    if (cell.cover === 'open') {
-      open.push({ row, col })
-      state.board[row][col] = spawnOpening(state, cfg, item)
+  for (const cell of cells) {
+    if (cell.open) {
+      open.push({ row: cell.row, col: cell.col })
+      state.board[cell.row][cell.col] = spawnOpening(state, cfg, cell.item)
       continue
     }
+    const buried =
+      cell.item.kind === 'producer'
+        ? { kind: 'producer' as const, id: cell.item.id, level: cell.item.level }
+        : { kind: 'product' as const, line: cell.item.line, level: cell.item.level }
     state.locks.push({
-      row,
-      col,
+      row: cell.row,
+      col: cell.col,
       cover: 'sand',
-      veil: cell.cover === 'half' ? 'half' : 'full',
-      buried: item.kind === 'producer' ? { kind: 'producer', id: item.id, level: item.level } : { kind: 'product', line: item.line, level: item.level },
+      veil: cell.half ? 'half' : 'full',
+      buried,
+      prize: cell.prize,
     })
   }
   state.hasProducer.food = true
@@ -664,8 +664,8 @@ function applyOpening(state: GameState, cfg: GameConfig): void {
     mergeA: { row: 3, col: 1 },
     mergeB: { row: 4, col: 1 },
     unlock: { row: 4, col: 2 },
-    producer: { row: 4, col: 2 },
-    mergeD: { row: 4, col: 2 },
+    producer: { row: 3, col: 1 },
+    mergeD: { row: 4, col: 3 },
     gift: { row: 7, col: 6 },
     bagSpot: { row: 4, col: 4 },
   }
@@ -1281,7 +1281,7 @@ export function dropItem(state: GameState, from: Pos, to: Pos, cfg?: GameConfig)
       state.board[to.row][to.col] = makeProducer(state, other.producerId, cfg, level)
       state.board[from.row][from.col] = null
       noteProducerLevel(state, cfg, other.producerId, level)
-      if (other.producerId === 'food' && atStep(state, cfg, 'merge') && level === 3) advanceTutorial(state, cfg)
+      if (other.producerId === 'food' && atStep(state, cfg, 'merge') && level === 2) advanceTutorial(state, cfg)
       if (other.producerId === 'food' && atStep(state, cfg, 'producerL2') && level === 2) advanceTutorial(state, cfg)
       if (other.producerId === 'food' && atStep(state, cfg, 'producerL3') && level >= 3) advanceTutorial(state, cfg)
       revealAround(state, to.row, to.col, cfg)
@@ -1587,7 +1587,7 @@ function earlyReady(state: GameState, cfg: GameConfig, no: number): boolean {
 export function syncEarlyOrders(state: GameState, cfg: GameConfig): void {
   state.orderSeq ??= 1
   state.heldOrders ??= []
-  if (state.lesson === 'home1' || state.lesson === 'talk1' || state.lesson === 'merge' || state.lesson === 'mergeC') return
+  if (state.lesson === 'home1' || state.lesson === 'talk1' || state.lesson === 'merge' || state.lesson === 'mergeC' || state.lesson === 'mergeD') return
   if (state.orderSeq > 131 && !state.heldOrders.length) return
   let guard = 0
   while (guard < 12) {
@@ -2500,8 +2500,8 @@ function openingStepPossible(state: GameState, cfg: GameConfig): boolean {
     const right = piece(b)
     return left?.kind === 'producer' && left.producerId === 'food' && right?.kind === 'producer' && right.producerId === 'food'
   }
-  if (step.id === 'mergeC' || step.id === 'unlock') return hasFood(3)
-  if (step.id === 'mergeD') return hasFood(4)
+  if (step.id === 'mergeC' || step.id === 'unlock') return hasFood(2)
+  if (step.id === 'mergeD') return hasFood(3)
   return true
 }
 

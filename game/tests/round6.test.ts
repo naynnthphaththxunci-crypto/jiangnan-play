@@ -43,7 +43,7 @@ describe('第六轮', () => {
     const state = createGame(1, cfg)
     expect(openCellCount(state)).toBe(2)
     const food = findProducer(state, 'food')
-    expect(food?.item.kind === 'producer' && food.item.level).toBe(2)
+    expect(food?.item.kind === 'producer' && food.item.level).toBe(1)
     expect(findProducer(state, 'bev')).toBeNull()
     const full = state.locks.filter((lock) => lock.veil === 'full').length
     const half = state.locks.filter((lock) => lock.veil === 'half' && lock.cover !== 'gift').length

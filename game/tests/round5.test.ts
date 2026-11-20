@@ -152,6 +152,7 @@ function playToLevelFive(): {
   state.phase = 'opening'
   dropItem(state, { row: 3, col: 1 }, { row: 4, col: 1 }, cfg)
   dropItem(state, { row: 4, col: 1 }, { row: 4, col: 2 }, cfg)
+  dropItem(state, { row: 4, col: 2 }, { row: 4, col: 3 }, cfg)
   state.lesson = 'free'
   state.phase = 'play'
   const rng = mulberry32(5)
