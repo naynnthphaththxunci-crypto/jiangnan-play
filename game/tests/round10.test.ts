@@ -76,9 +76,10 @@ describe('第十轮开局和前期', () => {
     expect(state.rewards.some((item) => item.kind === 'producer' && item.producerId === 'bev' && item.level === 1)).toBe(true)
     expect(claimShopDaily(state, cfg, 1).ok).toBe(true)
     expect(claimShopPack(state, cfg).ok).toBe(true)
-    state.xp = 135
+    state.xp = 60
     reconcileLevel(state, cfg, () => 0)
     expect(state.level).toBe(4)
+    expect(state.xp).toBe(0)
     expect(cfg.economy.smileGoal).toBe(6)
     state.board[0][0] = makeProduct(state, 'coin', 5)
     expect(collectBoardProduct(state, { row: 0, col: 0 }, cfg).ok).toBe(true)

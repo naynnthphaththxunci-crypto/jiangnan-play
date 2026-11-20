@@ -641,6 +641,16 @@ function applyOpening(state: GameState, cfg: GameConfig): void {
   }[]
   const open: { row: number; col: number }[] = []
   for (const cell of cells) {
+    if (cell.item.kind === 'producer' && cell.item.id === 'bev') {
+      state.locks.push({
+        row: cell.row,
+        col: cell.col,
+        cover: 'sand',
+        veil: 'full',
+        buried: { kind: 'coin', amount: 2, line: 'coin', level: 1 },
+      })
+      continue
+    }
     if (cell.open) {
       open.push({ row: cell.row, col: cell.col })
       state.board[cell.row][cell.col] = spawnOpening(state, cfg, cell.item)
@@ -886,6 +896,7 @@ export function tapProducer(state: GameState, pos: Pos, cfg: GameConfig, rng: Rn
     } else state.board[pos.row][pos.col] = null
   }
   if (atStep(state, cfg, 'produce')) advanceTutorial(state, cfg)
+  promoteFocusLesson(state)
   if (spot && state.mintStep === 'produce' && item.producerId === 'bev') {
     const mints = occupied(state).filter((cell) => cell.item.kind === 'product' && cell.item.line === 'mint')
     const pair = mints.find((cell, index) =>
@@ -1138,6 +1149,12 @@ export function claimDailyChest(state: GameState, now: number, cfg: GameConfig):
   }
 }
 
+function promoteFocusLesson(state: GameState): void {
+  if (state.lesson !== 'focus') return
+  const order = state.orders.find((entry) => entry.scripted)
+  if (order && orderSatisfied(state, order)) state.lesson = 'deliver'
+}
+
 export function dropItem(state: GameState, from: Pos, to: Pos, cfg?: GameConfig): ActionResult {
   if (!inBoard(from.row, from.col) || !inBoard(to.row, to.col)) {
     return { ok: false, reason: 'oob', events: [{ type: 'bounce' }] }
@@ -1191,6 +1208,7 @@ export function dropItem(state: GameState, from: Pos, to: Pos, cfg?: GameConfig)
       state.locks = state.locks.filter((entry) => entry.row !== to.row || entry.col !== to.col)
       noteUnlock(state, item.line, level)
       if (cfg && atStep(state, cfg, 'unlock')) advanceTutorial(state, cfg)
+      promoteFocusLesson(state)
       revealAround(state, to.row, to.col, cfg)
       return {
         ok: true,
@@ -1241,10 +1259,7 @@ export function dropItem(state: GameState, from: Pos, to: Pos, cfg?: GameConfig)
       state.board[from.row][from.col] = null
       noteUnlock(state, other.line, level)
       if (cfg && (atStep(state, cfg, 'merge') || atStep(state, cfg, 'bagMerge'))) advanceTutorial(state, cfg)
-      if (state.lesson === 'focus') {
-        const need = state.orders.find((order) => order.scripted)?.slots.find((slot) => slot.line === other.line)
-        if (need && level >= need.level) state.lesson = 'deliver'
-      }
+      promoteFocusLesson(state)
       if (state.mintStep === 'merge' && other.line === 'mint') {
         const ready = state.orders.some((order) => order.slots.some((slot) => slot.line === 'mint') && orderSatisfied(state, order))
         state.mintStep = ready ? 'deliver' : 'produce'
@@ -1840,7 +1855,6 @@ export function completeOrder(
   takeMatches(state, order)
   const pay = orderPayout(order, cfg)
   state.coins += pay.coins
-  state.xp += pay.xp
   state.smiles += pay.smiles
   state.stats.ordersDone += 1
   logAction(state, now, 'order')
@@ -2241,29 +2255,38 @@ export function levelForTaskCount(count: number, cfg: GameConfig): number {
   return levelForXp(count * (cfg.economy.xpPerTask || 15), cfg)
 }
 
-/** 累计经验。数组里是每一级要的经验，后面的级按上一级再加 15。 */
-export function xpThresholds(cfg: GameConfig): number[] {
+/** 从这一级升到下一级要的经验。表用完后，每级再加 15。升级后经验重新累计，不把前面的级加在一起。 */
+export function levelCost(cfg: GameConfig, fromLevel: number): number {
   const costs = cfg.economy.levelTaskThresholds.length ? cfg.economy.levelTaskThresholds : [30]
+  const index = Math.max(0, fromLevel - 1)
+  if (index < costs.length) return costs[index]!
+  let cost = costs[costs.length - 1] ?? 30
+  for (let i = costs.length; i <= index; i++) cost += 15
+  return cost
+}
+
+/** 从 1 级起把总经验逐级扣掉，算出能到哪一级。 */
+export function levelForXp(totalXp: number, cfg: GameConfig): number {
+  let level = 1
+  let left = Math.max(0, totalXp)
+  for (let guard = 0; guard < 80; guard++) {
+    const need = levelCost(cfg, level)
+    if (left < need) break
+    left -= need
+    level += 1
+  }
+  return level
+}
+
+export function xpThresholds(cfg: GameConfig): number[] {
   const out: number[] = []
   let sum = 0
-  let prev = 0
-  const limit = Math.max(costs.length, 24)
-  for (let i = 0; i < limit; i++) {
-    const delta = i < costs.length ? costs[i]! : prev + 15
-    prev = delta
-    sum += delta
+  const limit = Math.max(cfg.economy.levelTaskThresholds.length, 24)
+  for (let level = 1; level <= limit; level++) {
+    sum += levelCost(cfg, level)
     out.push(sum)
   }
   return out
-}
-
-export function levelForXp(xp: number, cfg: GameConfig): number {
-  let level = 1
-  const thresholds = xpThresholds(cfg)
-  for (let i = 0; i < thresholds.length; i++) {
-    if (xp >= thresholds[i]) level = i + 2
-  }
-  return level
 }
 
 function grantProducer(state: GameState, cfg: GameConfig, rng: Rng, id: string, level?: number, tray = false): GameEvent[] {
@@ -2310,8 +2333,10 @@ export function nudgeOrder(state: GameState, cfg: GameConfig, rng: Rng, line: st
 
 export function reconcileLevel(state: GameState, cfg: GameConfig, _rng: Rng): GameEvent[] {
   const events: GameEvent[] = []
-  const should = levelForXp(state.xp, cfg)
-  while (state.level < should) {
+  for (let guard = 0; guard < 40; guard++) {
+    const need = levelCost(cfg, state.level)
+    if (state.xp < need) break
+    state.xp -= need
     state.level += 1
     if (state.level >= (cfg.economy.smileUnlockLevel ?? 4)) {
       for (const order of state.orders) {
@@ -2344,7 +2369,7 @@ export function claimLevelModal(state: GameState, cfg: GameConfig, rng: Rng): Ac
   for (const reward of modal.rewards) {
     if (cfg.producers.some((entry) => entry.id === reward.id)) {
       const tray = reward.id === 'bev' && reward.producerLevel === 1
-      events.push(...grantProducer(state, cfg, rng, reward.id, reward.producerLevel, tray).filter((event) => event.type !== 'toast'))
+      events.push(...grantProducer(state, cfg, rng, reward.id, reward.producerLevel ?? 1, tray).filter((event) => event.type !== 'toast'))
     } else if (reward.id === 'pack') {
       state.gems += reward.gems ?? 100
       events.push({ type: 'toast', text: `钻石 +${reward.gems ?? 100}` })
@@ -2648,6 +2673,7 @@ export function resolveGuides(state: GameState, cfg?: GameConfig): string[] {
     state.storySeen = true
     notes.push('opening')
   }
+  promoteFocusLesson(state)
   if (cfg && state.phase === 'opening') {
     let guard = 0
     while (state.phase === 'opening' && guard < 6 && !openingStepPossible(state, cfg)) {
@@ -3018,10 +3044,14 @@ export interface SaveFile {
   v: 2
   state: GameState
   economy: GameConfig['economy']
+  /** 有这个印记才沿用存档里的等级表。旧档没有，避免把旧的 4 级饮料母棋带回来。 */
+  curve?: string
 }
 
+const CURVE = '1120-reset'
+
 export function serialize(state: GameState, cfg: GameConfig): string {
-  const data: SaveFile = { v: 2, state, economy: cfg.economy }
+  const data: SaveFile = { v: 2, state, economy: cfg.economy, curve: CURVE }
   return JSON.stringify(data)
 }
 
@@ -3031,8 +3061,40 @@ export function hydrate(raw: string, cfg: GameConfig): GameState | null {
     if (!data || data.v !== 2 || !data.state || !Array.isArray(data.state.board)) return null
     if (data.state.board.length !== ROWS) return null
     if (!data.state.board.every((row) => Array.isArray(row) && row.length === COLS)) return null
+    const freshCurve = {
+      xpPerTask: cfg.economy.xpPerTask,
+      orderXp: cfg.economy.orderXp,
+      levelTaskThresholds: cfg.economy.levelTaskThresholds.slice(),
+      levelRewards: cfg.economy.levelRewards,
+    }
     if (data.economy) cfg.economy = { ...cfg.economy, ...data.economy }
     const state = data.state
+    if (data.curve !== CURVE) {
+      cfg.economy.xpPerTask = freshCurve.xpPerTask
+      cfg.economy.orderXp = freshCurve.orderXp
+      cfg.economy.levelTaskThresholds = freshCurve.levelTaskThresholds
+      cfg.economy.levelRewards = freshCurve.levelRewards
+      const stories = (state.tasksDone ?? []).filter((id) => String(id).startsWith('s')).length
+      const earned = stories * (cfg.economy.xpPerTask || 15)
+      let level = 1
+      let left = earned
+      while (level < 99) {
+        const need = levelCost(cfg, level)
+        if (left < need) break
+        left -= need
+        level += 1
+      }
+      if (state.level > level) {
+        state.level = level
+        state.xp = left
+        state.levelModal = null
+        state.levelQueue = []
+      } else {
+        let spent = 0
+        for (let at = 1; at < state.level; at++) spent += levelCost(cfg, at)
+        state.xp = Math.max(0, state.xp - spent)
+      }
+    }
     state.pending ||= []
     state.rewards ||= []
     state.styles ||= {}

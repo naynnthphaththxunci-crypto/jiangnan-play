@@ -1,7 +1,25 @@
 import { describe, expect, it } from 'vitest'
 import { BALANCE, earlyOrder, energyOfPieceLevel, parseRewardText, storyDef } from '../src/balance1120'
 import { defaultConfig } from '../src/config'
-import { buildTask, createGame, fillOrders, makeProducer, maybeOfferStory, mulberry32, openStoryCard, syncEarlyOrders } from '../src/logic/sim'
+import {
+  buildTask,
+  claimLevelModal,
+  completeOrder,
+  createGame,
+  dropItem,
+  fillOrders,
+  hydrate,
+  lockAt,
+  makeProducer,
+  makeProduct,
+  maybeOfferStory,
+  mulberry32,
+  nextTask,
+  openStoryCard,
+  resolveGuides,
+  serialize,
+  syncEarlyOrders,
+} from '../src/logic/sim'
 
 describe('1120 数值表', () => {
   it('前期订单照抄，冲突单也不改金币', () => {
@@ -111,5 +129,87 @@ describe('1120 数值表', () => {
     expect(state.orders.every((order) => order.slots.every((slot) => slot.line === 'food'))).toBe(true)
     expect(state.orders.some((order) => order.blocker)).toBe(false)
     expect(state.orders.every((order) => order.slots.every((slot) => slot.level >= 3))).toBe(true)
+  })
+
+  it('剧情 15 经验按级清零，奖励只在升到那一级时发，开局没有饮料母棋', () => {
+    const cfg = defaultConfig()
+    const state = createGame(1, cfg)
+    expect(state.board.flat().some((item) => item?.kind === 'producer' && item.producerId === 'bev')).toBe(false)
+    expect(state.locks.some((lock) => lock.buried.kind === 'producer' && lock.buried.id === 'bev')).toBe(false)
+    state.lesson = 'free'
+    state.phase = 'play'
+    state.coins = 100_000
+    const rng = mulberry32(4)
+    const log: { level: number; xp: number; rewards: string[] }[] = []
+    for (let i = 0; i < 9; i++) {
+      const task = nextTask(state, cfg)
+      expect(task?.id).toBe(`s${i + 1}`)
+      expect(buildTask(state, task!.id, null, cfg, rng, i).ok).toBe(true)
+      const rewards: string[] = []
+      while (state.levelModal) {
+        rewards.push(...state.levelModal.rewards.map((reward) => `${reward.id}:${reward.producerLevel ?? ''}`))
+        claimLevelModal(state, cfg, rng)
+      }
+      log.push({ level: state.level, xp: state.xp, rewards })
+    }
+    expect(log[0]).toEqual({ level: 1, xp: 15, rewards: [] })
+    expect(log[1]).toEqual({ level: 2, xp: 0, rewards: expect.arrayContaining(['chest:', 'food:4', 'pack:']) })
+    expect(log[1]?.rewards.some((reward) => reward.startsWith('bev'))).toBe(false)
+    expect(log[2]).toEqual({ level: 2, xp: 15, rewards: [] })
+    expect(log[3]).toEqual({ level: 2, xp: 30, rewards: [] })
+    expect(log[4]?.level).toBe(3)
+    expect(log[4]?.xp).toBe(0)
+    expect(log[4]?.rewards).toContain('bev:1')
+    expect(log[5]).toEqual({ level: 3, xp: 15, rewards: [] })
+    expect(log[8]).toEqual({ level: 4, xp: 0, rewards: expect.arrayContaining(['chest:']) })
+    expect(log[8]?.rewards.some((reward) => reward.startsWith('bev'))).toBe(false)
+    const bev = [...state.board.flat(), ...state.rewards].find((item) => item?.kind === 'producer' && item.producerId === 'bev')
+    expect(bev?.kind === 'producer' && bev.level).toBe(1)
+    const before = state.xp
+    state.locks = state.locks.filter((lock) => lock.row !== 0 || lock.col !== 0)
+    state.board[0][0] = makeProduct(state, 'food', 3)
+    state.orders = [{ id: 'pay', customerId: 'xiaotao', big: false, slots: [{ line: 'food', level: 3, filled: false }], payCoins: 2 }]
+    expect(completeOrder(state, 'pay', cfg, rng, 9).ok).toBe(true)
+    expect(state.xp).toBe(before)
+    expect(state.level).toBe(4)
+  })
+
+  it('教学合出订单要的猫粮就进入交单，旧档带不回 4 级饮料母棋', () => {
+    const cfg = defaultConfig()
+    const state = createGame(1, cfg)
+    state.phase = 'opening'
+    state.openingStep = cfg.copy.tutorial.length
+    state.lesson = 'focus'
+    state.orders = [{ id: 'e1', customerId: 'xiaotao', big: false, scripted: true, slots: [{ line: 'food', level: 3, filled: false }], payCoins: 2 }]
+    state.locks = state.locks.filter((lock) => lock.row !== 0 || lock.col !== 0)
+    state.board[0][0] = makeProduct(state, 'food', 2)
+    state.locks = state.locks.filter((lock) => lock.row !== 0 || lock.col !== 1)
+    state.locks.push({ row: 0, col: 1, cover: 'sand', veil: 'half', buried: { kind: 'product', line: 'food', level: 2 } })
+    expect(dropItem(state, { row: 0, col: 0 }, { row: 0, col: 1 }, cfg).ok).toBe(true)
+    expect(lockAt(state, 0, 1)).toBeUndefined()
+    expect(state.lesson).toBe('deliver')
+    state.lesson = 'focus'
+    state.board[0][1] = makeProduct(state, 'food', 3)
+    resolveGuides(state, cfg)
+    expect(state.lesson).toBe('deliver')
+
+    const stale = createGame(2, cfg)
+    stale.level = 4
+    stale.xp = 30
+    stale.tasksDone = ['s1', 's2']
+    stale.board[1][1] = { uid: 'tea', kind: 'producer', producerId: 'bev', line: 'bev', level: 4, charges: 9, cooldownUntil: 0 }
+    const raw = JSON.parse(serialize(stale, cfg)) as { curve?: string; economy: typeof cfg.economy }
+    delete raw.curve
+    raw.economy = {
+      ...cfg.economy,
+      levelTaskThresholds: [10, 10, 10],
+      levelRewards: [{ level: 4, rewards: [{ id: 'bev', name: '4级饮料母棋', producerLevel: 4 }] }],
+    }
+    const next = defaultConfig()
+    const loaded = hydrate(JSON.stringify(raw), next)
+    expect(loaded?.level).toBe(2)
+    expect(loaded?.xp).toBe(0)
+    expect(next.economy.levelTaskThresholds[0]).toBe(30)
+    expect(next.economy.levelRewards.find((entry) => entry.level === 4)?.rewards.some((reward) => reward.id === 'bev')).toBe(false)
   })
 })

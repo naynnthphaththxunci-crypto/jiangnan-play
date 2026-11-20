@@ -121,7 +121,7 @@ describe('修缮', () => {
     const { state, cfg } = boot()
     finish(state, cfg, 2)
     expect(state.level).toBe(2)
-    expect(state.xp).toBe(30)
+    expect(state.xp).toBe(0)
     const owned = [...state.board.flat(), ...state.rewards, ...state.pending]
     expect(owned.some((item) => item?.kind === 'producer' && item.producerId === 'food' && item.level === 4)).toBe(true)
     expect(owned.some((item) => item?.kind === 'chest')).toBe(true)
@@ -135,7 +135,7 @@ describe('修缮', () => {
         state.rewards.some((item) => item.kind === 'producer' && item.producerId === 'bev'),
     ).toBeTruthy()
 
-    expect(state.xp).toBe(75)
+    expect(state.xp).toBe(0)
     expect(state.level).toBe(3)
     expect(nextTask(state, cfg)?.id).toBe('s6')
   })

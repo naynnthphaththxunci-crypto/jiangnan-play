@@ -180,14 +180,29 @@ export function designToScreen(
   }
 }
 
+function cellSpec(row: number, col: number): Box {
+  return designCell(row, col) ?? { x: BOARD_X + 43 + col * 141, y: BOARD_Y + 42 + row * 143, w: 139, h: 140 }
+}
+
 export function cellOnBoard(board: { x: number; y: number }, scale: number, row: number, col: number): Box {
-  const spec = designCell(row, col) ?? { x: BOARD_X + 43 + col * 141, y: BOARD_Y + 42 + row * 143, w: 139, h: 140 }
+  const spec = cellSpec(row, col)
   const side = spec.w * scale
   return {
     x: board.x + (spec.x - BOARD_X) * scale,
     y: board.y + (spec.y - BOARD_Y) * scale + (spec.h * scale - side) / 2,
     w: side,
     h: side,
+  }
+}
+
+/** 木格的整格，给遮罩挖孔。棋子仍放在格子里居中的正方形上。 */
+export function cellWoodRect(board: { x: number; y: number }, scale: number, row: number, col: number): Box {
+  const spec = cellSpec(row, col)
+  return {
+    x: board.x + (spec.x - BOARD_X) * scale,
+    y: board.y + (spec.y - BOARD_Y) * scale,
+    w: spec.w * scale,
+    h: spec.h * scale,
   }
 }
 

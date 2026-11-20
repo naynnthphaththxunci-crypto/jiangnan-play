@@ -50,7 +50,7 @@ import { selectBreathScale, selectFrameRect } from './selectFrame'
 import { curtainBambooPlace, curtainBitmaps, curtainDrop, curtainPlace } from './curtain'
 import { alignedHome, arrowPoke, storyCardRects, type HomeBox } from './homeLayout'
 import { homeArt, type HomeArtId } from './homeArt'
-import { designToScreen } from './hechengLayout'
+import { cellWoodRect, designToScreen } from './hechengLayout'
 import { orderTickPlace } from './orderTick'
 import { COMIC_FONT, comicCursor, comicFontReady, comicPanelImage, comicPrompt, comicSilaImage, wrapComicText } from './comic'
 import { openingFilm } from './openingFilm'
@@ -1628,6 +1628,7 @@ function drawStorageLesson(model: RenderModel): void {
 }
 
 function drawHand(model: RenderModel): void {
+  if (model.state.lesson && model.state.lesson !== 'free') return
   if (!model.showHand || model.state.phase !== 'play' || model.chain) return
   if (model.state.storageLesson > 0 && model.state.storageLesson < 4) return
   if (model.state.mintStep === 'select' || model.state.mintStep === 'produce' || model.state.mintStep === 'merge' || model.state.mintStep === 'deliver') return
@@ -1999,7 +2000,7 @@ function lessonDialogBox(model: RenderModel): Rect | null {
     box.y = Math.max(frame.hud.y + frame.hud.h + 4, top - box.h - 12)
   }
   if (lesson === 'merge' || lesson === 'mergeC' || lesson === 'mergeD' || lesson === 'focus') {
-    const holes = lesson === 'focus' ? focusCells(model).map((cell) => cellRect(frame, cell.row, cell.col)) : tutorialHoles(model)
+    const holes = lesson === 'focus' ? focusHoles(model) : tutorialHoles(model)
     if (holes.length) above(holes)
     else box.y = frame.board.y - box.h - 8
     return box
@@ -2021,30 +2022,23 @@ function lessonDialogBox(model: RenderModel): Rect | null {
 }
 
 function focusCells(model: RenderModel): { row: number; col: number }[] {
-  const { state, cfg } = model
-  let row = cfg.board.roles.mergeD?.row ?? cfg.board.roles.producer.row
-  let col = cfg.board.roles.mergeD?.col ?? cfg.board.roles.producer.col
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
-      const item = state.board[r]?.[c]
-      if (item?.kind === 'producer' && item.producerId === 'food' && item.level >= 4) {
-        row = r
-        col = c
-      }
+  const { state } = model
+  const open: { row: number; col: number }[] = []
+  let producer: { row: number; col: number } | null = null
+  for (let row = 0; row < ROWS; row++) {
+    for (let col = 0; col < COLS; col++) {
+      const item = state.board[row]?.[col]
+      if (item?.kind === 'producer' && item.producerId === 'food' && item.level >= 4) producer = { row, col }
+      if (!lockAt(state, row, col)) open.push({ row, col })
     }
   }
-  const cells = [{ row, col }]
-  for (let dr = -1; dr <= 1; dr++) {
-    for (let dc = -1; dc <= 1; dc++) {
-      if (dr === 0 && dc === 0) continue
-      const nr = row + dr
-      const nc = col + dc
-      if (nr < 0 || nc < 0 || nr >= ROWS || nc >= COLS) continue
-      const lock = lockAt(state, nr, nc)
-      if (!lock || lock.veil === 'half') cells.push({ row: nr, col: nc })
-    }
-  }
-  return cells
+  if (!producer) return open
+  return [producer, ...open.filter((cell) => cell.row !== producer.row || cell.col !== producer.col)]
+}
+
+function focusHoles(model: RenderModel): Rect[] {
+  const scale = model.frame.w / 1080
+  return focusCells(model).map((cell) => cellWoodRect(model.frame.board, scale, cell.row, cell.col))
 }
 
 function punchCells(ctx: CanvasRenderingContext2D, view: Rect, holes: Rect[]): void {
@@ -2077,14 +2071,21 @@ function drawLesson(model: RenderModel): void {
   }
   if (lesson === 'focus') {
     const cells = focusCells(model)
-    const holes = cells.map((cell) => cellRect(frame, cell.row, cell.col))
-    punchCells(ctx, { x: 0, y: 0, w: frame.w, h: frame.h }, holes)
+    punchCells(ctx, { x: 0, y: 0, w: frame.w, h: frame.h }, focusHoles(model))
     const box = lessonDialogBox(model)
     if (box) paintHomeImg(ctx, 'tut4', box)
-    const producer = cells[0]
-    if (producer) {
-      const rect = cellRect(frame, producer.row, producer.col)
-      paintHand(ctx, rect.x + rect.w / 2, rect.y + rect.h / 2, frame.board.cell)
+    const pair = foodMergePair(state)
+    if (pair) {
+      const a = cellRect(frame, pair[0].row, pair[0].col)
+      const b = cellRect(frame, pair[1].row, pair[1].col)
+      const t = (Math.sin(model.realNow / 280) + 1) / 2
+      paintHand(ctx, a.x + a.w / 2 + (b.x - a.x) * t, a.y + a.h / 2 + (b.y - a.y) * t, frame.board.cell)
+    } else {
+      const producer = cells[0]
+      if (producer) {
+        const rect = cellRect(frame, producer.row, producer.col)
+        paintHand(ctx, rect.x + rect.w / 2, rect.y + rect.h / 2, frame.board.cell)
+      }
     }
     return
   }
@@ -2109,6 +2110,22 @@ function drawLesson(model: RenderModel): void {
     if (frame.storyBtn.w > 0) paintHand(ctx, frame.storyBtn.x + frame.storyBtn.w / 2, frame.storyBtn.y + frame.storyBtn.h / 2, frame.board.cell)
   }
   void cfg
+}
+
+function foodMergePair(state: GameState): [{ row: number; col: number }, { row: number; col: number }] | null {
+  const found: { row: number; col: number; level: number }[] = []
+  for (let row = 0; row < ROWS; row++) {
+    for (let col = 0; col < COLS; col++) {
+      const item = state.board[row]?.[col]
+      if (item?.kind === 'product' && item.line === 'food' && !lockAt(state, row, col)) found.push({ row, col, level: item.level })
+    }
+  }
+  for (let i = 0; i < found.length; i++) {
+    for (let j = i + 1; j < found.length; j++) {
+      if (found[i]?.level === found[j]?.level) return [found[i]!, found[j]!]
+    }
+  }
+  return null
 }
 
 function paintLiftedOrder(model: RenderModel, index: number): void {
