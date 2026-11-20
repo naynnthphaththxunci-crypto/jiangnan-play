@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BALANCE, cellPos, earlyOrder, storyDef } from '../src/balance1120'
+import { BALANCE, cellPos, earlyOrder, energyOfPieceLevel, parseRewardText, storyDef } from '../src/balance1120'
 import { defaultConfig } from '../src/config'
 import { buildTask, createGame, fillOrders, makeProducer, maybeOfferStory, mulberry32, openStoryCard, syncEarlyOrders } from '../src/logic/sim'
 
@@ -29,6 +29,12 @@ describe('1120 数值表', () => {
     expect(cfg.economy.xpPerTask).toBe(15)
     expect(cfg.economy.levelTaskThresholds[0]).toBe(30)
     expect(cfg.items.potions.map((potion) => potion.energy)).toEqual([2, 6, 15, 40, 100])
+    expect(['体力4', '体力3', '体力2', '体力1', '体力1'].map(energyOfPieceLevel)).toEqual([40, 15, 6, 2, 2])
+    expect(cfg.economy.newbieChest).toEqual([40, 15, 6, 2, 2])
+    expect(parseRewardText('猫粮母棋4 ×1')[0]?.producerLevel).toBe(4)
+    expect(parseRewardText('花盆母棋3 ×1')[0]?.producerLevel).toBe(3)
+    expect(parseRewardText('饮料母棋1 ×1')[0]?.producerLevel).toBe(1)
+    expect(parseRewardText('玩具母棋（原文未写等级，【推断】1级）×1')[0]?.producerLevel).toBe(1)
   })
 
   it('开局盘 b4、b5 是 2 级猫粮母棋，c5 半遮 3 级', () => {

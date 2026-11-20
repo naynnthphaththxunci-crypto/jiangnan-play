@@ -56,6 +56,7 @@ interface BalanceFile {
   smileRounds: { round: number; target: number }[]
   openingBoard: BalanceCell[]
   resources: { coin: number[]; gem: number[]; energy: number[] }
+  chests: { id: string; firstOpenFixed?: string[]; table?: Record<string, number> | string }[]
   startCoins: string
   ordersLate: {
     maxOnScreen: number
@@ -159,15 +160,21 @@ export function applyBalance(cfg: GameConfig): void {
   cfg.economy.smileGoal = BALANCE.smileRounds[0]?.target ?? 6
   cfg.economy.giftCooldownMs = 120_000
   cfg.orders.maxActive = BALANCE.ordersLate.maxOnScreen
-  cfg.economy.newbieChest = [100, 40, 15, 2, 2]
+  const energyChest = BALANCE.chests.find((chest) => chest.id === 'energy_chest')
+  cfg.economy.newbieChest = (energyChest?.firstOpenFixed ?? ['体力4', '体力3', '体力2', '体力1', '体力1']).map((label) =>
+    energyOfPieceLevel(label),
+  )
   cfg.economy.newbieChestFixed = true
   cfg.economy.newbieChestCount = 1
-  cfg.economy.chestWeights = [
-    { energy: 2, weight: 40 },
-    { energy: 6, weight: 20 },
-    { energy: 15, weight: 20 },
-    { energy: 40, weight: 20 },
-  ]
+  const energyTable = energyChest && typeof energyChest.table === 'object' ? energyChest.table : null
+  cfg.economy.chestWeights = energyTable
+    ? Object.entries(energyTable).map(([label, weight]) => ({ energy: energyOfPieceLevel(label), weight }))
+    : [
+        { energy: 2, weight: 40 },
+        { energy: 6, weight: 20 },
+        { energy: 15, weight: 20 },
+        { energy: 40, weight: 20 },
+      ]
   cfg.economy.levelRewards = BALANCE.levels.map((level) => ({
     level: level.level,
     rewards: parseRewardText(level.reward ?? ''),
@@ -250,6 +257,12 @@ export function producerCode(jsonId: string): string {
 
 export function asProducer(def: ProducerDef): ProducerDef {
   return def
+}
+
+/** 「体力4」是 4 级体力棋，体力值取该级，不是下一级。 */
+export function energyOfPieceLevel(label: string): number {
+  const level = Number(label.match(/(\d+)/)?.[1] ?? 1)
+  return BALANCE.resources.energy[level - 1] ?? 0
 }
 
 export function coinItemLevel(amount: number): number {

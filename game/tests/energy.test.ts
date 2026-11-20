@@ -209,11 +209,17 @@ describe('体力', () => {
       }
     }
     drain(() => 0.99)
-    expect(potionEnergySum(state, cfg)).toBe(159)
+    const firstTiers = state.board
+      .flat()
+      .filter((item) => item?.kind === 'potion')
+      .map((item) => (item?.kind === 'potion' ? item.tier : 0))
+      .sort((a, b) => b - a)
+    expect(firstTiers).toEqual([4, 3, 2, 1, 1])
+    expect(potionEnergySum(state, cfg)).toBe(65)
     drain(() => 0.99)
-    expect(potionEnergySum(state, cfg)).toBe(359)
+    expect(potionEnergySum(state, cfg)).toBe(265)
     drain(() => 0)
-    expect(potionEnergySum(state, cfg)).toBe(369)
+    expect(potionEnergySum(state, cfg)).toBe(275)
     expect(state.chestsOpened).toBe(3)
   })
 
