@@ -28,7 +28,7 @@ describe('Allen 11-06 母棋、剧情和暂存', () => {
   it('六条链的母棋都能两两合成，最高到链尾，开局猫粮是 6 级', () => {
     const { state, cfg } = boot()
     const starter = state.board.flat().find((item) => item?.kind === 'producer' && item.producerId === 'food')
-    expect(starter && starter.kind === 'producer' && starter.level).toBe(1)
+    expect(starter && starter.kind === 'producer' && starter.level).toBe(2)
     expect(state.board.flat().some((item) => item?.kind === 'producer' && item.producerId !== 'food')).toBe(false)
     for (const id of ['food', 'toy', 'bev'] as const) {
       state.board[0][0] = makeProducer(state, id, cfg, 1)
@@ -40,8 +40,8 @@ describe('Allen 11-06 母棋、剧情和暂存', () => {
       expect(dropItem(state, { row: 0, col: 0 }, { row: 0, col: 1 }, cfg).ok).toBe(true)
       const third = state.board[0][1]
       expect(third?.kind === 'producer' && third.level).toBe(3)
-      state.board[0][0] = makeProducer(state, id, cfg, 10)
-      state.board[0][1] = makeProducer(state, id, cfg, 10)
+      state.board[0][0] = makeProducer(state, id, cfg, 11)
+      state.board[0][1] = makeProducer(state, id, cfg, 11)
       dropItem(state, { row: 0, col: 0 }, { row: 0, col: 1 }, cfg)
       expect(state.board[0][0]?.kind).toBe('producer')
       expect(state.board[0][1]?.kind).toBe('producer')
@@ -70,7 +70,7 @@ describe('Allen 11-06 母棋、剧情和暂存', () => {
     const { state, cfg } = boot()
     state.producerSeen.food = [4]
     const chain = producerChain(state, 'food', 4, cfg.economy.producerMaxLevel)
-    expect(chain.map((slot) => slot.level)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    expect(chain.map((slot) => slot.level)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
     expect(chain[3]?.label).toBe('4')
     expect(chain[3]?.current).toBe(true)
     expect(chain[0]?.label).toBe('?')
@@ -126,11 +126,8 @@ describe('Allen 11-06 母棋、剧情和暂存', () => {
     expect(dropItem(state, { row: 4, col: 1 }, { row: 4, col: 2 }, cfg).ok).toBe(true)
     expect(lockAt(state, 3, 3)?.veil).toBe('half')
     expect(lockAt(state, 5, 3)?.veil).toBe('half')
-    expect(lockAt(state, 4, 4)?.veil).toBe('half')
-    expect(state.openingStep).toBe(2)
-    expect(dropItem(state, { row: 4, col: 2 }, { row: 4, col: 3 }, cfg).ok).toBe(true)
     expect(state.lesson).toBe('focus')
-    expect(state.board[4][3]?.kind === 'producer' && state.board[4][3].level).toBe(4)
+    expect(state.board[4][2]?.kind === 'producer' && state.board[4][2].level).toBe(4)
   })
 
   it('开局不再弹出进厨房', () => {

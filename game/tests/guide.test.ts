@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { defaultConfig } from '../src/config'
-import { homePlaces } from '../src/homeLayout'
 import { cellRect, contains, guideHole, hitTest, layout, type LayoutInput } from '../src/layout'
 import { SIDE_ICON_LEVEL } from '../src/hechengLayout'
 import type { GameState } from '../src/types'
@@ -163,7 +162,7 @@ describe('强制引导', () => {
     const house = frame({ mode: 'house' })
     state.guide = 'repairBtn'
     expect(guideHole(house, state, cfg)).toBe(house.buildBtn)
-    const build = homePlaces(house.w, house.h).build
+    const build = house.houseBtn
     expect(hitTest(house, build.x + build.w / 2, build.y + build.h / 2)?.kind).toBe('back')
     state.guide = 'backBtn'
     expect(guideHole(house, state, cfg)).toBe(house.backBtn)
@@ -229,7 +228,7 @@ describe('强制引导', () => {
   it('新母棋引导：正常、只剩一格、棋盘满、刷新', () => {
     const cfg = defaultConfig()
     const normal = createGame(1, cfg)
-    const spot = cfg.board.roles.producer
+    const spot = { row: 3, col: 1 }
     normal.phase = 'play'
     normal.locks = []
     const starter = normal.board[spot.row]?.[spot.col]
@@ -247,7 +246,7 @@ describe('强制引导', () => {
     few.phase = 'play'
     few.locks = []
     fill(few, 1)
-    const fewProducer = few.board[cfg.board.roles.producer.row]?.[cfg.board.roles.producer.col]
+    const fewProducer = few.board[spot.row]?.[spot.col]
     if (fewProducer?.kind === 'producer') {
       fewProducer.level = 4
       fewProducer.charges = 200
@@ -308,7 +307,7 @@ describe('强制引导', () => {
     fill(build, 0)
     expect(guideSpot(build, cfg)).toBe('build')
     refreshGuide(build, cfg, 'house')
-    expect(build.guide).toBe('repairBtn')
+    expect(build.guide).toBe('none')
     refreshGuide(build, cfg, 'board')
     expect(build.guide).toBe('none')
 
@@ -322,7 +321,7 @@ describe('强制引导', () => {
     fill(back, 0)
     expect(guideSpot(back, cfg)).toBe('back')
     refreshGuide(back, cfg, 'board')
-    expect(back.guide).toBe('backTalk')
+    expect(back.guide).toBe('none')
     advanceGuide(back, cfg)
     expect(back.guide).toBe('none')
     const backSaved = rich()
@@ -369,7 +368,7 @@ describe('强制引导', () => {
 
     const cooled = createGame(2, cfg)
     cooled.phase = 'play'
-    const producer = cfg.board.roles.producer
+    const producer = { row: 3, col: 1 }
     const item = cooled.board[producer.row]?.[producer.col]
     if (item?.kind === 'producer') {
       item.charges = 0

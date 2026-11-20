@@ -48,7 +48,7 @@ import { drawAvatar, drawCharacter } from './cast'
 import { hechengImage, speedArtId } from './hechengArt'
 import { selectBreathScale, selectFrameRect } from './selectFrame'
 import { curtainBambooPlace, curtainBitmaps, curtainDrop, curtainPlace } from './curtain'
-import { arrowPoke, homePlaces, type HomeBox } from './homeLayout'
+import { alignedHome, arrowPoke, storyCardRects, type HomeBox } from './homeLayout'
 import { homeArt, type HomeArtId } from './homeArt'
 import { designToScreen } from './hechengLayout'
 import { orderTickPlace } from './orderTick'
@@ -129,6 +129,7 @@ export function render(model: RenderModel): void {
   const overlay = activeOverlay(model.state)
   if (overlay === 'level') drawLevelModal(model)
   else if (overlay === 'smile') drawSmileModal(model)
+  else if (overlay === 'story') drawStoryCard(model)
   else if (overlay === 'shop') drawShop(model)
   else if (overlay === 'detail') drawDetail(model)
   else if (overlay === 'talk') {
@@ -318,6 +319,20 @@ function drawItem(
   ctx.translate(cx, cy)
   ctx.scale(scale, scale)
   ctx.translate(-cx, -cy)
+  if ((item.kind === 'producer' && item.producerId === 'dog') || (item.kind === 'product' && item.line === 'dog')) {
+    const label = item.kind === 'producer' ? '狗窝' : '狗'
+    roundRect(ctx, box.x + 4, box.y + box.h * 0.22, box.w - 8, box.h * 0.42, 6)
+    ctx.fillStyle = '#8a5a32'
+    ctx.fill()
+    text(ctx, label, cx, cy, Math.max(11, box.w * 0.22), '#fff6e4')
+    const badge = Math.max(12, box.w * 0.28)
+    roundRect(ctx, box.x + box.w - badge - 2, box.y + 2, badge, badge * 0.72, 4)
+    ctx.fillStyle = 'rgba(42,33,24,0.82)'
+    ctx.fill()
+    text(ctx, String(item.level), box.x + box.w - badge / 2 - 2, box.y + badge * 0.36 + 2, badge * 0.5, '#fff6e4')
+    ctx.restore()
+    return
+  }
   if (item.kind === 'producer') {
     const sprite = producerSprite(item.producerId, item.level)
     const place = producerPlace(item.producerId, item.level)
@@ -1834,9 +1849,61 @@ function paintHomeImg(ctx: CanvasRenderingContext2D, id: HomeArtId, box: HomeBox
   ctx.restore()
 }
 
+function drawHostessBubble(ctx: CanvasRenderingContext2D, bubble: Rect, state: GameState, cfg: GameConfig): void {
+  const task = nextTask(state, cfg)
+  if (!task || bubble.w <= 0) return
+  const price = taskPrice(task, cfg)
+  ctx.fillStyle = '#fffaf2'
+  ctx.strokeStyle = '#6a3a22'
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.roundRect(bubble.x, bubble.y, bubble.w, bubble.h, 16)
+  ctx.fill()
+  ctx.stroke()
+  text(ctx, String(price), bubble.x + bubble.w * 0.38, bubble.y + bubble.h / 2, bubble.h * 0.42, '#6a3a22', 'center', 'middle', 700)
+  const badge = Math.min(bubble.h * 0.46, 28)
+  ctx.beginPath()
+  ctx.fillStyle = '#d23b3b'
+  ctx.arc(bubble.x + bubble.w - badge, bubble.y + badge * 0.2, badge * 0.55, 0, Math.PI * 2)
+  ctx.fill()
+  text(ctx, '!', bubble.x + bubble.w - badge, bubble.y + badge * 0.2, badge * 0.7, '#fffaf2', 'center', 'middle', 700)
+}
+
+function drawStoryCard(model: RenderModel): void {
+  const { ctx, frame, state, cfg } = model
+  const rects = storyCardRects(frame.w, frame.h)
+  const task = nextTask(state, cfg)
+  const price = task ? taskPrice(task, cfg) : 0
+  const no = state.storyCard?.no ?? 0
+  ctx.fillStyle = 'rgba(0,0,0,0.6)'
+  ctx.fillRect(0, 0, frame.w, frame.h)
+  ctx.fillStyle = '#fff6ea'
+  ctx.strokeStyle = '#6a3a22'
+  ctx.lineWidth = 3
+  ctx.beginPath()
+  ctx.roundRect(rects.card.x, rects.card.y, rects.card.w, rects.card.h, 18)
+  ctx.fill()
+  ctx.stroke()
+  ctx.fillStyle = '#f0d8bc'
+  ctx.fillRect(rects.portrait.x, rects.portrait.y, rects.portrait.w, rects.portrait.h)
+  text(ctx, '温如月', rects.portrait.x + rects.portrait.w / 2, rects.portrait.y + rects.portrait.h / 2, rects.portrait.w * 0.16, '#6a3a22', 'center', 'middle', 700)
+  text(ctx, `剧情 ${no}`, rects.portrait.x + rects.portrait.w + 24, rects.card.y + 78, 28, '#3a2416', 'left', 'middle', 700)
+  text(ctx, '经验 15', rects.portrait.x + rects.portrait.w + 24, rects.card.y + 130, 20, '#8a5a32', 'left', 'middle', 700)
+  ctx.fillStyle = '#d23b3b'
+  ctx.beginPath()
+  ctx.arc(rects.close.x + rects.close.w / 2, rects.close.y + rects.close.h / 2, rects.close.w / 2, 0, Math.PI * 2)
+  ctx.fill()
+  text(ctx, '×', rects.close.x + rects.close.w / 2, rects.close.y + rects.close.h / 2, 18, '#fffaf2', 'center', 'middle', 700)
+  ctx.fillStyle = '#3c8f4a'
+  ctx.beginPath()
+  ctx.roundRect(rects.start.x, rects.start.y, rects.start.w, rects.start.h, 12)
+  ctx.fill()
+  text(ctx, `开始 ${price}`, rects.start.x + rects.start.w / 2, rects.start.y + rects.start.h / 2, 22, '#fffaf2', 'center', 'middle', 700)
+}
+
 function drawHouse(model: RenderModel): void {
   const { ctx, frame, state, cfg, realNow } = model
-  const home = homePlaces(frame.w, frame.h)
+  const home = alignedHome(frame)
   ctx.fillStyle = '#000'
   ctx.fillRect(0, 0, frame.w, frame.h)
   paintHomeImg(ctx, 'bg', home.bg)
@@ -1884,6 +1951,7 @@ function drawHouse(model: RenderModel): void {
   paintHomeImg(ctx, 'badge', home.badgeSettings)
   paintHomeImg(ctx, 'badge', home.badgeShop)
   const lesson = state.lesson
+  if (lesson === 'free') drawHostessBubble(ctx, home.bubble, state, cfg)
   const dim = lesson === 'home1' || lesson === 'home2' || lesson === 'home3'
   if (dim) {
     ctx.fillStyle = 'rgba(0,0,0,0.6)'
@@ -2013,18 +2081,10 @@ function drawLesson(model: RenderModel): void {
     punchCells(ctx, { x: 0, y: 0, w: frame.w, h: frame.h }, holes)
     const box = lessonDialogBox(model)
     if (box) paintHomeImg(ctx, 'tut4', box)
-    const pair = foodMergePair(state)
-    if (pair) {
-      const a = cellRect(frame, pair[0].row, pair[0].col)
-      const b = cellRect(frame, pair[1].row, pair[1].col)
-      const t = (Math.sin(model.realNow / 280) + 1) / 2
-      paintHand(ctx, a.x + a.w / 2 + (b.x - a.x) * t, a.y + a.h / 2 + (b.y - a.y) * t, frame.board.cell)
-    } else {
-      const producer = cells[0]
-      if (producer) {
-        const rect = cellRect(frame, producer.row, producer.col)
-        paintHand(ctx, rect.x + rect.w / 2, rect.y + rect.h / 2, frame.board.cell)
-      }
+    const producer = cells[0]
+    if (producer) {
+      const rect = cellRect(frame, producer.row, producer.col)
+      paintHand(ctx, rect.x + rect.w / 2, rect.y + rect.h / 2, frame.board.cell)
     }
     return
   }
@@ -2049,22 +2109,6 @@ function drawLesson(model: RenderModel): void {
     if (frame.storyBtn.w > 0) paintHand(ctx, frame.storyBtn.x + frame.storyBtn.w / 2, frame.storyBtn.y + frame.storyBtn.h / 2, frame.board.cell)
   }
   void cfg
-}
-
-function foodMergePair(state: GameState): [{ row: number; col: number }, { row: number; col: number }] | null {
-  const found: { row: number; col: number; level: number }[] = []
-  for (let row = 0; row < ROWS; row++) {
-    for (let col = 0; col < COLS; col++) {
-      const item = state.board[row]?.[col]
-      if (item?.kind === 'product' && item.line === 'food' && !lockAt(state, row, col)) found.push({ row, col, level: item.level })
-    }
-  }
-  for (let i = 0; i < found.length; i++) {
-    for (let j = i + 1; j < found.length; j++) {
-      if (found[i]?.level === found[j]?.level) return [found[i]!, found[j]!]
-    }
-  }
-  return null
 }
 
 function paintLiftedOrder(model: RenderModel, index: number): void {

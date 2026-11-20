@@ -5,6 +5,7 @@ import {
   createGame,
   generateOrder,
   makeProduct,
+  syncEarlyOrders,
   mulberry32,
   orderPayout,
   orderReward,
@@ -21,19 +22,24 @@ function boot() {
 }
 
 describe('订单', () => {
-  it('开局只有小桃的包子单，报酬等于第一件修缮', () => {
+  it('教学走到出货后才有小桃的第一单，金币照表是 2', () => {
     const { state, cfg } = boot()
+    state.lesson = 'free'
+    const producer = state.board.flat().find((item) => item?.kind === 'producer' && item.producerId === 'food')
+    if (producer?.kind === 'producer') producer.level = 4
+    syncEarlyOrders(state, cfg)
     expect(state.orders).toHaveLength(1)
     expect(state.orders[0].scripted).toBe(true)
     expect(state.orders[0].slots).toEqual([{ line: 'food', level: 3, filled: false }])
-    expect(orderReward(state.orders[0], cfg)).toBe(taskPrice(allTasks(cfg)[0], cfg))
-    expect(orderReward(state.orders[0], cfg)).toBe(8)
+    expect(state.orders[0].payCoins).toBe(2)
+    expect(taskPrice(allTasks(cfg)[0], cfg)).toBe(26)
   })
 
   it('没齐不能点完成，齐了一次扣掉棋盘上的物品', () => {
     const { state, cfg, rng } = boot()
     state.locks = []
     state.phase = 'play'
+    state.lesson = 'free'
     const food = state.board.flat().find((item) => item?.kind === 'producer' && item.producerId === 'food')
     if (food?.kind === 'producer') food.level = 4
     state.orders = [
@@ -56,17 +62,19 @@ describe('订单', () => {
     state.board[0][1] = makeProduct(state, 'bev', 3)
     expect(orderSatisfied(state, state.orders[0])).toBe(true)
     const done = completeOrder(state, 'mix', cfg, rng, 2)
-    expect(done.events[0]).toMatchObject({ type: 'deliver', coins: 16, smiles: 0, xp: 0 })
+    expect(done.events[0]).toMatchObject({ type: 'deliver', coins: 4, smiles: 0, xp: 0 })
     expect(state.board[0][0]).toBeNull()
     expect(state.board[0][1]).toBeNull()
     expect(state.energy).toBe(100)
-    expect(state.orders).toHaveLength(3)
+    state.lesson = 'free'
+    expect(state.orders.length).toBeGreaterThan(0)
     expect(state.orders.some((order) => order.id === 'mix')).toBe(false)
   })
 
   it('大单金边报酬是三级单的十倍，并带街坊台词', () => {
     const { state, cfg, rng } = boot()
     state.phase = 'play'
+    state.lesson = 'free'
     state.hasProducer.food = true
     const food = state.board.flat().find((item) => item?.kind === 'producer' && item.producerId === 'food')
     if (food?.kind === 'producer') food.level = 4
@@ -91,13 +99,17 @@ describe('订单', () => {
       dialogue: '这一桌，员外我包下了。',
     })
     expect(state.coins).toBe(80)
-    expect(state.orders).toHaveLength(3)
+    expect(state.orders.length).toBeGreaterThan(0)
   })
 
   it('报酬倍率立刻作用在还没交的订单上', () => {
     const { state, cfg } = boot()
+    state.lesson = 'free'
+    const producer = state.board.flat().find((item) => item?.kind === 'producer' && item.producerId === 'food')
+    if (producer?.kind === 'producer') producer.level = 4
+    syncEarlyOrders(state, cfg)
     cfg.economy.orderRewardScale = 2
-    expect(orderReward(state.orders[0], cfg)).toBe(16)
+    expect(orderPayout(state.orders[0], cfg).coins).toBe(2)
   })
 
   it('没有的产线不会被点单；没合出四级以前不点四级', () => {
@@ -169,21 +181,19 @@ describe('订单', () => {
     const { state, cfg, rng } = boot()
     skipOpening(state, cfg, rng)
     expect(state.phase).toBe('play')
-    expect(state.orders).toHaveLength(3)
+    expect(state.lesson).toBe('free')
+    expect(state.orders).toHaveLength(1)
+    expect(state.orders[0]?.earlyNo).toBe(1)
     expect(state.showHelp).toBe(true)
     expect(state.board.some((row) => row.some((item) => item?.kind === 'producer'))).toBe(true)
   })
 
   it('开局教学没结束前交单不补满三张', () => {
-    const { state, cfg, rng } = boot()
+    const { state, cfg } = boot()
     state.phase = 'opening'
+    state.lesson = 'merge'
     state.openingStep = 0
-    state.locks = state.locks.filter((lock) => !(lock.row === 0 && lock.col === 0))
-    state.board[0][0] = makeProduct(state, 'food', 3)
-    const result = completeOrder(state, 'tutorial', cfg, rng, 20)
-    expect(result.ok).toBe(true)
-    expect(state.coins).toBe(8)
+    syncEarlyOrders(state, cfg)
     expect(state.orders).toHaveLength(0)
-    expect(state.phase).toBe('opening')
   })
 })

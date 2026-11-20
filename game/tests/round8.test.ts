@@ -26,6 +26,7 @@ describe('第八轮猫猫合成', () => {
     const state = createGame(1_700_000_000_000, cfg)
     state.phase = 'play'
     state.locks = []
+    cfg.economy.producerCooldownOn = 1
     state.playedMs = cfg.economy.producerGraceMs + 1
     const spot = findProducer(state, 'food')
     expect(spot).toBeTruthy()
@@ -35,7 +36,7 @@ describe('第八轮猫猫合成', () => {
     const now = 5_000
     const first = tapProducer(state, spot, cfg, () => 0.9, now)
     expect(first.ok).toBe(true)
-    const spawned = state.board.flat().find((item) => item?.kind === 'product' && item.line === 'food' && item.level === 2)
+    const spawned = state.board.flat().find((item) => item?.kind === 'product' && item.line === 'food' && item.level === 1)
     expect(spawned).toBeTruthy()
     const producer = state.board[spot.row]?.[spot.col]
     expect(producer?.kind === 'producer' && producer.cooldownUntil).toBe(0)
@@ -66,7 +67,7 @@ describe('第八轮猫猫合成', () => {
     const ids = defaultConfig().items.lines.map((line) => line.id)
     expect(ids).toContain('food')
     expect(ids).toContain('bed')
-    expect(ids.find((id) => id === 'bed') && defaultConfig().items.lines.find((line) => line.id === 'bed')?.levels).toHaveLength(10)
+    expect(ids.find((id) => id === 'bed') && defaultConfig().items.lines.find((line) => line.id === 'bed')?.levels).toHaveLength(12)
     const banned = ['"steamer"', '"bamboo"']
     const blob = JSON.stringify({ items, producers, orders, economy, board, copy, opening })
     for (const word of banned) expect(blob.includes(word), word).toBe(false)

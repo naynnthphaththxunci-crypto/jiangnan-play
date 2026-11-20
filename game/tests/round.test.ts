@@ -18,6 +18,7 @@ import {
   makeProduct,
   mulberry32,
   orderCardAction,
+  syncEarlyOrders,
   orderMarks,
   orderSatisfied,
   orderStripAction,
@@ -143,7 +144,11 @@ describe('第三轮教学、订单和布局', () => {
   })
 
   it('点订单空白处不交单，只有完成按钮能交', () => {
-    const { state } = boot()
+    const { state, cfg } = boot()
+    state.lesson = 'free'
+    const producer = state.board.flat().find((item) => item?.kind === 'producer' && item.producerId === 'food')
+    if (producer?.kind === 'producer') producer.level = 4
+    syncEarlyOrders(state, cfg)
     const order = state.orders[0]
     if (!order) throw new Error('missing order')
     const button = { x: 10, y: 80, w: 40, h: 24 }

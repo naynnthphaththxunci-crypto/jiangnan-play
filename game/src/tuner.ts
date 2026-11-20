@@ -567,6 +567,68 @@ export const SLIDERS: SliderSpec[] = [
     text: (v) => `${Math.round(v)} 级`,
   },
   {
+    id: 'food3Price',
+    label: '猫粮3单价',
+    min: 1,
+    max: 40,
+    step: 1,
+    get: (c) => c.items.lines.find((line) => line.id === 'food')?.levels.find((level) => level.level === 3)?.coins ?? 2,
+    set: (c, v) => {
+      const level = c.items.lines.find((line) => line.id === 'food')?.levels.find((entry) => entry.level === 3)
+      if (level) level.coins = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)} 金币`,
+  },
+  {
+    id: 'foodHard',
+    label: '猫粮5级难出',
+    min: 0,
+    max: 40,
+    step: 0.5,
+    get: (c) => c.producers.find((entry) => entry.id === 'food')?.drops?.find((row) => row.level === 5)?.hard ?? 10,
+    set: (c, v) => {
+      const row = c.producers.find((entry) => entry.id === 'food')?.drops?.find((entry) => entry.level === 5)
+      if (row) row.hard = Math.round(v * 10) / 10
+    },
+    text: (v) => `${Math.round(v * 10) / 10}%`,
+  },
+  {
+    id: 'cooldownSwitch',
+    label: '猫粮饮料冷却',
+    min: 0,
+    max: 1,
+    step: 1,
+    get: (c) => c.economy.producerCooldownOn ?? 0,
+    set: (c, v) => {
+      c.economy.producerCooldownOn = v >= 1 ? 1 : 0
+    },
+    text: (v) => (v >= 1 ? '旧规则开' : '不冷却'),
+  },
+  {
+    id: 'maxOrders',
+    label: '屏上订单上限',
+    min: 1,
+    max: 6,
+    step: 1,
+    get: (c) => c.orders.maxActive,
+    set: (c, v) => {
+      c.orders.maxActive = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)} 单`,
+  },
+  {
+    id: 'foodShare',
+    label: '食品饮料占比',
+    min: 0,
+    max: 1,
+    step: 0.05,
+    get: (c) => c.economy.foodDrinkShare ?? 0.8,
+    set: (c, v) => {
+      c.economy.foodDrinkShare = Math.round(v * 100) / 100
+    },
+    text: (v) => `${Math.round(v * 100)}%`,
+  },
+  {
     id: 'smileGoal',
     label: '笑脸开奖',
     min: 4,

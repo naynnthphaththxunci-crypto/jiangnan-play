@@ -67,6 +67,73 @@ export function buildHit(viewW: number, viewH: number): HomeBox {
   return { x: build.x - pad, y: build.y - pad, w: build.w + pad * 2, h: build.h + pad * 2 }
 }
 
+/** 主场景上和合成页共用的按钮，直接用合成页算好的屏幕矩形。 */
+export function alignedHome(frame: {
+  w: number
+  board: { y: number }
+  shopBtn: HomeBox
+  houseBtn: HomeBox
+  pendingBtn: HomeBox
+  avatarSlot: HomeBox
+  energySlot: HomeBox
+  coinSlot: HomeBox
+  gemSlot: HomeBox
+}) {
+  const scale = frame.w / HOME_W
+  const sceneTop = frame.board.y - 714 * scale
+  const fit = { x: 0, y: sceneTop, scale }
+  const settings = {
+    x: frame.shopBtn.x - (918 - 793) * scale,
+    y: frame.shopBtn.y + (248 - 247) * scale,
+    w: 108 * scale,
+    h: 106 * scale,
+  }
+  const pad = BUILD_HIT_PAD * scale
+  const build = frame.houseBtn
+  return {
+    fit,
+    bg: sceneBox(fit, -115, -4, 1310, 2348),
+    dialog: sceneBox(fit, 47, 819, 986, 702),
+    arrow: sceneBox(fit, 668, 1819, 235, 249),
+    menu: sceneBox(fit, 540, 362, 405, 546),
+    settings,
+    shop: frame.shopBtn,
+    storage: frame.pendingBtn,
+    build,
+    hit: { x: build.x - pad, y: build.y - pad, w: build.w + pad * 2, h: build.h + pad * 2 },
+    hostess: sceneBox(fit, 250, 900, 480, 640),
+    bubble: sceneBox(fit, 500, 800, 200, 110),
+    avatar: frame.avatarSlot,
+    energy: frame.energySlot,
+    coin: frame.coinSlot,
+    gem: frame.gemSlot,
+    badgeSettings: {
+      x: settings.x + (874 - 793) * scale,
+      y: settings.y + (246 - 248) * scale,
+      w: 38 * scale,
+      h: 38 * scale,
+    },
+    badgeShop: {
+      x: frame.shopBtn.x + (1020 - 918) * scale,
+      y: frame.shopBtn.y + (246 - 247) * scale,
+      w: 38 * scale,
+      h: 38 * scale,
+    },
+  }
+}
+
+/** 剧情任务框。立绘、标题、经验和开始按钮都是占位。 */
+export function storyCardRects(w: number, h: number) {
+  const s = w / 1080
+  const card = { x: 70 * s, y: Math.max(80 * s, h * 0.16), w: w - 140 * s, h: Math.min(h * 0.66, 1080 * s) }
+  return {
+    card,
+    close: { x: card.x + card.w - 58 * s, y: card.y + 16 * s, w: 42 * s, h: 42 * s },
+    start: { x: card.x + card.w * 0.36, y: card.y + card.h - 96 * s, w: card.w * 0.56, h: 68 * s },
+    portrait: { x: card.x + 28 * s, y: card.y + 88 * s, w: card.w * 0.28, h: card.h - 200 * s },
+  }
+}
+
 /** 箭头朝建筑按钮来回戳，返回设计稿上的位移。 */
 export function arrowPoke(now: number): { x: number; y: number } {
   const fromX = 668 + 235 / 2

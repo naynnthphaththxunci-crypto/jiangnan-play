@@ -66,7 +66,7 @@ describe('体力', () => {
     expect(state.energyTs).toBe(5_000)
     expect(state.stats.producerTaps).toBe(1)
     const item = state.board.flat().find((cell) => cell?.kind === 'product')
-    expect(item && item.kind === 'product' && item.level).toBe(2)
+    expect(item && item.kind === 'product' && item.level).toBe(1)
     expect(syncEnergy(state, 5_000 + 119_999, cfg)).toBe(0)
     expect(state.energy).toBe(99)
     expect(syncEnergy(state, 5_000 + 120_000, cfg)).toBe(1)
@@ -108,6 +108,7 @@ describe('体力', () => {
 
   it('点满一轮进入冷却，到点后恢复次数', () => {
     const { state, cfg } = boot()
+    cfg.economy.producerCooldownOn = 1
     state.playedMs = cfg.economy.producerGraceMs
     const spot = producerAt(state)
     state.board[3][2] = null
@@ -134,7 +135,7 @@ describe('体力', () => {
     eachCell(state.board, (item, row, col) => {
       if (item?.kind === 'product') state.board[row][col] = null
     })
-    tapProducer(state, spot, cfg, () => 0.99, 0)
+    tapProducer(state, spot, cfg, () => 0.92, 0)
     const first = state.board.flat().find((cell) => cell?.kind === 'product')
     expect(first && first.kind === 'product' && first.level).toBe(2)
     if (first) {
@@ -177,13 +178,13 @@ describe('体力', () => {
 
   it('宝箱权重与新手前两只固定四十八点', () => {
     const { cfg } = boot()
-    expect(rollEnergy(cfg, () => 0)).toBe(5)
-    expect(rollEnergy(cfg, () => 0.399)).toBe(5)
-    expect(rollEnergy(cfg, () => 0.4)).toBe(10)
-    expect(rollEnergy(cfg, () => 0.699)).toBe(10)
-    expect(rollEnergy(cfg, () => 0.7)).toBe(20)
-    expect(rollEnergy(cfg, () => 0.899)).toBe(20)
-    expect(rollEnergy(cfg, () => 0.9)).toBe(40)
+    expect(rollEnergy(cfg, () => 0)).toBe(2)
+    expect(rollEnergy(cfg, () => 0.399)).toBe(2)
+    expect(rollEnergy(cfg, () => 0.4)).toBe(6)
+    expect(rollEnergy(cfg, () => 0.599)).toBe(6)
+    expect(rollEnergy(cfg, () => 0.6)).toBe(15)
+    expect(rollEnergy(cfg, () => 0.799)).toBe(15)
+    expect(rollEnergy(cfg, () => 0.8)).toBe(40)
     expect(rollEnergy(cfg, () => 0.999)).toBe(40)
 
     const state = createGame(1_700_000_000_000, cfg)
@@ -208,11 +209,11 @@ describe('体力', () => {
       }
     }
     drain(() => 0.99)
-    expect(potionEnergySum(state, cfg)).toBe(48)
+    expect(potionEnergySum(state, cfg)).toBe(159)
     drain(() => 0.99)
-    expect(potionEnergySum(state, cfg)).toBe(96)
+    expect(potionEnergySum(state, cfg)).toBe(359)
     drain(() => 0)
-    expect(potionEnergySum(state, cfg)).toBe(121)
+    expect(potionEnergySum(state, cfg)).toBe(369)
     expect(state.chestsOpened).toBe(3)
   })
 

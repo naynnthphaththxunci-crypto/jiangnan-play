@@ -2,7 +2,7 @@ import { tutorialHand } from './coach'
 import { SIDE_ICON_LEVEL } from './hechengLayout'
 import { comicCursor, silaJustShown } from './comic'
 import { openingFilm, replayOpeningFilm } from './openingFilm'
-import { buildHit } from './homeLayout'
+import { alignedHome, storyCardRects } from './homeLayout'
 import { createComicAudio } from './comicAudio'
 import { createSfx, type Sfx } from './audio'
 import { defaultConfig, resetEconomy } from './config'
@@ -62,10 +62,12 @@ import {
   claimLevelModal,
   clearSale,
   completeOrder,
+  closeStoryCard,
   createGame,
   currentTutorial,
   dismissStuckGuide,
   enterKitchen,
+  fillOrders,
   finishTutorial,
   guardedDrop,
   hydrate,
@@ -74,6 +76,7 @@ import {
   nextTask,
   occupied,
   openChest,
+  openStoryCard,
   openRewardBox,
   openSmilePrize,
   pokeGift,
@@ -969,7 +972,7 @@ export function startGame(platform: Platform): void {
   function pressHomeBuild(x: number, y: number): boolean {
     if (view !== 'house') return false
     if (state.lesson !== 'home1' && state.lesson !== 'home3') return false
-    if (!contains(buildHit(frame.w, frame.h), x, y)) return false
+    if (!contains(alignedHome(frame).hit, x, y)) return false
     if (state.lesson === 'home1') state.lesson = 'talk1'
     else {
       state.lesson = 'free'
@@ -1054,6 +1057,11 @@ export function startGame(platform: Platform): void {
       return
     }
     if (guardLesson(x, y)) return
+    if (view === 'house' && state.lesson === 'free' && !activeOverlay(state) && contains(alignedHome(frame).hostess, x, y)) {
+      openStoryCard(state, cfg)
+      mark()
+      return
+    }
     if (view === 'house' && hitTest(frame, x, y)?.kind === 'settings') {
       settingsOpen = !settingsOpen
       settingsAt = platform.now()
@@ -1090,6 +1098,16 @@ export function startGame(platform: Platform): void {
         else advanceGuide(state, cfg)
         mark()
       }
+      return
+    }
+    if (overlay === 'story') {
+      const card = storyCardRects(frame.w, frame.h)
+      if (contains(card.close, x, y)) closeStoryCard(state)
+      else if (contains(card.start, x, y)) {
+        const task = nextTask(state, cfg)
+        if (task) present(buildTask(state, task.id, null, cfg, rng, platform.now()))
+      }
+      mark()
       return
     }
     if (overlay === 'shop') {
@@ -1605,6 +1623,9 @@ export function startGame(platform: Platform): void {
         return
       }
       curtain = { to: view === 'board' ? 'house' : 'board', started: platform.now(), freeze: progress }
+    },
+    pump() {
+      fillOrders(state, cfg, rng)
     },
     startCurtain(to: 'board' | 'house') {
       beginCurtain(to)

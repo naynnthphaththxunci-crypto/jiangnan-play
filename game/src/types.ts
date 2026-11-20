@@ -41,6 +41,12 @@ export interface ProducerDef {
   /** normal 花体力；netSource 出渔网；plant 不花体力；consumable 点完消失。 */
   kind?: 'normal' | 'netSource' | 'plant' | 'consumable'
   side?: string
+  sideFrom?: number
+  maxLevel?: number
+  produceFrom?: number
+  drops?: { level: number; hard: number; e1: number; e2: number; e3: number; rare: number; catch1?: number; catch2?: number; catch3?: number }[]
+  tapCooldown?: { taps: [number, number]; seconds: [number, number] } | null
+  bursts?: { level: number; items: number; cooldownMin: number }[]
 }
 
 export interface ChoiceDef {
@@ -270,6 +276,12 @@ export interface Economy {
   guestNudgeX: number
   /** 1 时订单区固定出现阿桨和鲍大叔，方便看序列帧。默认 0。 */
   testOrderGuests: number
+  /** 131 单之后，食品饮料线占比。 */
+  foodDrinkShare: number
+  /** 这个等级起才出后期卡关单。 */
+  blockFromLevel: number
+  /** 1 时猫粮、饮料恢复旧的按次冷却。默认 0。 */
+  producerCooldownOn: number
   spawn1High: number
   spawn2Mid: number
   spawnTable: { mult: 1 | 2 | 4 | 8; cost: number; enabled: boolean; weights: { level: number; p: number }[] }[]
@@ -425,6 +437,14 @@ export interface Order {
   scripted?: boolean
   chest?: boolean
   readyAt?: number
+  /** 前期订单号。有这个字段时金币和笑脸照数值表，不按单价重算。 */
+  earlyNo?: number
+  payCoins?: number
+  paySmile?: number
+  /** 这张单的笑脸先记着，等笑脸解锁或领完本轮再补上。 */
+  smilePending?: number
+  smileWait?: 'claim' | 'unlock'
+  blocker?: boolean
 }
 
 export interface LevelRewardEntry {
@@ -525,6 +545,17 @@ export interface GameState {
   mintGuided: boolean
   idCounter: number
   orderCounter: number
+  /** 下一张前期订单号，1 到 131。超过 131 后改自动出单。 */
+  orderSeq: number
+  /** 母棋还没到出货等级、先挂起的前期订单号。解锁后优先出。 */
+  heldOrders: number[]
+  /** 已经出过单的线。后期新解锁的线第一张单立刻用这条线。 */
+  orderedLines: string[]
+  /** 10 级后本轮最后一张难单还在，先不补其他单。 */
+  lateBlock: boolean
+  smileRound: number
+  /** 占位剧情任务框。有值就盖在当前页面上。 */
+  storyCard: { no: number } | null
   stats: {
     producerTaps: number
     ordersDone: number

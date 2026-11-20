@@ -1,4 +1,4 @@
-import { buildHit, homePlaces } from './homeLayout'
+import { alignedHome } from './homeLayout'
 import type { GameConfig, GameState, NormBox } from './types'
 import { COLS, ROWS } from './types'
 import { SLIDERS } from './tuner'
@@ -608,14 +608,14 @@ export function layout(input: LayoutInput): Frame {
     ? { x: helpCard.x + 18, y: helpCard.y + helpCard.h - 52, w: helpCard.w - 36, h: 36 }
     : Z
   const enterBtn: Rect = input.showEnter ? { x: (w - Math.round(168 * unit)) / 2, y: h * 0.42, w: Math.round(168 * unit), h: Math.round(56 * unit) } : Z
-  const scene = boardMode
+  const scene = boardMode || input.mode === 'house'
     ? hechengParts({
         w,
         h,
         insetTop: top,
         insetBottom: bottomInset,
-        orderCount: input.orderCount,
-        orderSlots: input.orderSlots,
+        orderCount: boardMode ? input.orderCount : 0,
+        orderSlots: boardMode ? input.orderSlots : [],
         orderScroll: input.orderScroll,
         showRush: input.showRush,
         guestCanvasScale: input.guestCanvasScale,
@@ -765,10 +765,10 @@ export function hitTest(frame: Frame, x: number, y: number): Hit | null {
   if (frame.muteBtn.w > 0 && contains(frame.muteBtn, x, y)) return { kind: 'mute' }
   if (frame.mode === 'story') return { kind: 'hotspot' }
   if (frame.mode === 'house') {
-    const home = homePlaces(frame.w, frame.h)
+    const home = alignedHome(frame)
     if (contains(home.settings, x, y)) return { kind: 'settings' }
     if (contains(home.shop, x, y)) return { kind: 'shop' }
-    if (contains(buildHit(frame.w, frame.h), x, y)) return { kind: 'back' }
+    if (contains(home.hit, x, y)) return { kind: 'back' }
     return { kind: 'swallow' }
   }
   if (frame.shop) {

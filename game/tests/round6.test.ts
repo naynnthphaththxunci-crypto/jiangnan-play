@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { defaultConfig } from '../src/config'
 import {
-  advanceGuide,
   applyFreeRefill,
   arrangeOrders,
   buildTask,
@@ -21,6 +20,7 @@ import {
   nextTask,
   openCellCount,
   openSmilePrize,
+  openStoryCard,
   orderCraftable,
   orderSatisfied,
   pokeGift,
@@ -43,17 +43,17 @@ describe('第六轮', () => {
     const state = createGame(1, cfg)
     expect(openCellCount(state)).toBe(2)
     const food = findProducer(state, 'food')
-    expect(food?.item.kind === 'producer' && food.item.level).toBe(1)
+    expect(food?.item.kind === 'producer' && food.item.level).toBe(2)
     expect(findProducer(state, 'bev')).toBeNull()
     const full = state.locks.filter((lock) => lock.veil === 'full').length
     const half = state.locks.filter((lock) => lock.veil === 'half' && lock.cover !== 'gift').length
     expect(full).toBeGreaterThan(half)
     expect(half).toBe(1)
     expect(lockAt(state, 4, 0)?.veil).toBe('full')
+    state.phase = 'opening'
     dropItem(state, { row: 3, col: 1 }, { row: 4, col: 1 }, cfg)
-  dropItem(state, { row: 4, col: 1 }, { row: 4, col: 2 }, cfg)
-  dropItem(state, { row: 4, col: 2 }, { row: 4, col: 3 }, cfg)
-    expect(lockAt(state, 4, 0)?.veil).toBe('half')
+    dropItem(state, { row: 4, col: 1 }, { row: 4, col: 2 }, cfg)
+    expect(lockAt(state, 3, 3)?.veil).toBe('half')
   })
 
   it('前期只有蒸笼的 A/B 订单，升到 3 级才有竹编篓', () => {
@@ -125,18 +125,12 @@ describe('第六轮', () => {
     state.lesson = 'free'
     state.coins = 0
     refreshGuide(state, cfg, 'house')
-    expect(state.guide).toBe('backBtn')
-    refreshGuide(state, cfg, 'board')
-    expect(state.guide).toBe('backTalk')
-    advanceGuide(state, cfg)
     expect(state.guide).toBe('none')
-    state.coins = 8
+    state.coins = 26
     refreshGuide(state, cfg, 'board')
-    expect(state.guide).toBe('buildTalk')
-    advanceGuide(state, cfg)
-    expect(state.guide).toBe('buildBtn')
-    refreshGuide(state, cfg, 'house')
-    expect(state.guide).toBe('repairBtn')
+    expect(state.guide).toBe('none')
+    openStoryCard(state, cfg)
+    expect(state.storyCard?.no).toBe(1)
     state.guide = 'none'
     state.guidedTask = null
     state.buildGuideCount = cfg.economy.guideShows
