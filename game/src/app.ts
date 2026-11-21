@@ -3,10 +3,11 @@ import { SIDE_ICON_LEVEL } from './hechengLayout'
 import { comicCursor, silaJustShown } from './comic'
 import { openingFilm, replayOpeningFilm } from './openingFilm'
 import { alignedHome, storyCardRects } from './homeLayout'
+import { clampHomeCam, defaultHomeCam, homeHostessRect } from './homeMap'
 import { createComicAudio } from './comicAudio'
 import { createSfx, type Sfx } from './audio'
 import { defaultConfig, resetEconomy } from './config'
-import { partAt, render } from './draw'
+import { render } from './draw'
 import { curtainReady as curtainImagesReady } from './curtain'
 import { createFx, easeOutCubic, type Fx } from './fx'
 import { clamp } from './format'
@@ -81,7 +82,6 @@ import {
   openSmilePrize,
   pokeGift,
   previewDecor,
-  reopenDecor,
   orderSatisfied,
   orderStripAction,
   reconcileLevel,
@@ -186,7 +186,6 @@ export function startGame(platform: Platform): void {
   let guideSince = platform.now()
   let guideMisses = 0
   const pointers = new Map<number, Pointer>()
-  let pinch: { dist: number; scale: number } | null = null
   let frame = makeFrame()
 
   function animAt(real: number): number {
@@ -289,11 +288,19 @@ export function startGame(platform: Platform): void {
   }
 
   function ensureCam(): void {
-    if (camReady || frame.map.h <= 0) return
-    cam.x = 700
-    cam.y = 980
-    cam.scale = clamp(Math.min(frame.map.w / 640, frame.map.h / 860), 0.35, 2.6)
+    const next = defaultHomeCam(frame.w, frame.h)
+    cam.x = next.x
+    cam.y = next.y
+    cam.scale = next.scale
     camReady = true
+  }
+
+  function holdHomeCam(): void {
+    if (!camReady) ensureCam()
+    const next = clampHomeCam(cam.x, cam.y, frame.w, frame.h)
+    cam.x = next.x
+    cam.y = next.y
+    cam.scale = next.scale
   }
 
   function fly(item: Item, fromX: number, fromY: number, toX: number, toY: number, hide: Pos[], ease: 'snap' | 'spawn'): void {
@@ -1067,11 +1074,6 @@ export function startGame(platform: Platform): void {
       return
     }
     if (guardLesson(x, y)) return
-    if (view === 'house' && state.lesson === 'free' && !activeOverlay(state) && contains(alignedHome(frame).hostess, x, y)) {
-      openStoryCard(state, cfg)
-      mark()
-      return
-    }
     if (view === 'house' && hitTest(frame, x, y)?.kind === 'settings') {
       settingsOpen = !settingsOpen
       settingsAt = platform.now()
@@ -1207,12 +1209,6 @@ export function startGame(platform: Platform): void {
     }
     if (tutorialBlocks(hit)) return
     pointers.set(id, { id, x, y, sx: x, sy: y, hit, moved: false, camX: cam.x, camY: cam.y, scroll: tunerScroll, orderScroll, downAt: platform.now() })
-    if (pointers.size >= 2 && view === 'house') {
-      fx.drag = null
-      dragId = -1
-      const pts = [...pointers.values()]
-      pinch = { dist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1, scale: cam.scale }
-    }
   }
 
   function onMove(x: number, y: number, id: number): void {
@@ -1221,12 +1217,6 @@ export function startGame(platform: Platform): void {
     pointer.x = x
     pointer.y = y
     if (!pointer.moved && Math.hypot(x - pointer.sx, y - pointer.sy) > 22) pointer.moved = true
-    if (pinch && pointers.size >= 2 && view === 'house') {
-      const pts = [...pointers.values()]
-      const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1
-      cam.scale = clamp(pinch.scale * (dist / pinch.dist), 0.35, 2.6)
-      return
-    }
     const hit = pointer.hit
     if (hit.kind === 'slider' && tuner) {
       const spec = SLIDERS[hit.index]
@@ -1243,8 +1233,15 @@ export function startGame(platform: Platform): void {
       return
     }
     if (pointer.hit.kind === 'map' && pointer.moved && view === 'house') {
-      cam.x = pointer.camX - (x - pointer.sx) / cam.scale
-      cam.y = pointer.camY - (y - pointer.sy) / cam.scale
+      const next = clampHomeCam(
+        pointer.camX - (x - pointer.sx) / cam.scale,
+        pointer.camY - (y - pointer.sy) / cam.scale,
+        frame.w,
+        frame.h,
+      )
+      cam.x = next.x
+      cam.y = next.y
+      cam.scale = next.scale
       return
     }
     const onOrderStrip =
@@ -1293,7 +1290,6 @@ export function startGame(platform: Platform): void {
   function onUp(x: number, y: number, id: number): void {
     const pointer = pointers.get(id)
     pointers.delete(id)
-    if (pointers.size < 2) pinch = null
     if (!pointer) return
     if (fx.drag && dragId === id) {
       finishDrag(x, y)
@@ -1359,6 +1355,14 @@ export function startGame(platform: Platform): void {
       return
     }
     if (!pointer.moved) {
+      if (view === 'house' && state.lesson === 'free' && !activeOverlay(state)) {
+        const hostess = homeHostessRect(frame.w, frame.h, cam)
+        if (contains(hostess, pointer.sx, pointer.sy) && contains(hostess, ux, uy)) {
+          openStoryCard(state, cfg)
+          mark()
+          return
+        }
+      }
       if (state.chainPop && frame.mode === 'board') {
         const pop = chainPopRect(frame)
         if (contains(pop.close, x, y) || contains(pop.card, x, y)) {
@@ -1388,15 +1392,6 @@ export function startGame(platform: Platform): void {
         }
         return
       }
-      const held = platform.now() - pointer.downAt
-      if (held > 480 && view === 'house' && pointer.hit.kind === 'map') {
-        const taskId = partAt(frame, cam, x, y)
-        if (taskId && reopenDecor(state, cfg, taskId)) {
-          sfx.ui()
-          mark()
-          return
-        }
-      }
       activate(pointer.hit)
     } else if (pointer.hit.kind === 'slider') saveNow()
   }
@@ -1408,7 +1403,7 @@ export function startGame(platform: Platform): void {
       tunerScroll = clamp(tunerScroll + dy * 0.45, 0, frame.tunerMaxScroll)
       return
     }
-    if (view === 'house' && contains(frame.map, x, y)) zoomAt(x, y, dy > 0 ? 0.92 : 1.08)
+    if (view === 'house' && contains(frame.map, x, y)) return
   })
   platform.onKey((key) => {
     if (key === 'Escape') {
@@ -1513,7 +1508,8 @@ export function startGame(platform: Platform): void {
       }
     }
     frame = makeFrame()
-    if (view === 'house') ensureCam()
+    if (view === 'house') holdHomeCam()
+    else camReady = false
     const ctx = platform.canvas.getContext('2d')
     if (ctx) {
       const dpr = platform.dpr || 1

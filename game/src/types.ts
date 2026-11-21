@@ -553,7 +553,7 @@ export interface GameState {
   giftModal: GiftModal | null
   /** 4 级笑脸教学只走一次。 */
   smileTaught: boolean
-  smileLesson: 'off' | 'order'
+  smileLesson: 'off' | 'wait' | 'order'
   welcomeFreeUsed: boolean
   /** 剧情 11 之后，回到合成页的下一次合成必掉一个气泡。 */
   bubbleDue: boolean

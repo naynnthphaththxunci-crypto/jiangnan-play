@@ -1,3 +1,4 @@
+import { assignArtSrc } from './artGate'
 import bgUrl from './assets/hecheng/bg.webp'
 import counterUrl from './assets/hecheng/counter.webp'
 import plateUrl from './assets/hecheng/plate.webp'
@@ -76,7 +77,7 @@ function loadImage(src: string): ArtImage | null {
   const Ctor = (globalThis as { Image?: new () => HTMLImageElement }).Image
   if (typeof Ctor !== 'function') return null
   const img = new Ctor()
-  img.src = src
+  assignArtSrc(img, src)
   return img
 }
 

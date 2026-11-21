@@ -2456,7 +2456,7 @@ export function claimLevelModal(state: GameState, cfg: GameConfig, rng: Rng): Ac
   }
   if (modal.level === 4 && !state.smileTaught) {
     state.smileTaught = true
-    state.smileLesson = 'order'
+    state.smileLesson = state.giftModal ? 'wait' : 'order'
   }
   state.levelModal = state.levelQueue.shift() ?? null
   return { ok: true, events }
@@ -2957,17 +2957,23 @@ function grantRewardEntry(state: GameState, cfg: GameConfig, rng: Rng, entry: Le
   return []
 }
 
+function releaseSmileLesson(state: GameState): void {
+  if (state.smileLesson === 'wait' && !state.giftModal) state.smileLesson = 'order'
+}
+
 export function claimGiftModal(state: GameState, cfg: GameConfig, rng: Rng): ActionResult {
   const modal = state.giftModal
   if (!modal) return { ok: false, reason: 'none', events: [] }
   if (modal.mode === 'locked') {
     state.giftModal = null
+    releaseSmileLesson(state)
     return { ok: true, events: [] }
   }
   const events = modal.rewards.flatMap((entry) => grantRewardEntry(state, cfg, rng, entry))
   if (modal.lockText) {
     state.giftModal = { mode: 'locked', title: '下一档还锁着', rewards: [], lockText: modal.lockText }
   } else state.giftModal = null
+  releaseSmileLesson(state)
   return { ok: true, events }
 }
 
@@ -2975,9 +2981,15 @@ function grantStoryReward(state: GameState, cfg: GameConfig, rng: Rng, no: numbe
   const reward = storyDef(no)?.reward
   if (typeof reward !== 'string' || !reward || reward === '—') return
   const entries = parseRewardText(reward)
-  const bundle = entries.filter((entry) => entry.id === 'gift').flatMap((entry) => entry.bundle ?? [])
+  const gift = entries.find((entry) => entry.id === 'gift')
+  const bundle = [...(gift?.bundle ?? [])]
   for (const entry of entries) {
-    if (entry.id !== 'gift') grantRewardEntry(state, cfg, rng, entry)
+    if (entry.id === 'gift') continue
+    if (gift && (entry.id === 'energy' || entry.id === 'pack')) {
+      bundle.push(entry.id === 'energy' ? { ...entry, name: `体力 ×${entry.energy ?? 0}` } : entry)
+      continue
+    }
+    grantRewardEntry(state, cfg, rng, entry)
   }
   if (!bundle.length) return
   const lock = (storyNote(no).match(/达到[^。）]*/)?.[0] ?? storyNote(no).match(/到达[^。）]*/)?.[0] ?? '').replace(/^出现弹窗：?/, '')

@@ -1,3 +1,4 @@
+import { assignArtSrc } from './artGate'
 import scholar from './assets/guests/scholar/1.webp'
 import boatman from './assets/guests/boatman/1.webp'
 import squire from './assets/guests/squire/1.webp'
@@ -117,7 +118,7 @@ export function firstOrderGuestPortrait(): GuestImage | null {
   const img = createImage()
   if (!img) return null
   const host = globalThis as { wx?: unknown }
-  img.src = host.wx && xiaotaoFirst.startsWith('./') ? xiaotaoFirst.slice(2) : xiaotaoFirst
+  assignArtSrc(img, host.wx && xiaotaoFirst.startsWith('./') ? xiaotaoFirst.slice(2) : xiaotaoFirst)
   cache.set(xiaotaoFirst, img)
   return img
 }
@@ -131,7 +132,7 @@ export function guestPortrait(key: string | undefined): GuestImage | null {
   const img = createImage()
   if (!img) return null
   const host = globalThis as { wx?: unknown }
-  img.src = host.wx && src.startsWith('./') ? src.slice(2) : src
+  assignArtSrc(img, host.wx && src.startsWith('./') ? src.slice(2) : src)
   cache.set(src, img)
   return img
 }

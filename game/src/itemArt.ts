@@ -1,3 +1,4 @@
+import { assignArtSrc } from './artGate'
 import producerArt from './data/producerArt.json'
 
 const raw = import.meta.glob('./assets/items/*.png', { eager: true, import: 'default' }) as Record<string, string>
@@ -13,7 +14,7 @@ for (const [path, url] of Object.entries(potionRaw)) {
   const host = globalThis as { Image?: new () => HTMLImageElement; document?: Document }
   if (!host.document || typeof host.Image !== 'function') continue
   const img = new host.Image()
-  img.src = url
+  assignArtSrc(img, url)
   potionSprites.set(Number(match[1]), img)
 }
 
@@ -33,7 +34,7 @@ for (const [path, url] of Object.entries(producerRaw)) {
   const host = globalThis as { Image?: new () => HTMLImageElement; document?: Document }
   if (!host.document || typeof host.Image !== 'function') continue
   const img = new host.Image()
-  img.src = url
+  assignArtSrc(img, url)
   producerSprites.set(`${match[1]}:${match[2]}`, img)
 }
 
@@ -43,14 +44,14 @@ for (const [path, url] of Object.entries(raw)) {
   const host = globalThis as { Image?: new () => HTMLImageElement; document?: Document }
   if (!host.document || typeof host.Image !== 'function') continue
   const img = new host.Image()
-  img.src = url
+  assignArtSrc(img, url)
   sprites.set(`${match[1]}:${match[2]}`, img)
 }
 
 export function itemImageElements(): HTMLImageElement[] {
   const Ctor = (globalThis as { HTMLImageElement?: typeof HTMLImageElement }).HTMLImageElement
   if (!Ctor) return []
-  return [...sprites.values(), ...potionSprites.values()].filter((img): img is HTMLImageElement => img instanceof Ctor)
+  return [...sprites.values(), ...potionSprites.values(), ...producerSprites.values()].filter((img): img is HTMLImageElement => img instanceof Ctor)
 }
 
 const ART_LINE: Record<string, string> = {

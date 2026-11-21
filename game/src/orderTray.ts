@@ -1,3 +1,4 @@
+import { assignArtSrc } from './artGate'
 import src from './assets/ui/order_tray.png'
 import rewardSrc from './assets/ui/order_reward.png'
 
@@ -9,7 +10,7 @@ function load(current: HTMLImageElement | null, srcUrl: string): HTMLImageElemen
   if (!host.document || typeof host.Image !== 'function') return null
   if (!current) {
     current = new host.Image()
-    current.src = srcUrl
+    assignArtSrc(current, srcUrl)
   }
   return current
 }

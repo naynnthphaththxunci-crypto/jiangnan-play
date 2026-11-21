@@ -14,6 +14,7 @@ import silaUrl from './assets/comic/sila.webp'
 import regularUrl from './assets/comic/comic-regular.woff2'
 import boldUrl from './assets/comic/comic-bold.woff2'
 import type { ComicBeat, OpeningScript } from './types'
+import { assignArtSrc } from './artGate'
 
 export const COMIC_FONT = 'JiangnanComic'
 
@@ -29,7 +30,7 @@ function loadImage(src: string): ComicImage | null {
   const Ctor = (globalThis as { Image?: new () => HTMLImageElement }).Image
   if (typeof Ctor !== 'function') return null
   const img = new Ctor()
-  img.src = src
+  assignArtSrc(img, src)
   return img
 }
 

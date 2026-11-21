@@ -206,6 +206,60 @@ describe('1120 数值表', () => {
     expect(state.bubbleDue).toBe(true)
   })
 
+  it('剧情 6 弹窗同时列钻石和体力，领取前不发', () => {
+    const cfg = defaultConfig()
+    const state = createGame(1, cfg)
+    state.lesson = 'free'
+    state.phase = 'play'
+    state.coins = 100_000
+    const rng = mulberry32(6)
+    for (let i = 0; i < 5; i++) {
+      const task = nextTask(state, cfg)
+      expect(buildTask(state, task!.id, null, cfg, rng, i).ok).toBe(true)
+      while (state.levelModal) claimLevelModal(state, cfg, rng)
+      while (state.giftModal) claimGiftModal(state, cfg, rng)
+    }
+    const energy = state.energy
+    const gems = state.gems
+    const task = nextTask(state, cfg)
+    expect(task?.id).toBe('s6')
+    expect(buildTask(state, task!.id, null, cfg, rng, 6).ok).toBe(true)
+    expect(state.giftModal?.mode).toBe('claim')
+    const names = state.giftModal?.rewards.map((reward) => reward.name) ?? []
+    expect(names.some((name) => name.includes('钻石') && name.includes('10'))).toBe(true)
+    expect(names.some((name) => name.includes('体力') && name.includes('50'))).toBe(true)
+    expect(state.energy).toBe(energy)
+    expect(state.gems).toBe(gems)
+    claimGiftModal(state, cfg, rng)
+    expect(state.energy).toBe(energy + 50)
+    expect(state.gems).toBe(gems + 10)
+    expect(state.giftModal?.mode === 'claim').toBe(false)
+  })
+
+  it('4 级笑脸教学等礼包弹窗关掉再出现', () => {
+    const cfg = defaultConfig()
+    const state = createGame(1, cfg)
+    state.lesson = 'free'
+    state.phase = 'play'
+    state.coins = 100_000
+    const rng = mulberry32(9)
+    for (let i = 0; i < 8; i++) {
+      const task = nextTask(state, cfg)
+      expect(buildTask(state, task!.id, null, cfg, rng, i).ok).toBe(true)
+      while (state.levelModal) claimLevelModal(state, cfg, rng)
+      while (state.giftModal) claimGiftModal(state, cfg, rng)
+    }
+    const task = nextTask(state, cfg)
+    expect(buildTask(state, task!.id, null, cfg, rng, 9).ok).toBe(true)
+    while (state.levelModal) claimLevelModal(state, cfg, rng)
+    expect(state.level).toBe(4)
+    expect(state.smileLesson).toBe('wait')
+    expect(state.giftModal).toBeTruthy()
+    while (state.giftModal) claimGiftModal(state, cfg, rng)
+    expect(state.giftModal).toBeNull()
+    expect(state.smileLesson).toBe('order')
+  })
+
   it('教学合出订单要的猫粮就进入交单，旧档带不回 4 级饮料母棋', () => {
     const cfg = defaultConfig()
     const state = createGame(1, cfg)

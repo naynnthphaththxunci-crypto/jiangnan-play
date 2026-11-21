@@ -1,3 +1,4 @@
+import { assignArtSrc } from './artGate'
 import curtainUrl from './assets/transition/curtain.webp'
 import frontUrl from './assets/transition/front.webp'
 import { easeOutCubic } from './fx'
@@ -75,7 +76,7 @@ function loadImage(src: string): ArtImage | null {
   const Ctor = (globalThis as { Image?: new () => HTMLImageElement }).Image
   if (typeof Ctor !== 'function') return null
   const img = new Ctor()
-  img.src = src
+  assignArtSrc(img, src)
   return img
 }
 

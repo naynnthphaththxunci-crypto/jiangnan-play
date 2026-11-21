@@ -769,7 +769,7 @@ export function hitTest(frame: Frame, x: number, y: number): Hit | null {
     if (contains(home.settings, x, y)) return { kind: 'settings' }
     if (contains(home.shop, x, y)) return { kind: 'shop' }
     if (contains(home.hit, x, y)) return { kind: 'back' }
-    return { kind: 'swallow' }
+    return { kind: 'map' }
   }
   if (frame.shop) {
     const shop = shopRects(frame)

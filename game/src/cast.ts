@@ -1,3 +1,4 @@
+import { assignArtSrc } from './artGate'
 import { guestClip, sequencedGuestDest } from './guestClips'
 import { PORTRAITS } from './portraits'
 import { drawSprite, spriteFrameIndex, staticSheet, type SpriteDest, type SpriteSheet } from './sprite'
@@ -15,7 +16,7 @@ function loadFrame(src: string): HTMLImageElement | null {
   const Ctor = (globalThis as { Image?: new () => HTMLImageElement }).Image
   if (typeof Ctor !== 'function') return null
   const img = new Ctor()
-  img.src = src
+  assignArtSrc(img, src)
   return img
 }
 

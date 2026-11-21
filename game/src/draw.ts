@@ -50,7 +50,9 @@ import { hechengImage, speedArtId } from './hechengArt'
 import { selectBreathScale, selectFrameRect } from './selectFrame'
 import { curtainBambooPlace, curtainBitmaps, curtainDrop, curtainPlace } from './curtain'
 import { alignedHome, arrowPoke, storyCardRects, type HomeBox } from './homeLayout'
+import { assignArtSrc } from './artGate'
 import { homeArt, type HomeArtId } from './homeArt'
+import { HOME_HOSTESS, HOME_MAP_H, HOME_MAP_W, homeHostessRect, mapToScreen, placeHomeBuildings, type HomeCam } from './homeMap'
 import { cellWoodRect, designToScreen } from './hechengLayout'
 import { orderTickPlace } from './orderTick'
 import { COMIC_FONT, comicCursor, comicFontReady, comicPanelImage, comicPrompt, comicSilaImage, wrapComicText } from './comic'
@@ -1301,7 +1303,7 @@ function tutorialHandImage(): HTMLImageElement | null {
   if (!host.document || typeof host.Image !== 'function') return null
   if (!tutorialHandImg) {
     tutorialHandImg = new host.Image()
-    tutorialHandImg.src = tutorialHandUrl
+    assignArtSrc(tutorialHandImg, tutorialHandUrl)
   }
   return tutorialHandImg
 }
@@ -1343,7 +1345,7 @@ function iconBoltImage(): HTMLImageElement | null {
   if (!host.document || typeof host.Image !== 'function') return null
   if (!iconBoltImg) {
     iconBoltImg = new host.Image()
-    iconBoltImg.src = iconBoltUrl
+    assignArtSrc(iconBoltImg, iconBoltUrl)
   }
   return iconBoltImg
 }
@@ -1649,6 +1651,7 @@ function drawStorageLesson(model: RenderModel): void {
 
 function drawHand(model: RenderModel): void {
   if (model.state.lesson && model.state.lesson !== 'free') return
+  if (model.state.smileLesson === 'order') return
   if (!model.showHand || model.state.phase !== 'play' || model.chain) return
   if (model.state.storageLesson > 0 && model.state.storageLesson < 4) return
   if (model.state.mintStep === 'select' || model.state.mintStep === 'produce' || model.state.mintStep === 'merge' || model.state.mintStep === 'deliver') return
@@ -1695,7 +1698,14 @@ function drawSmileLesson(model: RenderModel): void {
   const index = state.orders.findIndex((order) => (order.paySmile ?? 0) > 0 || (order.smilePending ?? 0) > 0)
   const hole = index >= 0 ? frame.orders[index] : frame.smileSlot
   if (!hole || hole.w <= 0) return
-  text(ctx, '笑脸系统上线了。集满 6 个笑脸就能领奖励。', frame.w / 2, Math.max(36, hole.y - 18), 14, '#fffaf2')
+  const caption = '笑脸系统上线了。集满 6 个笑脸就能领奖励。'
+  const y = frame.orderClip.h > 0 ? frame.orderClip.y + frame.orderClip.h + 22 : hole.y + hole.h + 28
+  const w = Math.min(frame.w - 24, 300)
+  const plate = { x: (frame.w - w) / 2, y: y - 16, w, h: 32 }
+  roundRect(ctx, plate.x, plate.y, plate.w, plate.h, 10)
+  ctx.fillStyle = 'rgba(28, 18, 12, 0.88)'
+  ctx.fill()
+  text(ctx, caption, frame.w / 2, plate.y + plate.h / 2, 13, '#fffaf2')
   paintHand(ctx, hole.x + hole.w / 2, hole.y + hole.h / 2, frame.board.cell)
   void cfg
 }
@@ -1912,6 +1922,8 @@ function paintHomeImg(ctx: CanvasRenderingContext2D, id: HomeArtId, box: HomeBox
 
 function drawHostessBubble(ctx: CanvasRenderingContext2D, bubble: Rect, state: GameState, cfg: GameConfig, now: number): void {
   if (!storyReady(state, cfg) || bubble.w <= 0) return
+  const task = nextTask(state, cfg)
+  const price = task ? String(taskPrice(task, cfg)) : ''
   const pulse = state.level >= 2 ? 1 + 0.08 * Math.sin(now / 180) : 1
   ctx.save()
   ctx.translate(bubble.x + bubble.w / 2, bubble.y + bubble.h / 2)
@@ -1924,12 +1936,14 @@ function drawHostessBubble(ctx: CanvasRenderingContext2D, bubble: Rect, state: G
   ctx.roundRect(bubble.x, bubble.y, bubble.w, bubble.h, 16)
   ctx.fill()
   ctx.stroke()
-  const badge = Math.min(bubble.h * 0.7, 36)
+  text(ctx, price, bubble.x + bubble.w * 0.36, bubble.y + bubble.h / 2, bubble.h * 0.42, '#6a3a22', 'center', 'middle', 700)
+  const badge = Math.min(bubble.h * 0.62, 28)
+  const bx = bubble.x + bubble.w - badge * 0.85
   ctx.beginPath()
   ctx.fillStyle = '#d23b3b'
-  ctx.arc(bubble.x + bubble.w / 2, bubble.y + bubble.h / 2, badge * 0.55, 0, Math.PI * 2)
+  ctx.arc(bx, bubble.y + bubble.h / 2, badge * 0.55, 0, Math.PI * 2)
   ctx.fill()
-  text(ctx, '!', bubble.x + bubble.w / 2, bubble.y + bubble.h / 2, badge * 0.7, '#fffaf2', 'center', 'middle', 700)
+  text(ctx, '!', bx, bubble.y + bubble.h / 2, badge * 0.7, '#fffaf2', 'center', 'middle', 700)
   ctx.restore()
 }
 
@@ -1974,13 +1988,36 @@ function drawStoryCard(model: RenderModel): void {
   text(ctx, `开始 ${price}`, rects.start.x + rects.start.w / 2, rects.start.y + rects.start.h / 2, 22, '#fffaf2', 'center', 'middle', 700)
 }
 
+function drawHomeMap(ctx: CanvasRenderingContext2D, viewW: number, viewH: number, cam: HomeCam): void {
+  const img = homeArt.map
+  if (!img || (img.naturalWidth || 0) <= 0) return
+  const left = viewW / 2 + (0 - cam.x) * cam.scale
+  const top = viewH / 2 + (0 - cam.y) * cam.scale
+  ctx.drawImage(img, left - 1, top - 1, HOME_MAP_W * cam.scale + 2, HOME_MAP_H * cam.scale + 2)
+}
+
+function drawHomeHostess(ctx: CanvasRenderingContext2D, viewW: number, viewH: number, cam: HomeCam, now: number): void {
+  const foot = mapToScreen(viewW, viewH, cam, HOME_HOSTESS.x, HOME_HOSTESS.y)
+  const h = HOME_HOSTESS.h * cam.scale
+  const dest = { x: foot.x - h / 2, y: foot.y - h, w: h, h }
+  ctx.save()
+  ctx.fillStyle = 'rgba(42, 28, 16, 0.3)'
+  ctx.beginPath()
+  ctx.ellipse(foot.x, foot.y - h * 0.02, h * 0.16, h * 0.035, 0, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.restore()
+  drawCharacter(ctx, 'ruyue', guestPortrait('ruyue'), dest, now, 'contain-bottom')
+}
+
 function drawHouse(model: RenderModel): void {
   const { ctx, frame, state, cfg, realNow } = model
   const home = alignedHome(frame)
-  ctx.fillStyle = '#000'
+  ctx.fillStyle = '#1c140e'
   ctx.fillRect(0, 0, frame.w, frame.h)
-  paintHomeImg(ctx, 'bg', home.bg)
-  paintHomeImg(ctx, 'storage', home.storage)
+  drawHomeMap(ctx, frame.w, frame.h, model.cam)
+  drawHomeHostess(ctx, frame.w, frame.h, model.cam, realNow)
+  // 建筑图还没到。placeHomeBuildings 已经把地图坐标换成屏幕位置，下一轮直接贴在这里。
+  void placeHomeBuildings(frame.w, frame.h, model.cam)
   paintHomeImg(ctx, 'build', home.build)
   const avatar = home.avatar
   const avatarArt = {
@@ -2024,7 +2061,16 @@ function drawHouse(model: RenderModel): void {
   paintHomeImg(ctx, 'badge', home.badgeSettings)
   paintHomeImg(ctx, 'badge', home.badgeShop)
   const lesson = state.lesson
-  if (lesson === 'free') drawHostessBubble(ctx, home.bubble, state, cfg, realNow)
+  if (lesson === 'free') {
+    const hostess = homeHostessRect(frame.w, frame.h, model.cam)
+    drawHostessBubble(
+      ctx,
+      { x: hostess.x + hostess.w / 2 - 56, y: hostess.y - 48, w: 112, h: 42 },
+      state,
+      cfg,
+      realNow,
+    )
+  }
   const dim = lesson === 'home1' || lesson === 'home2' || lesson === 'home3'
   if (dim) {
     ctx.fillStyle = 'rgba(0,0,0,0.6)'

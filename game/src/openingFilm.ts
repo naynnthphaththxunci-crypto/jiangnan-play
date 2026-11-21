@@ -1,3 +1,4 @@
+import { assignArtSrc } from './artGate'
 import v01 from './assets/opening/01.mp4'
 import v02 from './assets/opening/02.mp4'
 import v03 from './assets/opening/03.mp4'
@@ -41,14 +42,14 @@ function loadImage(src: string): HTMLImageElement | null {
   const Ctor = (globalThis as { Image?: new () => HTMLImageElement }).Image
   if (typeof Ctor !== 'function') return null
   const img = new Ctor()
-  img.src = src
+  assignArtSrc(img, src)
   return img
 }
 
 function makeVideo(src: string, loop: boolean): HTMLVideoElement | null {
   if (typeof document === 'undefined') return null
   const video = document.createElement('video')
-  video.src = src
+  assignArtSrc(video, src)
   video.loop = loop
   video.preload = 'auto'
   video.muted = true

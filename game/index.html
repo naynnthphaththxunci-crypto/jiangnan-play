@@ -88,10 +88,12 @@
       #boot {
         position: fixed;
         z-index: 5;
-        left: 0;
-        top: 0;
+        inset: 0;
         overflow: hidden;
-        background: #2a1c14 center / cover no-repeat;
+        background-color: #140c10;
+        background-position: center center;
+        background-size: cover;
+        background-repeat: no-repeat;
         transition: opacity 0.28s ease;
       }
       #boot.is-done {
@@ -100,13 +102,17 @@
       }
       .boot-panel {
         position: absolute;
-        left: 12%;
-        right: 12%;
-        bottom: 3.4%;
+        left: 10%;
+        right: 10%;
+        bottom: 4.2%;
         display: flex;
         flex-direction: column;
         align-items: center;
         gap: 8px;
+        padding: 12px 14px 14px;
+        border-radius: 18px;
+        background: rgba(18, 8, 14, 0.62);
+        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
       }
       .boot-caption {
         margin: 0;

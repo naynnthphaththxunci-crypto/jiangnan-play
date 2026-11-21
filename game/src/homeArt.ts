@@ -1,4 +1,5 @@
-import bgUrl from './assets/home/bg.webp'
+import { assignArtSrc } from './artGate'
+import mapUrl from './assets/home/map.webp'
 import settingsUrl from './assets/home/btn_settings.webp'
 import shopUrl from './assets/home/btn_shop.webp'
 import storageUrl from './assets/home/btn_storage.webp'
@@ -20,12 +21,12 @@ function load(src: string): HTMLImageElement | null {
   const Ctor = (globalThis as { Image?: new () => HTMLImageElement }).Image
   if (typeof Ctor !== 'function') return null
   const img = new Ctor()
-  img.src = src
+  assignArtSrc(img, src)
   return img
 }
 
 export const homeArt = {
-  bg: load(bgUrl),
+  map: load(mapUrl),
   settings: load(settingsUrl),
   shop: load(shopUrl),
   storage: load(storageUrl),
