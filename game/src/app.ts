@@ -42,7 +42,6 @@ import {
   applyTestGuests,
   arrangeOrders,
   buyEnergyWithGems,
-  collectLock,
   confirmDecor,
   atStep,
   guideIsLocking,
@@ -824,10 +823,6 @@ export function startGame(platform: Platform): void {
         state.armed = null
         state.chainPop = null
         if (state.phase === 'opening') return
-        if (lock.buried.kind === 'coin' || lock.buried.kind === 'gem') {
-          present(collectLock(state, hit))
-          return
-        }
         pickCell(hit.row, hit.col)
         return
       }

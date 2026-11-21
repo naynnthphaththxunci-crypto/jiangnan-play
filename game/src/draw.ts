@@ -44,8 +44,7 @@ import {
 import { itemSprite, PIECE_FILL, potionSprite, producerBoltPlace, producerPieceName, producerPlace, producerSprite, PRODUCER_CELL_W, spriteContent, type ArtBox } from './itemArt'
 import tutorialHandUrl from './assets/ui/tutorial_hand.png'
 import iconBoltUrl from './assets/ui/stamina_bolt.webp'
-import { firstOrderGuestPortrait, guestPortrait, portraitReady } from './portraits'
-import { drawAvatar, drawCharacter } from './cast'
+import { drawAvatar } from './cast'
 import { hechengImage, speedArtId } from './hechengArt'
 import { selectBreathScale, selectFrameRect } from './selectFrame'
 import { curtainBambooPlace, curtainBitmaps, curtainDrop, curtainPlace } from './curtain'
@@ -54,7 +53,8 @@ import { assignArtSrc } from './artGate'
 import { homeArt, type HomeArtId } from './homeArt'
 import { HOME_MAP_H, HOME_MAP_W, homeDaughterRect, homeHostessRect, homeTreeRect, placeHomeBuildings, type HomeCam } from './homeMap'
 import { cellWoodRect, designToScreen } from './hechengLayout'
-import { BUBBLE_BOX, HALF_PIECE_BOX, MOUND_BOX, bubbleImage, moundImage, soilImage } from './boardCover'
+import { BUBBLE_BOX, CHEST_BADGE_BOX, HALF_PIECE_BOX, badgeImage, bubbleImage, chestBubble, moundImage, soilImage } from './boardCover'
+import { drawOrderGuest } from './orderCast'
 import { orderTickPlace } from './orderTick'
 import { COMIC_FONT, comicCursor, comicFontReady, comicPanelImage, comicPrompt, comicSilaImage, wrapComicText } from './comic'
 import { openingFilm } from './openingFilm'
@@ -780,19 +780,10 @@ function drawHecheng(model: RenderModel): void {
   state.orders.forEach((order, index) => {
     const guest = frame.orderGuests[index]
     if (!guest) return
-    const who = cfg.characters.find((entry) => entry.id === order.customerId)
-    const firstOrder = order.scripted === true
-    const portrait = firstOrder ? firstOrderGuestPortrait() : guestPortrait(who?.portrait)
     if (!guestSeen.has(order.id)) guestSeen.set(order.id, realNow)
-    if ((who || firstOrder) && portrait && portraitReady(portrait)) {
-      const portraitId = firstOrder ? 'xiaotao' : who?.portrait
-      const table = frame.tableSlots[index]
-      drawCharacter(ctx, portraitId, portrait, guest, realNow, 'contain', {
-        startedAt: guestSeen.get(order.id),
-        tableCenterX: table ? table.x + table.w / 2 : guest.x + guest.w / 2,
-        nudgeX: cfg.economy.guestNudgeX ?? 0,
-      })
-    }
+    const table = frame.tableSlots[index]
+    if (table) drawOrderGuest(ctx, order.customerId, table, realNow, guestSeen.get(order.id) ?? realNow)
+    void guest
   })
   ctx.restore()
   ctx.save()
@@ -1140,18 +1131,40 @@ function cellShake(at: number | undefined, now: number, width: number): number {
   return Math.sin(age / 30) * width * 0.06 * (1 - age / 420)
 }
 
-function drawBuriedPiece(ctx: CanvasRenderingContext2D, lock: { buried: GameState['locks'][number]['buried'] }, box: Rect): void {
+const PRODUCER_LINE: Record<string, string> = {
+  food: 'food',
+  bev: 'bev',
+  toy: 'toy',
+  bed: 'bed',
+  boat: 'fish',
+  plant: 'plant',
+  net: 'fish',
+  piggy: 'coin',
+}
+
+function buriedAsItem(lock: { buried: GameState['locks'][number]['buried'] }): Item | null {
   const buried = lock.buried
-  const sprite =
-    buried.kind === 'producer'
-      ? producerSprite(buried.id, buried.level)
-      : buried.kind === 'product'
-        ? itemSprite(buried.line, buried.level)
-        : buried.kind === 'potion'
-          ? potionSprite(buried.tier)
-          : null
-  if (sprite) drawFittedSprite(ctx, sprite, box, 1)
-  else if (buried.kind === 'coin') text(ctx, String(buried.amount), box.x + box.w / 2, box.y + box.h / 2, Math.max(12, box.w * 0.28), PAL.coin)
+  if (buried.kind === 'product') return { uid: 'buried', kind: 'product', line: buried.line, level: buried.level }
+  if (buried.kind === 'producer') {
+    return {
+      uid: 'buried',
+      kind: 'producer',
+      producerId: buried.id,
+      line: PRODUCER_LINE[buried.id] ?? buried.id,
+      level: buried.level,
+      charges: 1,
+      cooldownUntil: 0,
+    }
+  }
+  if (buried.kind === 'potion') return { uid: 'buried', kind: 'potion', tier: buried.tier }
+  if (buried.kind === 'gem') return { uid: 'buried', kind: 'product', line: 'gemline', level: buried.tier }
+  if (buried.kind === 'coin') return { uid: 'buried', kind: 'product', line: buried.line ?? 'coin', level: buried.level ?? 1 }
+  return null
+}
+
+function drawBuriedPiece(ctx: CanvasRenderingContext2D, cfg: GameConfig, lock: { buried: GameState['locks'][number]['buried'] }, box: Rect, now: number): void {
+  const item = buriedAsItem(lock)
+  if (item) drawItem(ctx, cfg, item, box, 1, 1, now)
 }
 
 function drawBoard(model: RenderModel): void {
@@ -1219,6 +1232,16 @@ function drawBoard(model: RenderModel): void {
               const bh = wood.h * BUBBLE_BOX.h
               ctx.drawImage(bubble, wood.x + (wood.w - bw) / 2, wood.y + (wood.h - bh) / 2, bw, bh)
             }
+            const mark = badgeImage()
+            if (chestBubble(row, col) && mark && (mark.naturalWidth || 0) > 0) {
+              ctx.drawImage(
+                mark,
+                wood.x + wood.w * CHEST_BADGE_BOX.x,
+                wood.y + wood.h * CHEST_BADGE_BOX.y,
+                wood.w * CHEST_BADGE_BOX.w,
+                wood.h * CHEST_BADGE_BOX.h,
+              )
+            }
           } else {
             const piece = {
               x: wood.x + wood.w * HALF_PIECE_BOX.x,
@@ -1226,17 +1249,9 @@ function drawBoard(model: RenderModel): void {
               w: wood.w * HALF_PIECE_BOX.w,
               h: wood.h * HALF_PIECE_BOX.h,
             }
-            drawBuriedPiece(ctx, lock, piece)
+            drawBuriedPiece(ctx, cfg, lock, piece, realNow)
             const mound = moundImage()
-            if (mound && (mound.naturalWidth || 0) > 0) {
-              ctx.drawImage(
-                mound,
-                wood.x + wood.w * MOUND_BOX.x,
-                wood.y + wood.h * MOUND_BOX.y,
-                wood.w * MOUND_BOX.w,
-                wood.h * MOUND_BOX.h,
-              )
-            }
+            if (mound && (mound.naturalWidth || 0) > 0) ctx.drawImage(mound, wood.x, wood.y, wood.w, wood.h)
           }
           ctx.restore()
         }
@@ -2268,16 +2283,9 @@ function paintLiftedOrder(model: RenderModel, index: number): void {
   const order = state.orders[index]
   const guest = frame.orderGuests[index]
   if (!order || !guest) return
-  const who = cfg.characters.find((entry) => entry.id === order.customerId)
-  const firstOrder = order.scripted === true
-  const portrait = firstOrder ? firstOrderGuestPortrait() : guestPortrait(who?.portrait)
-  if ((who || firstOrder) && portrait && portraitReady(portrait)) {
-    const table = frame.tableSlots[index]
-    drawCharacter(ctx, firstOrder ? 'xiaotao' : who?.portrait, portrait, guest, realNow, 'contain', {
-      tableCenterX: table ? table.x + table.w / 2 : guest.x + guest.w / 2,
-      nudgeX: cfg.economy.guestNudgeX ?? 0,
-    })
-  }
+  const table = frame.tableSlots[index]
+  if (table) drawOrderGuest(ctx, order.customerId, table, realNow, guestSeen.get(order.id) ?? realNow)
+  void guest
   const plate = frame.tableSlots[index]
   if (plate) blit(ctx, 'plate', plate)
   order.slots.forEach((slot, slotIndex) => {

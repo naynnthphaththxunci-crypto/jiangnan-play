@@ -11,11 +11,12 @@ import chestCatBlueUrl from './assets/board/reward_chest_cat_blue.png'
 import chestBlueUrl from './assets/board/reward_chest_blue.png'
 import chestWoodUrl from './assets/board/reward_chest_cat_wood.png'
 import gemsUrl from './assets/board/reward_gems.png'
+import badgeUrl from './assets/board/badge_exclaim.png'
 
-/** 半遮掩土堆，相对格子。底边贴齐。 */
-export const MOUND_BOX = { x: 0, y: 60 / 144, w: 144 / 145, h: 84 / 144 }
-/** 半遮掩棋子，相对格子。 */
-export const HALF_PIECE_BOX = { x: 20 / 145, y: 17 / 144, w: 107 / 145, h: 110 / 144 }
+/** 半遮掩棋子。新土堆从大约 61% 高度才挡住，棋子上移，露出更多。 */
+export const HALF_PIECE_BOX = { x: 0.12, y: 0.02, w: 0.74, h: 0.64 }
+/** 宝箱气泡右上角感叹号：左 67%、右 96%、上 5%、下 35%。 */
+export const CHEST_BADGE_BOX = { x: 0.67, y: 0.05, w: 0.29, h: 0.3 }
 /** 气泡奖励图，相对格子，居中。 */
 export const BUBBLE_BOX = { w: 126 / 145, h: 128 / 144 }
 
@@ -70,6 +71,7 @@ const soils: Record<SoilKind, HTMLImageElement | null> = {
   log: load(logUrl),
 }
 const mound = load(moundUrl)
+const badge = load(badgeUrl)
 const bubbles: Record<BubbleArt, HTMLImageElement | null> = {
   energy: load(energyUrl),
   chestCatBlue: load(chestCatBlueUrl),
@@ -102,6 +104,16 @@ export function moundImage(): HTMLImageElement | null {
   return mound
 }
 
+export function badgeImage(): HTMLImageElement | null {
+  return badge
+}
+
+/** 三个宝箱气泡格才有感叹号。 */
+export function chestBubble(row: number, col: number): boolean {
+  const id = key(row, col)
+  return id === '1,7' || id === '9,1' || id === '9,4'
+}
+
 export function bubbleReward(row: number, col: number): BubbleReward | null {
   return BUBBLES[key(row, col)] ?? null
 }
@@ -114,5 +126,5 @@ export function bubbleImage(row: number, col: number): HTMLImageElement | null {
 export function boardCoverImages(): HTMLImageElement[] {
   const Ctor = (globalThis as { HTMLImageElement?: typeof HTMLImageElement }).HTMLImageElement
   if (!Ctor) return []
-  return [...Object.values(soils), mound, ...Object.values(bubbles)].filter((img): img is HTMLImageElement => img instanceof Ctor)
+  return [...Object.values(soils), mound, badge, ...Object.values(bubbles)].filter((img): img is HTMLImageElement => img instanceof Ctor)
 }

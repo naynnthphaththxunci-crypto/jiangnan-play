@@ -9,6 +9,7 @@ import { castImageElements } from './cast'
 import { homeArt } from './homeArt'
 import { curtainBitmaps } from './curtain'
 import { boardCoverImages } from './boardCover'
+import { orderCastImages } from './orderCast'
 
 function waitImage(img: HTMLImageElement): Promise<void> {
   if (img.complete && img.naturalWidth > 0) return Promise.resolve()
@@ -77,6 +78,7 @@ export async function runBoot(canvas: HTMLCanvasElement): Promise<() => void> {
     ...hechengImageElements(),
     ...listed(Object.values(homeArt)),
     ...boardCoverImages(),
+    ...orderCastImages(),
     ...listed([curtain.curtain as HTMLImageElement | null, curtain.front as HTMLImageElement | null]),
     ...(tray ? [tray] : []),
   ]

@@ -19,6 +19,7 @@ import { producerPieceName } from '../itemArt'
 import openingBoard from '../data/openingBoard.json'
 import { BALANCE, earlyOrder, levelGiftText, parseLevelGift, parseRewardText, smileRoundReward, smileRoundTarget, storyDef, storyNote, unitPrice } from '../balance1120'
 import { bubbleReward } from '../boardCover'
+import { pickOrderCast } from '../orderCast'
 
 export function mulberry32(seed: number): Rng {
   let a = seed >>> 0
@@ -1534,13 +1535,11 @@ function maxOrderLevel(state: GameState, line: string): number {
   return 3
 }
 
-const GUEST_ROTATION = ['boatman', 'embroider', 'fisherman', 'squire', 'scholar', 'siamese', 'bossDaughter']
-
-/** 调参打开时，订单区固定带上阿桨和鲍大叔，方便看序列帧。默认关闭。 */
+/** 调参打开时，订单区固定带上两个新角色，方便看动画。默认关闭。 */
 export function applyTestGuests(state: GameState, cfg: GameConfig): void {
   if ((cfg.economy.testOrderGuests ?? 0) < 1) return
   if (state.phase === 'story') return
-  const wanted = ['boatman', 'fisherman']
+  const wanted = ['ajiang', 'ghost']
   const missing = wanted.filter((id) => !state.orders.some((order) => order.customerId === id))
   for (const id of missing) {
     const donor = state.orders.find((order) => !wanted.includes(order.customerId))
@@ -1558,13 +1557,8 @@ export function applyTestGuests(state: GameState, cfg: GameConfig): void {
   }
 }
 
-function nextGuest(state: GameState): string {
-  const busy = new Set(state.orders.map((order) => order.customerId))
-  for (let step = 0; step < GUEST_ROTATION.length; step++) {
-    const id = GUEST_ROTATION[(state.orderCounter + step) % GUEST_ROTATION.length]
-    if (id && !busy.has(id)) return id
-  }
-  return GUEST_ROTATION[state.orderCounter % GUEST_ROTATION.length] ?? 'boatman'
+function nextGuest(rng: Rng): string {
+  return pickOrderCast(rng())
 }
 
 function pickWeightedLine(state: GameState, cfg: GameConfig, rng: Rng, lines: string[]): string {
@@ -1601,7 +1595,7 @@ function generateEarlyOrder(state: GameState, cfg: GameConfig, rng: Rng, lines: 
     slots.push({ line: second, level: min + Math.floor(rng() * span), filled: false })
   }
   if (!slots.every((slot) => orderCraftable(state, cfg, slot.line, slot.level))) return null
-  const customerId = nextGuest(state)
+  const customerId = nextGuest(rng)
   state.orderCounter += 1
   return { id: `o${state.orderCounter}`, customerId, slots, big: false, chest: false }
 }
@@ -1638,12 +1632,12 @@ export function generateOrder(state: GameState, cfg: GameConfig, rng: Rng): Orde
       slots.push({ line: line2, level: 3 + Math.floor(rng() * span2), filled: false })
     }
   }
-  const customerId = nextGuest(state)
+  const customerId = nextGuest(rng)
   const chest = state.phase === 'play' && rng() < cfg.economy.chestOrderChance
   state.orderCounter += 1
   const order: Order = {
     id: `o${state.orderCounter}`,
-    customerId: chest ? 'raccoon' : customerId,
+    customerId,
     slots,
     big,
     chest,
@@ -1708,7 +1702,7 @@ function pushEarly(state: GameState, cfg: GameConfig, spec: NonNullable<ReturnTy
   }
   state.orders.push({
     id: `e${spec.no}`,
-    customerId: spec.no === 1 ? 'xiaotao' : ['boatman', 'scholar', 'embroider', 'squire', 'fisherman'][spec.no % 5] ?? 'boatman',
+    customerId: pickOrderCast((spec.no * 0.17) % 1),
     slots: spec.items.map((item) => ({ line: item.line, level: item.level, filled: false })),
     big: false,
     scripted: spec.no === 1,
@@ -1761,7 +1755,7 @@ function lateOrder(state: GameState, cfg: GameConfig, slots: { line: string; lev
   rememberLines(state, slots)
   return {
     id: `l${state.orderCounter}`,
-    customerId: ['boatman', 'scholar', 'embroider', 'squire', 'fisherman'][state.orderCounter % 5] ?? 'boatman',
+    customerId: pickOrderCast((state.orderCounter * 0.37) % 1),
     slots: slots.map((slot) => ({ line: slot.line, level: slot.level, filled: false })),
     big: high,
     payCoins: coins,
@@ -2817,21 +2811,8 @@ export function settleGifts(state: GameState, cfg: GameConfig, now: number): voi
 
 export function collectLock(state: GameState, pos: Pos): ActionResult {
   const lock = lockAt(state, pos.row, pos.col)
-  if (!lock || lock.cover === 'gift') return { ok: false, reason: 'not-cache', events: [] }
-  if (lock.veil === 'full') return { ok: false, reason: 'covered', events: [{ type: 'toast', text: '这格还盖着' }] }
-  if (lock.buried.kind === 'coin') {
-    state.locks = state.locks.filter((entry) => entry.row !== pos.row || entry.col !== pos.col)
-    state.coins += lock.buried.amount
-    revealAround(state, pos.row, pos.col)
-    return { ok: true, events: [{ type: 'toast', text: `铜钱 +${lock.buried.amount}` }] }
-  }
-  if (lock.buried.kind === 'gem') {
-    state.locks = state.locks.filter((entry) => entry.row !== pos.row || entry.col !== pos.col)
-    state.board[pos.row][pos.col] = makeGem(state, lock.buried.tier)
-    revealAround(state, pos.row, pos.col)
-    return { ok: true, events: [{ type: 'unlock', row: pos.row, col: pos.col, line: 'gem', level: lock.buried.tier }] }
-  }
-  return { ok: false, reason: 'not-cache', events: [] }
+  if (!lock || lock.cover === 'gift' || lock.veil !== 'full') return { ok: false, reason: 'half', events: [] }
+  return { ok: false, reason: 'covered', events: [{ type: 'toast', text: '这格还盖着' }] }
 }
 
 export function useGem(state: GameState, pos: Pos, cfg: GameConfig): ActionResult {

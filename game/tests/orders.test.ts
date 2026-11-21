@@ -151,7 +151,7 @@ describe('订单', () => {
     expect(big?.slots[0].level).toBe(6)
   })
 
-  it('七位客人轮流下单，同时在场不重复', () => {
+  it('新订单从七个新角色里挑', () => {
     const { state, cfg } = boot()
     state.phase = 'play'
     state.level = 5
@@ -159,22 +159,16 @@ describe('订单', () => {
     if (starter?.kind === 'producer') starter.level = 4
     cfg.economy.chestOrderChance = 0
     state.orders = []
+    const roster = ['ghost', 'mengpo', 'xiaotao', 'liuyan', 'jin', 'zhongkui', 'ajiang']
     const seen = new Set<string>()
-    const roster = ['boatman', 'embroider', 'fisherman', 'squire', 'scholar', 'siamese', 'bossDaughter']
-    for (let turn = 0; turn < roster.length; turn++) {
-      const ids = state.orders.map((order) => order.customerId)
-      expect(new Set(ids).size, ids.join(',')).toBe(ids.length)
-      for (const id of ids) {
-        expect(roster).toContain(id)
-        seen.add(id)
-      }
-      state.orders.shift()
+    for (let turn = 0; turn < 20; turn++) {
       const order = generateOrder(state, cfg, mulberry32(turn + 2))
       if (!order) throw new Error('order')
-      state.orders.push(order)
+      expect(roster).toContain(order.customerId)
+      seen.add(order.customerId)
+      state.orders = [order]
     }
-    for (const order of state.orders) seen.add(order.customerId)
-    for (const id of roster) expect(seen.has(id), id).toBe(true)
+    expect(seen.size).toBeGreaterThan(1)
   })
 
   it('跳过开局后直接三张订单，棋盘上仍有蒸笼', () => {
