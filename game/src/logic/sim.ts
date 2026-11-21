@@ -18,6 +18,7 @@ import { formatMs } from '../format'
 import { producerPieceName } from '../itemArt'
 import openingBoard from '../data/openingBoard.json'
 import { BALANCE, earlyOrder, levelGiftText, parseLevelGift, parseRewardText, smileRoundReward, smileRoundTarget, storyDef, storyNote, unitPrice } from '../balance1120'
+import { bubbleReward } from '../boardCover'
 
 export function mulberry32(seed: number): Rng {
   let a = seed >>> 0
@@ -241,6 +242,41 @@ function openRewardLock(state: GameState, cfg: GameConfig, lock: CellLock): void
   state.locks = state.locks.filter((entry) => entry !== lock)
 }
 
+function hasBuriedPiece(lock: CellLock): boolean {
+  return lock.buried.kind === 'product' || lock.buried.kind === 'producer'
+}
+
+function shakeHalf(lock: CellLock): void {
+  lock.veil = 'half'
+  lock.shakeAt = Date.now()
+}
+
+/** 气泡格发奖后变成半遮掩。下面没有棋子就留空。 */
+function claimBubble(state: GameState, lock: CellLock): void {
+  const reward = bubbleReward(lock.row, lock.col)
+  if (!reward) return
+  if (reward.energy) state.energy += reward.energy
+  if (reward.gems) state.gems += reward.gems
+  lock.prize = undefined
+  if (hasBuriedPiece(lock)) shakeHalf(lock)
+  else {
+    state.board[lock.row][lock.col] = null
+    state.locks = state.locks.filter((entry) => entry !== lock)
+  }
+}
+
+function revealLock(state: GameState, lock: CellLock, cfg?: GameConfig): void {
+  if (bubbleReward(lock.row, lock.col)) {
+    claimBubble(state, lock)
+    return
+  }
+  if (lock.prize && cfg) {
+    openRewardLock(state, cfg, lock)
+    return
+  }
+  shakeHalf(lock)
+}
+
 function revealAround(state: GameState, row: number, col: number, cfg?: GameConfig): void {
   if (row === 4 && col === 2) {
     for (const [r, c] of [
@@ -249,7 +285,7 @@ function revealAround(state: GameState, row: number, col: number, cfg?: GameConf
       [4, 4],
     ]) {
       const extra = lockAt(state, r, c)
-      if (extra && extra.veil === 'full' && extra.cover !== 'gift') extra.veil = 'half'
+      if (extra && extra.veil === 'full' && extra.cover !== 'gift') revealLock(state, extra, cfg)
     }
   }
   const near = [
@@ -261,8 +297,7 @@ function revealAround(state: GameState, row: number, col: number, cfg?: GameConf
   for (const [dr, dc] of near) {
     const lock = lockAt(state, row + (dr ?? 0), col + (dc ?? 0))
     if (!lock || lock.veil !== 'full' || lock.cover === 'gift') continue
-    if (lock.prize && cfg) openRewardLock(state, cfg, lock)
-    else lock.veil = 'half'
+    revealLock(state, lock, cfg)
   }
 }
 

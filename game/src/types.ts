@@ -407,6 +407,8 @@ export interface CellLock {
   giftUntil?: number
   /** 变成半遮掩时立刻发放，并露出下面的物品。 */
   prize?: { energy?: number; coins?: number; gems?: number; chest?: boolean }
+  /** 全遮掩刚变成半遮掩的时刻，用来抖一下格子。 */
+  shakeAt?: number
   buried:
     | { kind: 'product'; line: string; level: number }
     | { kind: 'producer'; id: string; level: number }

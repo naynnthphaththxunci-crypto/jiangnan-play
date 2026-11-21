@@ -54,6 +54,7 @@ import { assignArtSrc } from './artGate'
 import { homeArt, type HomeArtId } from './homeArt'
 import { HOME_MAP_H, HOME_MAP_W, homeDaughterRect, homeHostessRect, homeTreeRect, placeHomeBuildings, type HomeCam } from './homeMap'
 import { cellWoodRect, designToScreen } from './hechengLayout'
+import { BUBBLE_BOX, HALF_PIECE_BOX, MOUND_BOX, bubbleImage, moundImage, soilImage } from './boardCover'
 import { orderTickPlace } from './orderTick'
 import { COMIC_FONT, comicCursor, comicFontReady, comicPanelImage, comicPrompt, comicSilaImage, wrapComicText } from './comic'
 import { openingFilm } from './openingFilm'
@@ -1132,6 +1133,27 @@ function hiddenCells(fx: Fx): Set<string> {
   return set
 }
 
+function cellShake(at: number | undefined, now: number, width: number): number {
+  if (!at) return 0
+  const age = now - at
+  if (age < 0 || age > 420) return 0
+  return Math.sin(age / 30) * width * 0.06 * (1 - age / 420)
+}
+
+function drawBuriedPiece(ctx: CanvasRenderingContext2D, lock: { buried: GameState['locks'][number]['buried'] }, box: Rect): void {
+  const buried = lock.buried
+  const sprite =
+    buried.kind === 'producer'
+      ? producerSprite(buried.id, buried.level)
+      : buried.kind === 'product'
+        ? itemSprite(buried.line, buried.level)
+        : buried.kind === 'potion'
+          ? potionSprite(buried.tier)
+          : null
+  if (sprite) drawFittedSprite(ctx, sprite, box, 1)
+  else if (buried.kind === 'coin') text(ctx, String(buried.amount), box.x + box.w / 2, box.y + box.h / 2, Math.max(12, box.w * 0.28), PAL.coin)
+}
+
 function drawBoard(model: RenderModel): void {
   const { ctx, frame, state, cfg, realNow, animNow, fx } = model
   if (frame.board.cell <= 0) return
@@ -1174,48 +1196,49 @@ function drawBoard(model: RenderModel): void {
       const item = state.board[row][col]
       const unlimited = inProducerGrace(state, cfg)
       if (lock && !item) {
-        const covered = lock.veil === 'full' && lock.cover !== 'gift'
-        if (!covered && lock.buried.kind === 'product') {
-          drawItem(ctx, cfg, { uid: 'buried', kind: 'product', line: lock.buried.line, level: lock.buried.level }, box, 1, 0.45, realNow)
-        } else if (!covered && lock.buried.kind === 'producer') {
-          const buried = lock.buried
-          drawItem(
-            ctx,
-            cfg,
-            {
-              uid: 'buried',
-              kind: 'producer',
-              producerId: buried.id,
-              line: cfg.producers.find((entry) => entry.id === buried.id)?.line ?? buried.id,
-              level: buried.level,
-              charges: 0,
-              cooldownUntil: 0,
-            },
-            box,
-            1,
-            0.55,
-            realNow,
-          )
-        } else if (!covered && lock.buried.kind === 'potion') {
-          drawItem(ctx, cfg, { uid: 'buried', kind: 'potion', tier: lock.buried.tier }, box, 1, 0.45, realNow)
-        } else if (!covered && lock.buried.kind === 'gem') {
-          drawItem(ctx, cfg, { uid: 'buried', kind: 'gem', tier: lock.buried.tier }, box, 1, 0.45, realNow)
-        } else if (!covered && lock.buried.kind === 'coin') {
-          text(ctx, String(lock.buried.amount), box.x + box.w / 2, box.y + box.h * 0.4, Math.max(12, box.w * 0.22), PAL.coin)
-        }
-        ctx.fillStyle = covered
-          ? '#c4ae86'
-          : lock.cover === 'web'
-            ? 'rgba(90,90,90,0.45)'
-            : lock.cover === 'gift'
-              ? 'rgba(180,140,60,0.45)'
-              : 'rgba(255,248,236,0.42)'
-        roundRect(ctx, box.x + 3, box.y + 3, box.w - 6, box.h - 6, 6)
-        ctx.fill()
-        const giftLeft = lock.cover === 'gift' && lock.giftUntil != null ? lock.giftUntil - realNow : 0
         if (lock.cover === 'gift') {
+          const preview = buriedPreview(lock)
+          if (preview) drawItem(ctx, cfg, preview, box, 1, 0.45, realNow)
+          ctx.fillStyle = 'rgba(180,140,60,0.45)'
+          roundRect(ctx, box.x + 3, box.y + 3, box.w - 6, box.h - 6, 6)
+          ctx.fill()
+          const giftLeft = lock.giftUntil != null ? lock.giftUntil - realNow : 0
           const lockLabel = lock.giftUntil == null ? '礼物' : giftLeft > 0 ? formatMs(giftLeft) : '可开'
           text(ctx, lockLabel, box.x + box.w / 2, box.y + box.h * 0.72, Math.max(9, box.w * 0.16), PAL.ink)
+        } else {
+          const wood = cellWoodRect(frame.board, frame.w / 1080, row, col)
+          const dx = cellShake(lock.shakeAt, realNow, wood.w)
+          ctx.save()
+          ctx.translate(dx, 0)
+          if (lock.veil !== 'half') {
+            const soil = soilImage(row, col)
+            if (soil && (soil.naturalWidth || 0) > 0) ctx.drawImage(soil, wood.x, wood.y, wood.w, wood.h)
+            const bubble = bubbleImage(row, col)
+            if (bubble && (bubble.naturalWidth || 0) > 0) {
+              const bw = wood.w * BUBBLE_BOX.w
+              const bh = wood.h * BUBBLE_BOX.h
+              ctx.drawImage(bubble, wood.x + (wood.w - bw) / 2, wood.y + (wood.h - bh) / 2, bw, bh)
+            }
+          } else {
+            const piece = {
+              x: wood.x + wood.w * HALF_PIECE_BOX.x,
+              y: wood.y + wood.h * HALF_PIECE_BOX.y,
+              w: wood.w * HALF_PIECE_BOX.w,
+              h: wood.h * HALF_PIECE_BOX.h,
+            }
+            drawBuriedPiece(ctx, lock, piece)
+            const mound = moundImage()
+            if (mound && (mound.naturalWidth || 0) > 0) {
+              ctx.drawImage(
+                mound,
+                wood.x + wood.w * MOUND_BOX.x,
+                wood.y + wood.h * MOUND_BOX.y,
+                wood.w * MOUND_BOX.w,
+                wood.h * MOUND_BOX.h,
+              )
+            }
+          }
+          ctx.restore()
         }
         if (glow.has(key)) {
           const amp = Math.max(0, Math.min(1, cfg.economy.lockPulse || 0))
