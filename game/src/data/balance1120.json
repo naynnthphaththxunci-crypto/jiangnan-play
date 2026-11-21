@@ -1,0 +1,8306 @@
+{
+ "meta": {
+  "title": "江南合成 数值表 1120",
+  "source": "浪漫餐厅数值记录_1118.md（Allen 实测）+ Allen 母棋定稿 + 划划推断",
+  "rule": "原文数字原样照抄；推断值 src 字段标【推断】",
+  "coordinate": "格子键=列字母+行号，如 b4=第 b 列第 4 行"
+ },
+ "lines": {
+  "food": {
+   "name": "猫粮",
+   "rg": "面包",
+   "maxLevel": 15,
+   "tier": "好出",
+   "producer": "p_food",
+   "levels": [
+    {
+     "level": 1,
+     "name": "饱满麦粒",
+     "placeholder": false,
+     "orderable": false,
+     "price": null,
+     "priceSrc": null
+    },
+    {
+     "level": 2,
+     "name": "营养面粉",
+     "placeholder": false,
+     "orderable": false,
+     "price": null,
+     "priceSrc": null
+    },
+    {
+     "level": 3,
+     "name": "混合粗粮团",
+     "placeholder": false,
+     "orderable": true,
+     "price": 2,
+     "priceSrc": "实记 订单1/28/38"
+    },
+    {
+     "level": 4,
+     "name": "基础猫粮粒",
+     "placeholder": false,
+     "orderable": true,
+     "price": 4,
+     "priceSrc": "实记 订单3/84"
+    },
+    {
+     "level": 5,
+     "name": "酥脆猫粮饼",
+     "placeholder": false,
+     "orderable": true,
+     "price": 8,
+     "priceSrc": "实记 订单27"
+    },
+    {
+     "level": 6,
+     "name": "浓香猫粮罐",
+     "placeholder": false,
+     "orderable": true,
+     "price": 12,
+     "priceSrc": "实记 订单4/17/54"
+    },
+    {
+     "level": 7,
+     "name": "鲜肉猫粮袋",
+     "placeholder": false,
+     "orderable": true,
+     "price": 20,
+     "priceSrc": "实记 订单12起（订单9新手期32）"
+    },
+    {
+     "level": 8,
+     "name": "臻选猫粮桶",
+     "placeholder": false,
+     "orderable": true,
+     "price": 32,
+     "priceSrc": "实记 订单2/46/61…"
+    },
+    {
+     "level": 9,
+     "name": "营养猫粮箱",
+     "placeholder": false,
+     "orderable": true,
+     "price": 50,
+     "priceSrc": "【推断】×1.55/级"
+    },
+    {
+     "level": 10,
+     "name": "皇家猫粮大粮仓",
+     "placeholder": false,
+     "orderable": true,
+     "price": 78,
+     "priceSrc": "【推断】×1.55/级"
+    },
+    {
+     "level": 11,
+     "name": "猫粮11级【待命名】",
+     "placeholder": true,
+     "orderable": true,
+     "price": 121,
+     "priceSrc": "【推断】×1.55/级"
+    },
+    {
+     "level": 12,
+     "name": "猫粮12级【待命名】",
+     "placeholder": true,
+     "orderable": true,
+     "price": 188,
+     "priceSrc": "【推断】×1.55/级"
+    },
+    {
+     "level": 13,
+     "name": "猫粮13级【待命名】",
+     "placeholder": true,
+     "orderable": true,
+     "price": 291,
+     "priceSrc": "【推断】×1.55/级"
+    },
+    {
+     "level": 14,
+     "name": "猫粮14级【待命名】",
+     "placeholder": true,
+     "orderable": true,
+     "price": 451,
+     "priceSrc": "【推断】×1.55/级"
+    },
+    {
+     "level": 15,
+     "name": "猫粮15级【待命名】",
+     "placeholder": true,
+     "orderable": true,
+     "price": 699,
+     "priceSrc": "【推断】×1.55/级"
+    }
+   ]
+  },
+  "meat": {
+   "name": "肉类",
+   "rg": "薯条",
+   "maxLevel": 7,
+   "tier": "难出",
+   "producer": "p_food",
+   "levels": [
+    {
+     "level": 1,
+     "name": "新鲜生肉",
+     "placeholder": false,
+     "orderable": false,
+     "price": null,
+     "priceSrc": null
+    },
+    {
+     "level": 2,
+     "name": "精选肉丁",
+     "placeholder": false,
+     "orderable": false,
+     "price": null,
+     "priceSrc": null
+    },
+    {
+     "level": 3,
+     "name": "鲜嫩肉串",
+     "placeholder": false,
+     "orderable": true,
+     "price": 8,
+     "priceSrc": "实记 订单6/19/55"
+    },
+    {
+     "level": 4,
+     "name": "香煎大鸡腿",
+     "placeholder": false,
+     "orderable": true,
+     "price": 14,
+     "priceSrc": "实记 订单5/15/111/131"
+    },
+    {
+     "level": 5,
+     "name": "秘制酱鸭",
+     "placeholder": false,
+     "orderable": true,
+     "price": 24,
+     "priceSrc": "实记 订单8/69"
+    },
+    {
+     "level": 6,
+     "name": "豪华肉食大拼盘",
+     "placeholder": false,
+     "orderable": true,
+     "price": 36,
+     "priceSrc": "【推断】同难出线"
+    },
+    {
+     "level": 7,
+     "name": "肉类7级【待命名】",
+     "placeholder": true,
+     "orderable": true,
+     "price": 56,
+     "priceSrc": "【推断】×1.55/级"
+    }
+   ]
+  },
+  "bev": {
+   "name": "饮料",
+   "rg": "咖啡",
+   "maxLevel": 15,
+   "tier": "好出",
+   "producer": "p_bev",
+   "levels": [
+    {
+     "level": 1,
+     "name": "单颗咖啡豆",
+     "placeholder": false,
+     "orderable": false,
+     "price": null,
+     "priceSrc": null
+    },
+    {
+     "level": 2,
+     "name": "饱满咖啡豆",
+     "placeholder": false,
+     "orderable": false,
+     "price": null,
+     "priceSrc": null
+    },
+    {
+     "level": 3,
+     "name": "研磨咖啡粉",
+     "placeholder": false,
+     "orderable": true,
+     "price": 2,
+     "priceSrc": "实记 订单63"
+    },
+    {
+     "level": 4,
+     "name": "滤纸手冲液",
+     "placeholder": false,
+     "orderable": true,
+     "price": 4,
+     "priceSrc": "推算（订单24/35/44/48/120）"
+    },
+    {
+     "level": 5,
+     "name": "浓缩咖啡液",
+     "placeholder": false,
+     "orderable": true,
+     "price": 8,
+     "priceSrc": "实记 订单41/62/119"
+    },
+    {
+     "level": 6,
+     "name": "经典香浓拿铁",
+     "placeholder": false,
+     "orderable": true,
+     "price": 14,
+     "priceSrc": "实记 订单23/29/32…"
+    },
+    {
+     "level": 7,
+     "name": "猫爪拉花拿铁",
+     "placeholder": false,
+     "orderable": true,
+     "price": 24,
+     "priceSrc": "实记 订单16/39/56…"
+    },
+    {
+     "level": 8,
+     "name": "冰爽特调咖啡",
+     "placeholder": false,
+     "orderable": true,
+     "price": 36,
+     "priceSrc": "实记 订单68/85/126"
+    },
+    {
+     "level": 9,
+     "name": "奶油雪顶咖啡",
+     "placeholder": false,
+     "orderable": true,
+     "price": 56,
+     "priceSrc": "【推断】×1.55/级"
+    },
+    {
+     "level": 10,
+     "name": "殿堂级咖啡大师杯",
+     "placeholder": false,
+     "orderable": true,
+     "price": 87,
+     "priceSrc": "【推断】×1.55/级"
+    },
+    {
+     "level": 11,
+     "name": "饮料11级【待命名】",
+     "placeholder": true,
+     "orderable": true,
+     "price": 135,
+     "priceSrc": "【推断】×1.55/级"
+    },
+    {
+     "level": 12,
+     "name": "饮料12级【待命名】",
+     "placeholder": true,
+     "orderable": true,
+     "price": 209,
+     "priceSrc": "【推断】×1.55/级"
+    },
+    {
+     "level": 13,
+     "name": "饮料13级【待命名】",
+     "placeholder": true,
+     "orderable": true,
+     "price": 324,
+     "priceSrc": "【推断】×1.55/级"
+    },
+    {
+     "level": 14,
+     "name": "饮料14级【待命名】",
+     "placeholder": true,
+     "orderable": true,
+     "price": 502,
+     "priceSrc": "【推断】×1.55/级"
+    },
+    {
+     "level": 15,
+     "name": "饮料15级【待命名】",
+     "placeholder": true,
+     "orderable": true,
+     "price": 778,
+     "priceSrc": "【推断】×1.55/级"
+    }
+   ]
+  },
+  "mint": {
+   "name": "猫薄荷",
+   "rg": "柠檬茶（原橙汁）",
+   "maxLevel": 7,
+   "tier": "难出",
+   "producer": "p_bev",
+   "levels": [
+    {
+     "level": 1,
+     "name": "新鲜薄荷叶",
+     "placeholder": false,
+     "orderable": false,
+     "price": null,
+     "priceSrc": null
+    },
+    {
+     "level": 2,
+     "name": "翠绿薄荷束",
+     "placeholder": false,
+     "orderable": false,
+     "price": null,
+     "priceSrc": null
+    },
+    {
+     "level": 3,
+     "name": "舒缓薄荷茶",
+     "placeholder": false,
+     "orderable": true,
+     "price": 8,
+     "priceSrc": "实记 订单18"
+    },
+    {
+     "level": 4,
+     "name": "清凉薄荷气泡水",
+     "placeholder": false,
+     "orderable": true,
+     "price": 14,
+     "priceSrc": "实记 订单21"
+    },
+    {
+     "level": 5,
+     "name": "冰爽薄荷冰沙",
+     "placeholder": false,
+     "orderable": true,
+     "price": 24,
+     "priceSrc": "实记 订单71/92/107"
+    },
+    {
+     "level": 6,
+     "name": "猫薄荷特调仙露",
+     "placeholder": false,
+     "orderable": true,
+     "price": 36,
+     "priceSrc": "【推断】同难出线"
+    },
+    {
+     "level": 7,
+     "name": "猫薄荷7级【待命名】",
+     "placeholder": true,
+     "orderable": true,
+     "price": 56,
+     "priceSrc": "【推断】×1.55/级"
+    }
+   ]
+  },
+  "toy": {
+   "name": "老鼠玩具",
+   "rg": "泳圈",
+   "maxLevel": 11,
+   "tier": "储物箱主线",
+   "producer": "p_toy",
+   "levels": [
+    {
+     "level": 1,
+     "name": "零散旧毛线",
+     "placeholder": false,
+     "orderable": false,
+     "price": null,
+     "priceSrc": null
+    },
+    {
+     "level": 2,
+     "name": "缠绕毛线球",
+     "placeholder": false,
+     "orderable": false,
+     "price": null,
+     "priceSrc": null
+    },
+    {
+     "level": 3,
+     "name": "简易布老鼠",
+     "placeholder": false,
+     "orderable": true,
+     "price": 8,
+     "priceSrc": "【推断】按泳圈4=14套难出线价"
+    },
+    {
+     "level": 4,
+     "name": "铃铛布老鼠",
+     "placeholder": false,
+     "orderable": true,
+     "price": 14,
+     "priceSrc": "推算（订单128）"
+    },
+    {
+     "level": 5,
+     "name": "仿真跳跳鼠",
+     "placeholder": false,
+     "orderable": true,
+     "price": 24,
+     "priceSrc": "【推断】按泳圈4=14套难出线价"
+    },
+    {
+     "level": 6,
+     "name": "智能发条鼠",
+     "placeholder": false,
+     "orderable": true,
+     "price": 36,
+     "priceSrc": "【推断】按泳圈4=14套难出线价"
+    },
+    {
+     "level": 7,
+     "name": "机械遥控鼠",
+     "placeholder": false,
+     "orderable": true,
+     "price": 56,
+     "priceSrc": "【推断】按泳圈4=14套难出线价"
+    },
+    {
+     "level": 8,
+     "name": "趣味追逐轨道",
+     "placeholder": false,
+     "orderable": true,
+     "price": 87,
+     "priceSrc": "【推断】按泳圈4=14套难出线价"
+    },
+    {
+     "level": 9,
+     "name": "旋转猫咪转塔",
+     "placeholder": false,
+     "orderable": true,
+     "price": 135,
+     "priceSrc": "【推断】按泳圈4=14套难出线价"
+    },
+    {
+     "level": 10,
+     "name": "奇幻机械互动鼠",
+     "placeholder": false,
+     "orderable": true,
+     "price": 209,
+     "priceSrc": "【推断】按泳圈4=14套难出线价"
+    },
+    {
+     "level": 11,
+     "name": "老鼠玩具11级【待命名】",
+     "placeholder": true,
+     "orderable": true,
+     "price": 324,
+     "priceSrc": "【推断】按泳圈4=14套难出线价"
+    }
+   ]
+  },
+  "wand": {
+   "name": "逗猫棒",
+   "rg": "泳具（泳镜…潜水脚蹼）",
+   "maxLevel": 7,
+   "tier": "难出",
+   "producer": "p_toy",
+   "levels": [
+    {
+     "level": 1,
+     "name": "飘逸羽毛",
+     "placeholder": false,
+     "orderable": false,
+     "price": null,
+     "priceSrc": null
+    },
+    {
+     "level": 2,
+     "name": "简易羽毛棒",
+     "placeholder": false,
+     "orderable": false,
+     "price": null,
+     "priceSrc": null
+    },
+    {
+     "level": 3,
+     "name": "清脆铃铛棒",
+     "placeholder": false,
+     "orderable": true,
+     "price": 14,
+     "priceSrc": "【推断】比老鼠玩具同级高一档"
+    },
+    {
+     "level": 4,
+     "name": "灵动小鱼棒",
+     "placeholder": false,
+     "orderable": true,
+     "price": 24,
+     "priceSrc": "【推断】比老鼠玩具同级高一档"
+    },
+    {
+     "level": 5,
+     "name": "缤纷彩带棒",
+     "placeholder": false,
+     "orderable": true,
+     "price": 36,
+     "priceSrc": "【推断】比老鼠玩具同级高一档"
+    },
+    {
+     "level": 6,
+     "name": "终极豪华逗猫棒",
+     "placeholder": false,
+     "orderable": true,
+     "price": 56,
+     "priceSrc": "【推断】比老鼠玩具同级高一档"
+    },
+    {
+     "level": 7,
+     "name": "逗猫棒7级【待命名】",
+     "placeholder": true,
+     "orderable": true,
+     "price": 86,
+     "priceSrc": "【推断】比老鼠玩具同级高一档"
+    }
+   ]
+  },
+  "bed": {
+   "name": "猫窝",
+   "rg": "贝壳",
+   "maxLevel": 12,
+   "tier": "唯一",
+   "producer": "p_bed",
+   "levels": [
+    {
+     "level": 1,
+     "name": "暖心碎稻草",
+     "placeholder": false,
+     "orderable": false,
+     "price": null,
+     "priceSrc": null
+    },
+    {
+     "level": 2,
+     "name": "柔软小棉垫",
+     "placeholder": false,
+     "orderable": false,
+     "price": null,
+     "priceSrc": null
+    },
+    {
+     "level": 3,
+     "name": "舒适针织窝",
+     "placeholder": false,
+     "orderable": true,
+     "price": 8,
+     "priceSrc": "【推断】按难出线价"
+    },
+    {
+     "level": 4,
+     "name": "质朴竹编篮",
+     "placeholder": false,
+     "orderable": true,
+     "price": 14,
+     "priceSrc": "【推断】按难出线价"
+    },
+    {
+     "level": 5,
+     "name": "经典纸箱窝",
+     "placeholder": false,
+     "orderable": true,
+     "price": 24,
+     "priceSrc": "【推断】按难出线价"
+    },
+    {
+     "level": 6,
+     "name": "温暖毛绒圆窝",
+     "placeholder": false,
+     "orderable": true,
+     "price": 36,
+     "priceSrc": "【推断】按难出线价"
+    },
+    {
+     "level": 7,
+     "name": "探险小帐篷",
+     "placeholder": false,
+     "orderable": true,
+     "price": 56,
+     "priceSrc": "【推断】按难出线价"
+    },
+    {
+     "level": 8,
+     "name": "豪华原木屋",
+     "placeholder": false,
+     "orderable": true,
+     "price": 87,
+     "priceSrc": "【推断】按难出线价"
+    },
+    {
+     "level": 9,
+     "name": "趣味多层猫爬架",
+     "placeholder": false,
+     "orderable": true,
+     "price": 135,
+     "priceSrc": "【推断】按难出线价"
+    },
+    {
+     "level": 10,
+     "name": "奢华猫咪大别墅",
+     "placeholder": false,
+     "orderable": true,
+     "price": 209,
+     "priceSrc": "【推断】按难出线价"
+    },
+    {
+     "level": 11,
+     "name": "猫窝11级【待命名】",
+     "placeholder": true,
+     "orderable": true,
+     "price": 324,
+     "priceSrc": "【推断】按难出线价"
+    },
+    {
+     "level": 12,
+     "name": "猫窝12级【待命名】",
+     "placeholder": true,
+     "orderable": true,
+     "price": 502,
+     "priceSrc": "【推断】按难出线价"
+    }
+   ]
+  },
+  "fish": {
+   "name": "鱼类食品",
+   "rg": "鱼/熟鱼",
+   "maxLevel": 10,
+   "tier": "难出",
+   "producer": "p_catch",
+   "levels": [
+    {
+     "level": 1,
+     "name": "迷你小虾米",
+     "placeholder": false,
+     "orderable": false,
+     "price": null,
+     "priceSrc": null
+    },
+    {
+     "level": 2,
+     "name": "灵动小鱼苗",
+     "placeholder": false,
+     "orderable": false,
+     "price": null,
+     "priceSrc": null
+    },
+    {
+     "level": 3,
+     "name": "鲜嫩小鲫鱼",
+     "placeholder": false,
+     "orderable": true,
+     "price": 8,
+     "priceSrc": "实记 订单52/75"
+    },
+    {
+     "level": 4,
+     "name": "肥美大鲫鱼",
+     "placeholder": false,
+     "orderable": true,
+     "price": 14,
+     "priceSrc": "实记 订单50/90/122"
+    },
+    {
+     "level": 5,
+     "name": "鲜活肥鲈鱼",
+     "placeholder": false,
+     "orderable": true,
+     "price": 24,
+     "priceSrc": "实记 订单59"
+    },
+    {
+     "level": 6,
+     "name": "极品大鳊鱼",
+     "placeholder": false,
+     "orderable": true,
+     "price": 36,
+     "priceSrc": "实记 订单96/101/109"
+    },
+    {
+     "level": 7,
+     "name": "巨型青波鱼",
+     "placeholder": false,
+     "orderable": true,
+     "price": 56,
+     "priceSrc": "【推断】×1.55/级"
+    },
+    {
+     "level": 8,
+     "name": "璀璨金鲤鱼",
+     "placeholder": false,
+     "orderable": true,
+     "price": 87,
+     "priceSrc": "【推断】×1.55/级"
+    },
+    {
+     "level": 9,
+     "name": "远古深海巨鲲",
+     "placeholder": false,
+     "orderable": true,
+     "price": 135,
+     "priceSrc": "【推断】×1.55/级"
+    },
+    {
+     "level": 10,
+     "name": "神话真龙锦鲤",
+     "placeholder": false,
+     "orderable": true,
+     "price": 209,
+     "priceSrc": "【推断】×1.55/级"
+    }
+   ]
+  },
+  "plant": {
+   "name": "花草",
+   "rg": "蛋糕",
+   "maxLevel": 7,
+   "tier": "难出（冷却）",
+   "producer": "p_plant",
+   "levels": [
+    {
+     "level": 1,
+     "name": "神秘花种",
+     "placeholder": false,
+     "orderable": false,
+     "price": null,
+     "priceSrc": null
+    },
+    {
+     "level": 2,
+     "name": "破土冒芽盆",
+     "placeholder": false,
+     "orderable": true,
+     "price": 4,
+     "priceSrc": "推算（订单91/106）"
+    },
+    {
+     "level": 3,
+     "name": "鲜嫩猫草盆",
+     "placeholder": false,
+     "orderable": true,
+     "price": 8,
+     "priceSrc": "实记 订单108/124"
+    },
+    {
+     "level": 4,
+     "name": "清新雏菊盆",
+     "placeholder": false,
+     "orderable": true,
+     "price": 14,
+     "priceSrc": "推算（订单91）"
+    },
+    {
+     "level": 5,
+     "name": "优雅茉莉盆",
+     "placeholder": false,
+     "orderable": true,
+     "price": 24,
+     "priceSrc": "推算（订单89/127）"
+    },
+    {
+     "level": 6,
+     "name": "精致碗莲盆",
+     "placeholder": false,
+     "orderable": true,
+     "price": 36,
+     "priceSrc": "实记 订单94/114"
+    },
+    {
+     "level": 7,
+     "name": "典雅桂花盆景",
+     "placeholder": false,
+     "orderable": true,
+     "price": 56,
+     "priceSrc": "【推断】×1.55/级"
+    }
+   ]
+  },
+  "dog": {
+   "name": "狗",
+   "rg": "狗",
+   "maxLevel": 10,
+   "tier": "特殊（不进普通订单）",
+   "producer": "p_dog",
+   "levels": [
+    {
+     "level": 1,
+     "name": "狗 1级（文字）",
+     "placeholder": true,
+     "orderable": false,
+     "price": null,
+     "priceSrc": null
+    },
+    {
+     "level": 2,
+     "name": "狗 2级（文字）",
+     "placeholder": true,
+     "orderable": false,
+     "price": null,
+     "priceSrc": null
+    },
+    {
+     "level": 3,
+     "name": "狗 3级（文字）",
+     "placeholder": true,
+     "orderable": false,
+     "price": null,
+     "priceSrc": null
+    },
+    {
+     "level": 4,
+     "name": "狗 4级（文字）",
+     "placeholder": true,
+     "orderable": false,
+     "price": null,
+     "priceSrc": null
+    },
+    {
+     "level": 5,
+     "name": "狗 5级（文字）",
+     "placeholder": true,
+     "orderable": false,
+     "price": null,
+     "priceSrc": null
+    },
+    {
+     "level": 6,
+     "name": "狗 6级（文字）",
+     "placeholder": true,
+     "orderable": false,
+     "price": null,
+     "priceSrc": null
+    },
+    {
+     "level": 7,
+     "name": "狗 7级（文字）",
+     "placeholder": true,
+     "orderable": false,
+     "price": null,
+     "priceSrc": null
+    },
+    {
+     "level": 8,
+     "name": "狗 8级（文字）",
+     "placeholder": true,
+     "orderable": false,
+     "price": null,
+     "priceSrc": null
+    },
+    {
+     "level": 9,
+     "name": "狗 9级（文字）",
+     "placeholder": true,
+     "orderable": false,
+     "price": null,
+     "priceSrc": null
+    },
+    {
+     "level": 10,
+     "name": "狗 10级（文字）",
+     "placeholder": true,
+     "orderable": false,
+     "price": null,
+     "priceSrc": null
+    }
+   ]
+  },
+  "catch": {
+   "name": "渔货（消耗母棋，不进订单）",
+   "rg": "生鱼母棋",
+   "maxLevel": 5,
+   "levels": [
+    {
+     "level": 1,
+     "name": "一卷渔线"
+    },
+    {
+     "level": 2,
+     "name": "小抄网"
+    },
+    {
+     "level": 3,
+     "name": "竹柄渔网"
+    },
+    {
+     "level": 4,
+     "name": "强力撒网"
+    },
+    {
+     "level": 5,
+     "name": "深海大拖网"
+    }
+   ]
+  }
+ },
+ "producers": [
+  {
+   "id": "p_food",
+   "name": "猫粮母棋",
+   "rg": "购物车",
+   "type": "energy",
+   "levels": 11,
+   "produceFrom": 4,
+   "outputs": [
+    "food(15级,好出)",
+    "meat(7级,难出,母棋5级起)"
+   ],
+   "drop": [
+    {
+     "level": 4,
+     "hard": 0,
+     "e1": 100,
+     "e2": 0,
+     "e3": 0,
+     "rare": 0,
+     "src": "实测"
+    },
+    {
+     "level": 5,
+     "hard": 10,
+     "e1": 86,
+     "e2": 3,
+     "e3": 0.5,
+     "rare": 0.5,
+     "src": "【推断】"
+    },
+    {
+     "level": 6,
+     "hard": 11,
+     "e1": 82.5,
+     "e2": 4.5,
+     "e3": 1.2,
+     "rare": 0.8,
+     "src": "【推断】"
+    },
+    {
+     "level": 7,
+     "hard": 11.9,
+     "e1": 79,
+     "e2": 6,
+     "e3": 2,
+     "rare": 1.1,
+     "src": "实测（稀有=余数）"
+    },
+    {
+     "level": 8,
+     "hard": 12.9,
+     "e1": 75.5,
+     "e2": 8.5,
+     "e3": 2.25,
+     "rare": 0.85,
+     "src": "【推断】插值"
+    },
+    {
+     "level": 9,
+     "hard": 13.9,
+     "e1": 72,
+     "e2": 11,
+     "e3": 2.5,
+     "rare": 0.6,
+     "src": "实测（稀有=余数）"
+    },
+    {
+     "level": 10,
+     "hard": 14.4,
+     "e1": 69.5,
+     "e2": 12.5,
+     "e3": 2.9,
+     "rare": 0.7,
+     "src": "【推断】"
+    },
+    {
+     "level": 11,
+     "hard": 14.9,
+     "e1": 67,
+     "e2": 14,
+     "e3": 3.3,
+     "rare": 0.8,
+     "src": "【推断】"
+    }
+   ],
+   "cooldown": "实测未见冷却，【推断】不冷却（见冲突说明）"
+  },
+  {
+   "id": "p_bev",
+   "name": "饮料母棋",
+   "rg": "咖啡机",
+   "type": "energy",
+   "levels": 11,
+   "produceFrom": 4,
+   "outputs": [
+    "bev(15级,好出)",
+    "mint(7级,难出,母棋5级起)"
+   ],
+   "drop": "同 p_food（Allen：柠檬茶 17% 那次是爆了幸运值，按薯条算）",
+   "cooldown": "同 p_food"
+  },
+  {
+   "id": "p_toy",
+   "name": "玩具母棋",
+   "rg": "储物箱",
+   "type": "energy",
+   "levels": 11,
+   "produceFrom": 5,
+   "outputs": [
+    "toy(11级)",
+    "wand(7级,难出,母棋6级起【推断】)"
+   ],
+   "drop": [
+    {
+     "level": 5,
+     "hard": 0,
+     "e1": 97,
+     "e2": 2.5,
+     "e3": 0.5,
+     "rare": 0,
+     "src": "【推断】"
+    },
+    {
+     "level": 6,
+     "hard": 8,
+     "e1": 87,
+     "e2": 4,
+     "e3": 0.6,
+     "rare": 0.4,
+     "src": "难出 8% 实测，其余【推断】"
+    },
+    {
+     "level": 7,
+     "hard": 12,
+     "e1": 80,
+     "e2": 6,
+     "e3": 1.5,
+     "rare": 0.5,
+     "src": "难出 12% 实测，其余【推断】"
+    },
+    {
+     "level": 8,
+     "hard": 13,
+     "e1": 76.5,
+     "e2": 8,
+     "e3": 2,
+     "rare": 0.5,
+     "src": "【推断】"
+    },
+    {
+     "level": 9,
+     "hard": 14,
+     "e1": 73,
+     "e2": 10,
+     "e3": 2.4,
+     "rare": 0.6,
+     "src": "【推断】"
+    },
+    {
+     "level": 10,
+     "hard": 14.5,
+     "e1": 70.5,
+     "e2": 11.5,
+     "e3": 2.8,
+     "rare": 0.7,
+     "src": "【推断】"
+    },
+    {
+     "level": 11,
+     "hard": 15,
+     "e1": 68,
+     "e2": 13,
+     "e3": 3.2,
+     "rare": 0.8,
+     "src": "【推断】"
+    }
+   ],
+   "cooldown": {
+    "tapsPerRound": [
+     33,
+     37
+    ],
+    "cooldownSec": [
+     30,
+     105
+    ],
+    "src": "实测：点约 33–37 次后冷却 30 秒–1 分 45 秒（各级相同，【推断】）"
+   }
+  },
+  {
+   "id": "p_bed",
+   "name": "猫窝母棋",
+   "rg": "珊瑚",
+   "type": "energy",
+   "levels": 11,
+   "produceFrom": 5,
+   "outputs": [
+    "bed(12级,唯一)"
+   ],
+   "drop": [
+    {
+     "level": 5,
+     "hard": 0,
+     "e1": 97,
+     "e2": 2.5,
+     "e3": 0.5,
+     "rare": 0,
+     "src": "【推断】"
+    },
+    {
+     "level": 6,
+     "hard": 0,
+     "e1": 95,
+     "e2": 4,
+     "e3": 0.7,
+     "rare": 0.3,
+     "src": "【推断】"
+    },
+    {
+     "level": 7,
+     "hard": 0,
+     "e1": 92,
+     "e2": 6,
+     "e3": 1.5,
+     "rare": 0.5,
+     "src": "【推断】"
+    },
+    {
+     "level": 8,
+     "hard": 0,
+     "e1": 89.5,
+     "e2": 8,
+     "e3": 2,
+     "rare": 0.5,
+     "src": "【推断】"
+    },
+    {
+     "level": 9,
+     "hard": 0,
+     "e1": 87,
+     "e2": 10,
+     "e3": 2.4,
+     "rare": 0.6,
+     "src": "【推断】"
+    },
+    {
+     "level": 10,
+     "hard": 0,
+     "e1": 85,
+     "e2": 11.5,
+     "e3": 2.8,
+     "rare": 0.7,
+     "src": "【推断】"
+    },
+    {
+     "level": 11,
+     "hard": 0,
+     "e1": 83,
+     "e2": 13,
+     "e3": 3.2,
+     "rare": 0.8,
+     "src": "【推断】"
+    }
+   ],
+   "cooldown": {
+    "tapsPerRound": [
+     44,
+     44
+    ],
+    "cooldownSec": [
+     120,
+     120
+    ],
+    "src": "实测：约 44 次后冷却 2 分钟（各级相同，【推断】）"
+   }
+  },
+  {
+   "id": "p_net",
+   "name": "渔网母棋",
+   "rg": "渔网",
+   "type": "energy",
+   "levels": 11,
+   "produceFrom": 5,
+   "outputs": [
+    "p_catch 渔货（消耗母棋）"
+   ],
+   "drop": [
+    {
+     "level": 5,
+     "catch1": 95,
+     "catch2": 5,
+     "catch3": 0,
+     "src": "【推断】"
+    },
+    {
+     "level": 6,
+     "catch1": 92,
+     "catch2": 8,
+     "catch3": 0,
+     "src": "【推断】"
+    },
+    {
+     "level": 7,
+     "catch1": 90,
+     "catch2": 9,
+     "catch3": 1,
+     "src": "【推断】"
+    },
+    {
+     "level": 8,
+     "catch1": 88,
+     "catch2": 10,
+     "catch3": 2,
+     "src": "【推断】"
+    },
+    {
+     "level": 9,
+     "catch1": 86,
+     "catch2": 11,
+     "catch3": 3,
+     "src": "【推断】"
+    },
+    {
+     "level": 10,
+     "catch1": 84,
+     "catch2": 12,
+     "catch3": 4,
+     "src": "【推断】"
+    },
+    {
+     "level": 11,
+     "catch1": 82,
+     "catch2": 13,
+     "catch3": 5,
+     "src": "【推断】"
+    }
+   ],
+   "cooldown": {
+    "tapsPerRound": [
+     25,
+     25
+    ],
+    "cooldownSec": [
+     120,
+     120
+    ],
+    "src": "实测：约 25 次后冷却 2 分钟"
+   }
+  },
+  {
+   "id": "p_catch",
+   "name": "渔货",
+   "rg": "生鱼母棋·消耗类",
+   "type": "consumable",
+   "levels": 5,
+   "produceFrom": 5,
+   "outputs": [
+    "fish(10级)"
+   ],
+   "drop": {
+    "level": 5,
+    "items": 12,
+    "fish1": 92,
+    "fish2": 8,
+    "energyPerTap": "1【推断】",
+    "src": "实测：5级出 12 个，约 8% 为 2 级；出完消失"
+   },
+   "cooldown": "无（出完即消失）"
+  },
+  {
+   "id": "p_plant",
+   "name": "花盆母棋",
+   "rg": "树",
+   "type": "cooldown",
+   "levels": 10,
+   "produceFrom": 6,
+   "outputs": [
+    "plant(7级)，只出 1 级"
+   ],
+   "drop": [
+    {
+     "level": 6,
+     "items": 6,
+     "cooldownMin": 40,
+     "src": "实测"
+    },
+    {
+     "level": 7,
+     "items": 8,
+     "cooldownMin": 137,
+     "src": "实测（2小时17分）"
+    },
+    {
+     "level": 8,
+     "items": 10,
+     "cooldownMin": 240,
+     "src": "【推断】"
+    },
+    {
+     "level": 9,
+     "items": 12,
+     "cooldownMin": 360,
+     "src": "【推断】"
+    },
+    {
+     "level": 10,
+     "items": 14,
+     "cooldownMin": 480,
+     "src": "【推断】"
+    }
+   ],
+   "cooldown": "不耗体力；点一次出一个，出满本级个数后冷却；可花 40 钻石立刻冷却（原文订单 94），广告跳过沿用现有假广告按钮"
+  },
+  {
+   "id": "p_dog",
+   "name": "狗窝",
+   "rg": "狗窝",
+   "type": "cooldown",
+   "levels": 7,
+   "produceFrom": 4,
+   "outputs": [
+    "dog(10级，文字)"
+   ],
+   "drop": [
+    {
+     "level": 4,
+     "items": 3,
+     "cooldownMin": 30,
+     "src": "【推断】"
+    },
+    {
+     "level": 5,
+     "items": 4,
+     "cooldownMin": 45,
+     "src": "【推断】"
+    },
+    {
+     "level": 6,
+     "items": 5,
+     "cooldownMin": 60,
+     "src": "【推断】"
+    },
+    {
+     "level": 7,
+     "items": 6,
+     "cooldownMin": 90,
+     "src": "【推断】"
+    }
+   ],
+   "cooldown": "不耗体力【推断】；只出狗 1 级【推断】；狗不进普通订单（狗特殊订单以后做）"
+  }
+ ],
+ "resources": {
+  "coin": [
+   2,
+   6,
+   14,
+   30,
+   62
+  ],
+  "gem": [
+   1,
+   3,
+   7,
+   15
+  ],
+  "energy": [
+   2,
+   6,
+   15,
+   40,
+   100
+  ],
+  "gem5": "原文未记录",
+  "src": "原文：金币 1–5 级=2/6/14/30/62；钻石 1–4 级=1/3/7/15；体力瓶 1–5 级=2/6/15/40/100"
+ },
+ "chests": [
+  {
+   "id": "welcome",
+   "name": "欢迎礼盒",
+   "taps": "7–8",
+   "table": {
+    "金币1": 28.8,
+    "金币2": 28.5,
+    "钻石1": 28.5,
+    "钻石2": 14.2
+   },
+   "note": "消耗类；打开要等，首次教学 2 分钟且引导免费打开；可花钻石立刻开（等待时长/钻石价【推断】沿用现配置）",
+   "src": "原文"
+  },
+  {
+   "id": "energy_chest",
+   "name": "体力宝箱",
+   "taps": 5,
+   "table": {
+    "体力1": 40,
+    "体力2": 20,
+    "体力3": 20,
+    "体力4": 20
+   },
+   "firstOpenFixed": [
+    "体力4",
+    "体力3",
+    "体力2",
+    "体力1",
+    "体力1"
+   ],
+   "note": "升 2 级送的第一个：第一次必出 体力4×1、体力3×1、体力2×1、体力1×2，必能合出体力5（100 体力）",
+   "src": "原文"
+  },
+  {
+   "id": "surprise1",
+   "name": "惊喜礼盒（宝箱母棋1级）",
+   "taps": 6,
+   "table": {
+    "体力1": 50,
+    "金币1": 50
+   },
+   "note": "宝箱母棋共 3 级，2、3 级【待Allen补，先按推断】：2级 8 次（体力1 40/体力2 10/金币1 40/金币2 10），3级 10 次（体力2 40/体力3 10/金币2 40/金币3 10）",
+   "src": "1级原文"
+  },
+  {
+   "id": "red1",
+   "name": "红色宝箱1级",
+   "taps": "【推断】8",
+   "table": {
+    "猫粮母棋1": 25,
+    "饮料母棋1": 12.5,
+    "渔网母棋1": 12.5,
+    "金币1": 25,
+    "钻石1": 25
+   },
+   "src": "原文（点击次数未写）"
+  },
+  {
+   "id": "red2",
+   "name": "红色高级宝箱2级",
+   "taps": 12,
+   "table": {
+    "猫粮母棋2": 16.6,
+    "饮料母棋2": 8.3,
+    "渔网母棋2": 8.3,
+    "金币1": 8.3,
+    "钻石1": 8.3,
+    "金币2": 25.2,
+    "钻石2": 25.0
+   },
+   "note": "原文「25.%」照抄为 25.0，七项合计 100.0",
+   "src": "原文"
+  },
+  {
+   "id": "green1",
+   "name": "绿色宝箱1级",
+   "taps": "【待Allen补，先按推断】10",
+   "table": {
+    "玩具母棋1": 15,
+    "猫窝母棋1": 10,
+    "花盆母棋1": 5,
+    "体力1": 30,
+    "金币1": 25,
+    "钻石1": 15
+   },
+   "note": "原文只写到「1级绿色宝箱，可产出」就断了；共 2 级",
+   "src": "【待Allen补，先按推断】"
+  },
+  {
+   "id": "green2",
+   "name": "绿色宝箱2级",
+   "taps": "【待Allen补，先按推断】14",
+   "table": {
+    "玩具母棋2": 12,
+    "猫窝母棋2": 8,
+    "花盆母棋2": 5,
+    "体力2": 30,
+    "金币2": 25,
+    "钻石2": 20
+   },
+   "src": "【待Allen补，先按推断】"
+  },
+  {
+   "id": "smart",
+   "name": "聪明宝箱",
+   "taps": "【待Allen补，先按推断】6",
+   "table": "每次点击从「当前屏上订单所需、玩家还没有的子棋」里随机挑一件给出；没有可给的就给体力1",
+   "note": "原文：可产出当前订单所需要的子棋；只有 1 级；Allen 有截图待发",
+   "src": "【待Allen补，先按推断】"
+  },
+  {
+   "id": "wise",
+   "name": "睿智宝箱",
+   "taps": "【待Allen补，先按推断】12",
+   "table": {
+    "猫粮5": 20,
+    "饮料5": 20,
+    "肉类3": 15,
+    "猫薄荷3": 15,
+    "鱼类食品3": 10,
+    "体力3": 10,
+    "钻石2": 10
+   },
+   "note": "原文：开的东西多；只有 1 级；Allen 有截图待发",
+   "src": "【待Allen补，先按推断】"
+  },
+  {
+   "id": "meat_box",
+   "name": "肉类补给箱（原薯条补给箱）",
+   "taps": 9,
+   "table": {
+    "肉类3": 55.6,
+    "肉类2": 44.4
+   },
+   "note": "消耗类，只有 1 级",
+   "src": "原文"
+  },
+  {
+   "id": "pick",
+   "name": "母棋挑选宝箱",
+   "taps": 1,
+   "table": "三选一：猫粮母棋1 / 饮料母棋1 / 渔网母棋1",
+   "src": "原文"
+  },
+  {
+   "id": "piggy",
+   "name": "存钱罐（原金猪）",
+   "taps": 6,
+   "table": {
+    "金币1": 60,
+    "金币2": 30,
+    "金币3": 10
+   },
+   "note": "原文只写「打开获得金币子棋」；次数沿用江南 11-08 定的 6 次，概率【推断】",
+   "src": "【推断】"
+  },
+  {
+   "id": "food_box",
+   "name": "食物礼盒（4级新手礼包里）",
+   "taps": "【推断】6",
+   "table": {
+    "猫粮2": 70,
+    "猫粮3": 30
+   },
+   "note": "沿用江南 11-08「小篮子」规则（LV2 70%、LV3 30%，6 次）",
+   "src": "【推断】"
+  }
+ ],
+ "ordersEarly": [
+  {
+   "no": 1,
+   "items": [
+    {
+     "line": "food",
+     "level": 3,
+     "name": "混合粗粮团",
+     "rg": "面包3"
+    }
+   ],
+   "coins": 2,
+   "smile": 0,
+   "smileTiming": "none",
+   "smileRaw": "—",
+   "round": null,
+   "maxOnScreen": 1,
+   "rgItems": "面包3",
+   "note": "只有 1 个订单；完成合成后才弹出",
+   "flags": [],
+   "priceCheck": 2
+  },
+  {
+   "no": 2,
+   "items": [
+    {
+     "line": "food",
+     "level": 8,
+     "name": "臻选猫粮桶",
+     "rg": "面包8"
+    }
+   ],
+   "coins": 32,
+   "smile": 0,
+   "smileTiming": "none",
+   "smileRaw": "—",
+   "round": null,
+   "maxOnScreen": 1,
+   "rgItems": "面包8",
+   "note": "只有 1 个订单。合成 3b 后掉落 1 个金币，玩家等级 1。此时第一次出现剧情 UI（金币足够完成剧情后才会出现）。当时有 34 个金币，可完成第一个剧情",
+   "flags": [],
+   "priceCheck": 32
+  },
+  {
+   "no": 3,
+   "items": [
+    {
+     "line": "food",
+     "level": 4,
+     "name": "基础猫粮粒",
+     "rg": "面包4"
+    }
+   ],
+   "coins": 4,
+   "smile": 0,
+   "smileTiming": "none",
+   "smileRaw": "—",
+   "round": null,
+   "maxOnScreen": 1,
+   "rgItems": "面包4",
+   "note": "只有 1 个订单",
+   "flags": [],
+   "priceCheck": 4
+  },
+  {
+   "no": 4,
+   "items": [
+    {
+     "line": "food",
+     "level": 6,
+     "name": "浓香猫粮罐",
+     "rg": "面包6"
+    }
+   ],
+   "coins": 12,
+   "smile": 0,
+   "smileTiming": "none",
+   "smileRaw": "—",
+   "round": null,
+   "maxOnScreen": 1,
+   "rgItems": "面包6",
+   "note": "只有 1 个订单。订单 4 后强制进入剧情：「想要更多顾客？快来收拾一下餐厅吧！」",
+   "flags": [],
+   "priceCheck": 12
+  },
+  {
+   "no": 5,
+   "items": [
+    {
+     "line": "meat",
+     "level": 4,
+     "name": "香煎大鸡腿",
+     "rg": "薯条4"
+    }
+   ],
+   "coins": 14,
+   "smile": 0,
+   "smileTiming": "none",
+   "smileRaw": "—",
+   "round": null,
+   "maxOnScreen": 2,
+   "rgItems": "薯条4",
+   "note": "与 6 一起出，屏幕保持 2 个订单",
+   "flags": [],
+   "priceCheck": 14
+  },
+  {
+   "no": 6,
+   "items": [
+    {
+     "line": "meat",
+     "level": 3,
+     "name": "鲜嫩肉串",
+     "rg": "薯条3"
+    }
+   ],
+   "coins": 8,
+   "smile": 0,
+   "smileTiming": "none",
+   "smileRaw": "—",
+   "round": null,
+   "maxOnScreen": 2,
+   "rgItems": "薯条3",
+   "note": "与 5 一起出",
+   "flags": [],
+   "priceCheck": 8
+  },
+  {
+   "no": 7,
+   "items": [
+    {
+     "line": "meat",
+     "level": 3,
+     "name": "鲜嫩肉串",
+     "rg": "薯条3"
+    },
+    {
+     "line": "food",
+     "level": 6,
+     "name": "浓香猫粮罐",
+     "rg": "面包6"
+    }
+   ],
+   "coins": 20,
+   "smile": 0,
+   "smileTiming": "none",
+   "smileRaw": "—",
+   "round": null,
+   "maxOnScreen": 2,
+   "rgItems": "薯条3、面包6",
+   "note": "5、6 完成后任意出 7",
+   "flags": [],
+   "priceCheck": 20
+  },
+  {
+   "no": 8,
+   "items": [
+    {
+     "line": "meat",
+     "level": 5,
+     "name": "秘制酱鸭",
+     "rg": "薯条5"
+    }
+   ],
+   "coins": 24,
+   "smile": 0,
+   "smileTiming": "none",
+   "smileRaw": "—",
+   "round": null,
+   "maxOnScreen": 2,
+   "rgItems": "薯条5",
+   "note": "5、6、7 任意完成后出现 8",
+   "flags": [],
+   "priceCheck": 24
+  },
+  {
+   "no": 9,
+   "items": [
+    {
+     "line": "food",
+     "level": 7,
+     "name": "鲜肉猫粮袋",
+     "rg": "面包7"
+    }
+   ],
+   "coins": 32,
+   "smile": 0,
+   "smileTiming": "none",
+   "smileRaw": "—",
+   "round": null,
+   "maxOnScreen": 2,
+   "rgItems": "面包7",
+   "note": "新手期单价，高于后文同级的 20。屏幕仍为 2 个订单，角色任意出。金币够了就弹出剧情 UI（所需金币见剧情表），只有鼠标手引导，玩家自行选择进入",
+   "flags": [
+    "新手期价：猫粮7 这一单 32（之后猫粮7 都是 20）"
+   ],
+   "priceCheck": 20
+  },
+  {
+   "no": 10,
+   "items": [
+    {
+     "line": "food",
+     "level": 5,
+     "name": "酥脆猫粮饼",
+     "rg": "面包5"
+    },
+    {
+     "line": "meat",
+     "level": 3,
+     "name": "鲜嫩肉串",
+     "rg": "薯条3"
+    }
+   ],
+   "coins": 16,
+   "smile": 0,
+   "smileTiming": "none",
+   "smileRaw": "—",
+   "round": null,
+   "maxOnScreen": 2,
+   "rgItems": "面包5、薯条3",
+   "note": "同上，保持 2 个订单",
+   "flags": [],
+   "priceCheck": 16
+  },
+  {
+   "no": 11,
+   "items": [
+    {
+     "line": "bev",
+     "level": 3,
+     "name": "研磨咖啡粉",
+     "rg": "咖啡3"
+    },
+    {
+     "line": "bev",
+     "level": 3,
+     "name": "研磨咖啡粉",
+     "rg": "咖啡3"
+    }
+   ],
+   "coins": 8,
+   "smile": 0,
+   "smileTiming": "none",
+   "smileRaw": "—",
+   "round": null,
+   "maxOnScreen": 2,
+   "rgItems": "咖啡3、咖啡3",
+   "note": "升到 3 级后仍是 2 个订单。原文：「假如用了金币会得到额外的金币，完成剧情后，可能剩下一个订单」。当时订单 5 还没完成，会暂时变成 3 个订单（记下是为了算金币）",
+   "flags": [
+    "【冲突·照抄】按单价 2+2=4，原记 8。金币照抄 8，待 Allen 核"
+   ],
+   "priceCheck": 4
+  },
+  {
+   "no": 12,
+   "items": [
+    {
+     "line": "food",
+     "level": 7,
+     "name": "鲜肉猫粮袋",
+     "rg": "面包7"
+    }
+   ],
+   "coins": 20,
+   "smile": 0,
+   "smileTiming": "none",
+   "smileRaw": "—",
+   "round": null,
+   "maxOnScreen": 2,
+   "rgItems": "面包7",
+   "note": "此后面包7 单件均为 20，不再是订单 9 的 32",
+   "flags": [],
+   "priceCheck": 20
+  },
+  {
+   "no": 13,
+   "items": [
+    {
+     "line": "food",
+     "level": 5,
+     "name": "酥脆猫粮饼",
+     "rg": "面包5"
+    },
+    {
+     "line": "bev",
+     "level": 5,
+     "name": "浓缩咖啡液",
+     "rg": "咖啡5"
+    }
+   ],
+   "coins": 16,
+   "smile": 0,
+   "smileTiming": "none",
+   "smileRaw": "—",
+   "round": null,
+   "maxOnScreen": 2,
+   "rgItems": "面包5、咖啡5",
+   "note": "",
+   "flags": [],
+   "priceCheck": 16
+  },
+  {
+   "no": 14,
+   "items": [
+    {
+     "line": "bev",
+     "level": 5,
+     "name": "浓缩咖啡液",
+     "rg": "咖啡5"
+    },
+    {
+     "line": "bev",
+     "level": 3,
+     "name": "研磨咖啡粉",
+     "rg": "咖啡3"
+    }
+   ],
+   "coins": 10,
+   "smile": 1,
+   "smileTiming": "onSmileUnlock",
+   "smileRaw": "+1（升到 4 级后补）",
+   "round": 1,
+   "maxOnScreen": 3,
+   "rgItems": "咖啡5、咖啡3",
+   "note": "升到 4 级后才出现笑脸。并不是所有订单都会出笑脸。未完成的 14、15 在金币之外分别 +1 笑脸",
+   "flags": [],
+   "priceCheck": 10
+  },
+  {
+   "no": 15,
+   "items": [
+    {
+     "line": "meat",
+     "level": 4,
+     "name": "香煎大鸡腿",
+     "rg": "薯条4"
+    }
+   ],
+   "coins": 14,
+   "smile": 1,
+   "smileTiming": "onSmileUnlock",
+   "smileRaw": "+1（升到 4 级后补）",
+   "round": 1,
+   "maxOnScreen": 3,
+   "rgItems": "薯条4",
+   "note": "见上",
+   "flags": [],
+   "priceCheck": 14
+  },
+  {
+   "no": 16,
+   "items": [
+    {
+     "line": "bev",
+     "level": 7,
+     "name": "猫爪拉花拿铁",
+     "rg": "咖啡7"
+    }
+   ],
+   "coins": 24,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 1,
+   "maxOnScreen": 3,
+   "rgItems": "咖啡7",
+   "note": "第 1 轮笑脸之一。完成订单 16 时，第 1 轮 6 个笑脸订单做完",
+   "flags": [],
+   "priceCheck": 24
+  },
+  {
+   "no": 17,
+   "items": [
+    {
+     "line": "food",
+     "level": 6,
+     "name": "浓香猫粮罐",
+     "rg": "面包6"
+    }
+   ],
+   "coins": 12,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 1,
+   "maxOnScreen": 3,
+   "rgItems": "面包6",
+   "note": "第 1 轮",
+   "flags": [],
+   "priceCheck": 12
+  },
+  {
+   "no": 18,
+   "items": [
+    {
+     "line": "mint",
+     "level": 3,
+     "name": "舒缓薄荷茶",
+     "rg": "柠檬茶3"
+    }
+   ],
+   "coins": 8,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 1,
+   "maxOnScreen": 3,
+   "rgItems": "柠檬茶3",
+   "note": "第 1 轮。合出 5 级咖啡机，才能产出第二条线柠檬茶，也才出这条新订单",
+   "flags": [],
+   "priceCheck": 8
+  },
+  {
+   "no": 19,
+   "items": [
+    {
+     "line": "meat",
+     "level": 3,
+     "name": "鲜嫩肉串",
+     "rg": "薯条3"
+    }
+   ],
+   "coins": 8,
+   "smile": 0,
+   "smileTiming": "none",
+   "smileRaw": "—",
+   "round": 1,
+   "maxOnScreen": 3,
+   "rgItems": "薯条3",
+   "note": "当时无笑脸",
+   "flags": [],
+   "priceCheck": 8
+  },
+  {
+   "no": 20,
+   "items": [
+    {
+     "line": "food",
+     "level": 4,
+     "name": "基础猫粮粒",
+     "rg": "面包4"
+    },
+    {
+     "line": "bev",
+     "level": 3,
+     "name": "研磨咖啡粉",
+     "rg": "咖啡3"
+    }
+   ],
+   "coins": 6,
+   "smile": 0,
+   "smileTiming": "none",
+   "smileRaw": "—",
+   "round": 1,
+   "maxOnScreen": 3,
+   "rgItems": "面包4、咖啡3",
+   "note": "当时无笑脸",
+   "flags": [],
+   "priceCheck": 6
+  },
+  {
+   "no": 21,
+   "items": [
+    {
+     "line": "mint",
+     "level": 4,
+     "name": "清凉薄荷气泡水",
+     "rg": "柠檬茶4"
+    }
+   ],
+   "coins": 14,
+   "smile": 0,
+   "smileTiming": "none",
+   "smileRaw": "—",
+   "round": 1,
+   "maxOnScreen": 3,
+   "rgItems": "柠檬茶4",
+   "note": "当时无笑脸。做完 22 后只剩 2 个订单；做完 21 后等一会才出 23",
+   "flags": [],
+   "priceCheck": 14
+  },
+  {
+   "no": 22,
+   "items": [
+    {
+     "line": "food",
+     "level": 5,
+     "name": "酥脆猫粮饼",
+     "rg": "面包5"
+    },
+    {
+     "line": "bev",
+     "level": 3,
+     "name": "研磨咖啡粉",
+     "rg": "咖啡3"
+    }
+   ],
+   "coins": 10,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 1,
+   "maxOnScreen": 3,
+   "rgItems": "面包5、咖啡3",
+   "note": "第 1 轮第 6 个。做到这里时屏幕曾保持 4 个订单，做完一个就是 3 个，一直保持 3 个；做完 22 后只剩 2 个",
+   "flags": [],
+   "priceCheck": 10
+  },
+  {
+   "no": 23,
+   "items": [
+    {
+     "line": "bev",
+     "level": 6,
+     "name": "经典香浓拿铁",
+     "rg": "咖啡6"
+    }
+   ],
+   "coins": 14,
+   "smile": 1,
+   "smileTiming": "afterClaim",
+   "smileRaw": "+1（本无笑脸，第 1 轮完成后出现时带上）",
+   "round": 2,
+   "maxOnScreen": 4,
+   "rgItems": "咖啡6",
+   "note": "原文：这个订单本来没有笑脸，但完成订单 16（即完成第 1 轮 6 个笑脸订单）后，23 出现了笑脸 +1，并增加了其他订单，当时一共 4 个。第 1 轮笑脸奖励未记录（原文：「刚才第一次，我忘记记录了」）",
+   "flags": [],
+   "priceCheck": 14
+  },
+  {
+   "no": 24,
+   "items": [
+    {
+     "line": "bev",
+     "level": 3,
+     "name": "研磨咖啡粉",
+     "rg": "咖啡3"
+    },
+    {
+     "line": "bev",
+     "level": 4,
+     "name": "滤纸手冲液",
+     "rg": "咖啡4"
+    }
+   ],
+   "coins": 6,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 2,
+   "maxOnScreen": 4,
+   "rgItems": "咖啡3、咖啡4",
+   "note": "第 2 轮。可反推咖啡4 = 4（推算）",
+   "flags": [],
+   "priceCheck": 6
+  },
+  {
+   "no": 25,
+   "items": [
+    {
+     "line": "food",
+     "level": 6,
+     "name": "浓香猫粮罐",
+     "rg": "面包6"
+    },
+    {
+     "line": "mint",
+     "level": 4,
+     "name": "清凉薄荷气泡水",
+     "rg": "柠檬茶4"
+    }
+   ],
+   "coins": 26,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 2,
+   "maxOnScreen": 4,
+   "rgItems": "面包6、柠檬茶4",
+   "note": "第 2 轮。12+14=26，符合相加",
+   "flags": [],
+   "priceCheck": 26
+  },
+  {
+   "no": 26,
+   "items": [
+    {
+     "line": "bev",
+     "level": 7,
+     "name": "猫爪拉花拿铁",
+     "rg": "咖啡7"
+    },
+    {
+     "line": "food",
+     "level": 4,
+     "name": "基础猫粮粒",
+     "rg": "面包4"
+    },
+    {
+     "line": "meat",
+     "level": 3,
+     "name": "鲜嫩肉串",
+     "rg": "薯条3"
+    }
+   ],
+   "coins": 36,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 2,
+   "maxOnScreen": 4,
+   "rgItems": "咖啡7、面包4、薯条3",
+   "note": "第 2 轮。第一次出现 3 个子棋的订单。24+4+8=36，符合相加",
+   "flags": [],
+   "priceCheck": 36
+  },
+  {
+   "no": 27,
+   "items": [
+    {
+     "line": "food",
+     "level": 5,
+     "name": "酥脆猫粮饼",
+     "rg": "面包5"
+    }
+   ],
+   "coins": 8,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 2,
+   "maxOnScreen": 4,
+   "rgItems": "面包5",
+   "note": "第 2 轮。原文作「面包5，金币+8，+1笑脸」，按「面包5，+8金币」理解并照抄原文",
+   "flags": [],
+   "priceCheck": 8
+  },
+  {
+   "no": 28,
+   "items": [
+    {
+     "line": "food",
+     "level": 3,
+     "name": "混合粗粮团",
+     "rg": "面包3"
+    }
+   ],
+   "coins": 2,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 2,
+   "maxOnScreen": 4,
+   "rgItems": "面包3",
+   "note": "第 2 轮第 6 个。做完刚好 6 个笑脸，做完就剩下一个的时候刷新了 29，同样没有笑脸；领取笑脸奖励后，29 +1 笑脸。完成笑脸后送的子棋，点击后掉到棋盘中（原文「子棋知道到棋盘中」）。本轮送 8 个子棋：4 级面包 ×1、5 级面包 ×1、4 级咖啡 ×1、5 级咖啡 ×5",
+   "flags": [],
+   "priceCheck": 2
+  },
+  {
+   "no": 29,
+   "items": [
+    {
+     "line": "bev",
+     "level": 6,
+     "name": "经典香浓拿铁",
+     "rg": "咖啡6"
+    }
+   ],
+   "coins": 14,
+   "smile": 1,
+   "smileTiming": "afterClaim",
+   "smileRaw": "+1（领奖后补）",
+   "round": 3,
+   "maxOnScreen": 4,
+   "rgItems": "咖啡6",
+   "note": "出现时无笑脸，领取第 2 轮奖励后 +1",
+   "flags": [],
+   "priceCheck": 14
+  },
+  {
+   "no": 30,
+   "items": [
+    {
+     "line": "meat",
+     "level": 3,
+     "name": "鲜嫩肉串",
+     "rg": "薯条3"
+    },
+    {
+     "line": "mint",
+     "level": 3,
+     "name": "舒缓薄荷茶",
+     "rg": "柠檬茶3"
+    }
+   ],
+   "coins": 16,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 3,
+   "maxOnScreen": 4,
+   "rgItems": "薯条3、柠檬茶3",
+   "note": "第 3 轮。8+8=16",
+   "flags": [],
+   "priceCheck": 16
+  },
+  {
+   "no": 31,
+   "items": [
+    {
+     "line": "food",
+     "level": 6,
+     "name": "浓香猫粮罐",
+     "rg": "面包6"
+    },
+    {
+     "line": "food",
+     "level": 3,
+     "name": "混合粗粮团",
+     "rg": "面包3"
+    }
+   ],
+   "coins": 14,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 3,
+   "maxOnScreen": 4,
+   "rgItems": "面包6、面包3",
+   "note": "第 3 轮。12+2=14",
+   "flags": [],
+   "priceCheck": 14
+  },
+  {
+   "no": 32,
+   "items": [
+    {
+     "line": "bev",
+     "level": 6,
+     "name": "经典香浓拿铁",
+     "rg": "咖啡6"
+    }
+   ],
+   "coins": 14,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 3,
+   "maxOnScreen": 4,
+   "rgItems": "咖啡6",
+   "note": "第 3 轮",
+   "flags": [],
+   "priceCheck": 14
+  },
+  {
+   "no": 33,
+   "items": [
+    {
+     "line": "bev",
+     "level": 7,
+     "name": "猫爪拉花拿铁",
+     "rg": "咖啡7"
+    },
+    {
+     "line": "meat",
+     "level": 4,
+     "name": "香煎大鸡腿",
+     "rg": "薯条4"
+    }
+   ],
+   "coins": 38,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 3,
+   "maxOnScreen": 4,
+   "rgItems": "咖啡7、薯条4",
+   "note": "第 3 轮。24+14=38",
+   "flags": [],
+   "priceCheck": 38
+  },
+  {
+   "no": 34,
+   "items": [
+    {
+     "line": "food",
+     "level": 7,
+     "name": "鲜肉猫粮袋",
+     "rg": "面包7"
+    }
+   ],
+   "coins": 20,
+   "smile": 2,
+   "smileTiming": "afterClaim",
+   "smileRaw": "+2（领奖后补）",
+   "round": 4,
+   "maxOnScreen": 4,
+   "rgItems": "面包7",
+   "note": "出现时没有笑脸。把 6 个带笑脸的订单完成后，34 出现了 +2 笑脸（第一次出现 +2 笑脸）",
+   "flags": [],
+   "priceCheck": 20
+  },
+  {
+   "no": 35,
+   "items": [
+    {
+     "line": "bev",
+     "level": 3,
+     "name": "研磨咖啡粉",
+     "rg": "咖啡3"
+    },
+    {
+     "line": "bev",
+     "level": 4,
+     "name": "滤纸手冲液",
+     "rg": "咖啡4"
+    }
+   ],
+   "coins": 6,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 3,
+   "maxOnScreen": 4,
+   "rgItems": "咖啡3、咖啡4",
+   "note": "第 3 轮。与 24 相同，咖啡4 推算为 4",
+   "flags": [],
+   "priceCheck": 6
+  },
+  {
+   "no": 36,
+   "items": [
+    {
+     "line": "food",
+     "level": 3,
+     "name": "混合粗粮团",
+     "rg": "面包3"
+    },
+    {
+     "line": "food",
+     "level": 4,
+     "name": "基础猫粮粒",
+     "rg": "面包4"
+    }
+   ],
+   "coins": 6,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 3,
+   "maxOnScreen": 4,
+   "rgItems": "面包3、面包4",
+   "note": "第 3 轮。2+4=6。笑脸完成，获得 9 个物品：4 级咖啡 ×3、5 级咖啡 ×2、5 级面包 ×3",
+   "flags": [],
+   "priceCheck": 6
+  },
+  {
+   "no": 37,
+   "items": [
+    {
+     "line": "food",
+     "level": 6,
+     "name": "浓香猫粮罐",
+     "rg": "面包6"
+    },
+    {
+     "line": "meat",
+     "level": 3,
+     "name": "鲜嫩肉串",
+     "rg": "薯条3"
+    }
+   ],
+   "coins": 20,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 4,
+   "maxOnScreen": 4,
+   "rgItems": "面包6、薯条3",
+   "note": "第 4 轮起，笑脸目标变成 8",
+   "flags": [],
+   "priceCheck": 20
+  },
+  {
+   "no": 38,
+   "items": [
+    {
+     "line": "food",
+     "level": 3,
+     "name": "混合粗粮团",
+     "rg": "面包3"
+    }
+   ],
+   "coins": 2,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 4,
+   "maxOnScreen": 4,
+   "rgItems": "面包3",
+   "note": "",
+   "flags": [],
+   "priceCheck": 2
+  },
+  {
+   "no": 39,
+   "items": [
+    {
+     "line": "bev",
+     "level": 7,
+     "name": "猫爪拉花拿铁",
+     "rg": "咖啡7"
+    }
+   ],
+   "coins": 24,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 4,
+   "maxOnScreen": 4,
+   "rgItems": "咖啡7",
+   "note": "",
+   "flags": [],
+   "priceCheck": 24
+  },
+  {
+   "no": 40,
+   "items": [
+    {
+     "line": "bev",
+     "level": 6,
+     "name": "经典香浓拿铁",
+     "rg": "咖啡6"
+    }
+   ],
+   "coins": 14,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 4,
+   "maxOnScreen": 4,
+   "rgItems": "咖啡6",
+   "note": "",
+   "flags": [],
+   "priceCheck": 14
+  },
+  {
+   "no": 41,
+   "items": [
+    {
+     "line": "bev",
+     "level": 5,
+     "name": "浓缩咖啡液",
+     "rg": "咖啡5"
+    }
+   ],
+   "coins": 8,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 4,
+   "maxOnScreen": 4,
+   "rgItems": "咖啡5",
+   "note": "",
+   "flags": [],
+   "priceCheck": 8
+  },
+  {
+   "no": 42,
+   "items": [
+    {
+     "line": "food",
+     "level": 3,
+     "name": "混合粗粮团",
+     "rg": "面包3"
+    },
+    {
+     "line": "food",
+     "level": 4,
+     "name": "基础猫粮粒",
+     "rg": "面包4"
+    }
+   ],
+   "coins": 6,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 4,
+   "maxOnScreen": 4,
+   "rgItems": "面包3、面包4",
+   "note": "2+4=6",
+   "flags": [],
+   "priceCheck": 6
+  },
+  {
+   "no": 43,
+   "items": [
+    {
+     "line": "bev",
+     "level": 5,
+     "name": "浓缩咖啡液",
+     "rg": "咖啡5"
+    }
+   ],
+   "coins": 8,
+   "smile": 1,
+   "smileTiming": "afterClaim",
+   "smileRaw": "+1（本无笑脸，第 4 轮完成后补）",
+   "round": 5,
+   "maxOnScreen": 4,
+   "rgItems": "咖啡5",
+   "note": "完成 8 个笑脸订单后，43、44、45、46 本是没有笑脸，完成后全部 +1 笑脸。本轮一共 8 个子棋：4 级面包 ×5、5 级面包 ×3",
+   "flags": [],
+   "priceCheck": 8
+  },
+  {
+   "no": 44,
+   "items": [
+    {
+     "line": "bev",
+     "level": 4,
+     "name": "滤纸手冲液",
+     "rg": "咖啡4"
+    },
+    {
+     "line": "mint",
+     "level": 3,
+     "name": "舒缓薄荷茶",
+     "rg": "柠檬茶3"
+    }
+   ],
+   "coins": 12,
+   "smile": 1,
+   "smileTiming": "afterClaim",
+   "smileRaw": "+1（领奖后补）",
+   "round": 5,
+   "maxOnScreen": 4,
+   "rgItems": "咖啡4、柠檬茶3",
+   "note": "4+8=12（咖啡4 按推算 4）",
+   "flags": [],
+   "priceCheck": 12
+  },
+  {
+   "no": 45,
+   "items": [
+    {
+     "line": "food",
+     "level": 6,
+     "name": "浓香猫粮罐",
+     "rg": "面包6"
+    },
+    {
+     "line": "meat",
+     "level": 3,
+     "name": "鲜嫩肉串",
+     "rg": "薯条3"
+    }
+   ],
+   "coins": 20,
+   "smile": 1,
+   "smileTiming": "afterClaim",
+   "smileRaw": "+1（领奖后补）",
+   "round": 5,
+   "maxOnScreen": 4,
+   "rgItems": "面包6、薯条3",
+   "note": "12+8=20",
+   "flags": [],
+   "priceCheck": 20
+  },
+  {
+   "no": 46,
+   "items": [
+    {
+     "line": "food",
+     "level": 8,
+     "name": "臻选猫粮桶",
+     "rg": "面包8"
+    }
+   ],
+   "coins": 32,
+   "smile": 1,
+   "smileTiming": "afterClaim",
+   "smileRaw": "+1（领奖后补）",
+   "round": 5,
+   "maxOnScreen": 4,
+   "rgItems": "面包8",
+   "note": "",
+   "flags": [],
+   "priceCheck": 32
+  },
+  {
+   "no": 47,
+   "items": [
+    {
+     "line": "bev",
+     "level": 3,
+     "name": "研磨咖啡粉",
+     "rg": "咖啡3"
+    },
+    {
+     "line": "mint",
+     "level": 4,
+     "name": "清凉薄荷气泡水",
+     "rg": "柠檬茶4"
+    }
+   ],
+   "coins": 16,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 5,
+   "maxOnScreen": 4,
+   "rgItems": "咖啡3、柠檬茶4",
+   "note": "第 5 轮。2+14=16",
+   "flags": [],
+   "priceCheck": 16
+  },
+  {
+   "no": 48,
+   "items": [
+    {
+     "line": "meat",
+     "level": 5,
+     "name": "秘制酱鸭",
+     "rg": "薯条5"
+    },
+    {
+     "line": "bev",
+     "level": 4,
+     "name": "滤纸手冲液",
+     "rg": "咖啡4"
+    }
+   ],
+   "coins": 28,
+   "smile": 1,
+   "smileTiming": "afterClaim",
+   "smileRaw": "+1（领奖后补）",
+   "round": 6,
+   "maxOnScreen": 4,
+   "rgItems": "薯条5、咖啡4",
+   "note": "24+4=28。第 5 轮完成后剩下的订单，出现时没有笑脸，做完后 48 +1 笑脸。本轮送：四级咖啡 ×4、五级咖啡 ×2、3 级薯条 ×2",
+   "flags": [],
+   "priceCheck": 28
+  },
+  {
+   "no": 49,
+   "items": [
+    {
+     "line": "bev",
+     "level": 8,
+     "name": "冰爽特调咖啡",
+     "rg": "咖啡8"
+    },
+    {
+     "line": "food",
+     "level": 3,
+     "name": "混合粗粮团",
+     "rg": "面包3"
+    }
+   ],
+   "coins": 38,
+   "smile": 2,
+   "smileTiming": "afterClaim",
+   "smileRaw": "+2（领奖后补）",
+   "round": 6,
+   "maxOnScreen": 4,
+   "rgItems": "柠檬茶8、面包3",
+   "note": "原文作「茶8，面包3，+38金币，+2笑脸」。按统一名称写作柠檬茶 8。38−2=36，故柠檬茶8 推算为 36。同样是第 5 轮剩单，领奖后 +2 笑脸",
+   "flags": [
+    "【推断更正·待Allen确认】原文「茶8」，1118 整理写成柠檬茶8；但柠檬茶线只有 7 级，且 咖啡8(36)+面包3(2)=38 正好对上，按饮料主线 8 级出单。金币 38、笑脸 +2 照抄"
+   ],
+   "priceCheck": 38
+  },
+  {
+   "no": 50,
+   "items": [
+    {
+     "line": "fish",
+     "level": 4,
+     "name": "肥美大鲫鱼",
+     "rg": "鱼4"
+    }
+   ],
+   "coins": 14,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 5,
+   "maxOnScreen": 4,
+   "rgItems": "鱼4",
+   "note": "第一次订单出现鱼。因为送的红色宝箱开出渔网，合成出 4 级渔网，跟原始棋盘 1f 的 4 级渔网合成到 5 级，马上跳出这个订单",
+   "flags": [],
+   "priceCheck": 14
+  },
+  {
+   "no": 51,
+   "items": [
+    {
+     "line": "bev",
+     "level": 6,
+     "name": "经典香浓拿铁",
+     "rg": "咖啡6"
+    }
+   ],
+   "coins": 14,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 6,
+   "maxOnScreen": 4,
+   "rgItems": "咖啡6",
+   "note": "第 6 轮",
+   "flags": [],
+   "priceCheck": 14
+  },
+  {
+   "no": 52,
+   "items": [
+    {
+     "line": "fish",
+     "level": 3,
+     "name": "鲜嫩小鲫鱼",
+     "rg": "鱼3"
+    }
+   ],
+   "coins": 8,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 6,
+   "maxOnScreen": 4,
+   "rgItems": "鱼3",
+   "note": "",
+   "flags": [],
+   "priceCheck": 8
+  },
+  {
+   "no": 53,
+   "items": [
+    {
+     "line": "food",
+     "level": 7,
+     "name": "鲜肉猫粮袋",
+     "rg": "面包7"
+    },
+    {
+     "line": "food",
+     "level": 4,
+     "name": "基础猫粮粒",
+     "rg": "面包4"
+    }
+   ],
+   "coins": 24,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 6,
+   "maxOnScreen": 5,
+   "rgItems": "面包7、面包4",
+   "note": "20+4=24。加上刚才没做完的两个，当时有 5 个订单，都有笑脸",
+   "flags": [],
+   "priceCheck": 24
+  },
+  {
+   "no": 54,
+   "items": [
+    {
+     "line": "food",
+     "level": 6,
+     "name": "浓香猫粮罐",
+     "rg": "面包6"
+    }
+   ],
+   "coins": 12,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 6,
+   "maxOnScreen": 5,
+   "rgItems": "面包6",
+   "note": "",
+   "flags": [],
+   "priceCheck": 12
+  },
+  {
+   "no": 55,
+   "items": [
+    {
+     "line": "meat",
+     "level": 3,
+     "name": "鲜嫩肉串",
+     "rg": "薯条3"
+    }
+   ],
+   "coins": 8,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 6,
+   "maxOnScreen": 5,
+   "rgItems": "薯条3",
+   "note": "这一次全部做完，出现 56，当时 56 没有笑脸。领取笑脸奖励后，56 +1 笑脸。笑脸送：5 级面包 ×5、4 级面包 ×1、5 级咖啡 ×1",
+   "flags": [],
+   "priceCheck": 8
+  },
+  {
+   "no": 56,
+   "items": [
+    {
+     "line": "bev",
+     "level": 7,
+     "name": "猫爪拉花拿铁",
+     "rg": "咖啡7"
+    }
+   ],
+   "coins": 24,
+   "smile": 1,
+   "smileTiming": "afterClaim",
+   "smileRaw": "+1（领奖后补）",
+   "round": 7,
+   "maxOnScreen": 5,
+   "rgItems": "咖啡7",
+   "note": "",
+   "flags": [],
+   "priceCheck": 24
+  },
+  {
+   "no": 57,
+   "items": [
+    {
+     "line": "food",
+     "level": 7,
+     "name": "鲜肉猫粮袋",
+     "rg": "面包7"
+    }
+   ],
+   "coins": 20,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 7,
+   "maxOnScreen": 5,
+   "rgItems": "面包7",
+   "note": "第 7 轮",
+   "flags": [],
+   "priceCheck": 20
+  },
+  {
+   "no": 58,
+   "items": [
+    {
+     "line": "mint",
+     "level": 4,
+     "name": "清凉薄荷气泡水",
+     "rg": "柠檬茶4"
+    },
+    {
+     "line": "meat",
+     "level": 4,
+     "name": "香煎大鸡腿",
+     "rg": "薯条4"
+    }
+   ],
+   "coins": 38,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 7,
+   "maxOnScreen": 5,
+   "rgItems": "柠檬茶4、薯条4",
+   "note": "14+14=38",
+   "flags": [
+    "【冲突·照抄】按单价 14+14=28，原记 38（若是 薯条5 则 14+24=38）。金币、物品照抄，待 Allen 核"
+   ],
+   "priceCheck": 28
+  },
+  {
+   "no": 59,
+   "items": [
+    {
+     "line": "fish",
+     "level": 5,
+     "name": "鲜活肥鲈鱼",
+     "rg": "鱼5"
+    }
+   ],
+   "coins": 24,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 7,
+   "maxOnScreen": 5,
+   "rgItems": "鱼5",
+   "note": "",
+   "flags": [],
+   "priceCheck": 24
+  },
+  {
+   "no": 60,
+   "items": [
+    {
+     "line": "bev",
+     "level": 7,
+     "name": "猫爪拉花拿铁",
+     "rg": "咖啡7"
+    }
+   ],
+   "coins": 24,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 7,
+   "maxOnScreen": 5,
+   "rgItems": "咖啡7",
+   "note": "",
+   "flags": [],
+   "priceCheck": 24
+  },
+  {
+   "no": 61,
+   "items": [
+    {
+     "line": "food",
+     "level": 8,
+     "name": "臻选猫粮桶",
+     "rg": "面包8"
+    }
+   ],
+   "coins": 32,
+   "smile": 2,
+   "smileTiming": "onAppear",
+   "smileRaw": "+2",
+   "round": 7,
+   "maxOnScreen": 5,
+   "rgItems": "面包8",
+   "note": "原文：「很难得的 2 笑脸」",
+   "flags": [],
+   "priceCheck": 32
+  },
+  {
+   "no": 62,
+   "items": [
+    {
+     "line": "bev",
+     "level": 5,
+     "name": "浓缩咖啡液",
+     "rg": "咖啡5"
+    }
+   ],
+   "coins": 8,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 7,
+   "maxOnScreen": 5,
+   "rgItems": "咖啡5",
+   "note": "",
+   "flags": [],
+   "priceCheck": 8
+  },
+  {
+   "no": 63,
+   "items": [
+    {
+     "line": "bev",
+     "level": 3,
+     "name": "研磨咖啡粉",
+     "rg": "咖啡3"
+    }
+   ],
+   "coins": 2,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 7,
+   "maxOnScreen": 5,
+   "rgItems": "咖啡3",
+   "note": "笑脸订单全部完成后，跳出 64，没有笑脸。领取笑脸奖励后，64 +1 笑脸。奖励：4 级咖啡 ×2、5 级咖啡 ×4、四级面包 ×1、5 级面包 ×1",
+   "flags": [],
+   "priceCheck": 2
+  },
+  {
+   "no": 64,
+   "items": [
+    {
+     "line": "food",
+     "level": 7,
+     "name": "鲜肉猫粮袋",
+     "rg": "面包7"
+    }
+   ],
+   "coins": 20,
+   "smile": 1,
+   "smileTiming": "afterClaim",
+   "smileRaw": "+1（领奖后补）",
+   "round": 8,
+   "maxOnScreen": 5,
+   "rgItems": "面包7",
+   "note": "",
+   "flags": [],
+   "priceCheck": 20
+  },
+  {
+   "no": 65,
+   "items": [
+    {
+     "line": "food",
+     "level": 3,
+     "name": "混合粗粮团",
+     "rg": "面包3"
+    },
+    {
+     "line": "meat",
+     "level": 4,
+     "name": "香煎大鸡腿",
+     "rg": "薯条4"
+    }
+   ],
+   "coins": 16,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 8,
+   "maxOnScreen": 5,
+   "rgItems": "面包3、薯条4",
+   "note": "第 8 轮。2+14=16",
+   "flags": [],
+   "priceCheck": 16
+  },
+  {
+   "no": 66,
+   "items": [
+    {
+     "line": "bev",
+     "level": 6,
+     "name": "经典香浓拿铁",
+     "rg": "咖啡6"
+    }
+   ],
+   "coins": 14,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 8,
+   "maxOnScreen": 5,
+   "rgItems": "咖啡6",
+   "note": "",
+   "flags": [],
+   "priceCheck": 14
+  },
+  {
+   "no": 67,
+   "items": [
+    {
+     "line": "bev",
+     "level": 7,
+     "name": "猫爪拉花拿铁",
+     "rg": "咖啡7"
+    }
+   ],
+   "coins": 24,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 8,
+   "maxOnScreen": 5,
+   "rgItems": "咖啡7",
+   "note": "",
+   "flags": [],
+   "priceCheck": 24
+  },
+  {
+   "no": 68,
+   "items": [
+    {
+     "line": "bev",
+     "level": 8,
+     "name": "冰爽特调咖啡",
+     "rg": "咖啡8"
+    }
+   ],
+   "coins": 36,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 8,
+   "maxOnScreen": 5,
+   "rgItems": "咖啡8",
+   "note": "首次出现咖啡 8 单件，单价 36",
+   "flags": [],
+   "priceCheck": 36
+  },
+  {
+   "no": 69,
+   "items": [
+    {
+     "line": "meat",
+     "level": 5,
+     "name": "秘制酱鸭",
+     "rg": "薯条5"
+    }
+   ],
+   "coins": 24,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 8,
+   "maxOnScreen": 5,
+   "rgItems": "薯条5",
+   "note": "",
+   "flags": [],
+   "priceCheck": 24
+  },
+  {
+   "no": 70,
+   "items": [
+    {
+     "line": "food",
+     "level": 5,
+     "name": "酥脆猫粮饼",
+     "rg": "面包5"
+    },
+    {
+     "line": "food",
+     "level": 4,
+     "name": "基础猫粮粒",
+     "rg": "面包4"
+    }
+   ],
+   "coins": 12,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 8,
+   "maxOnScreen": 5,
+   "rgItems": "面包5、面包4",
+   "note": "8+4=12。8 个笑脸订单完成后出了 71、72，往常一样没有笑脸；领取完奖励后，71 +1 笑脸，72 +2 笑脸。原文疑问：记得之前有面包 7 是没有 +2 笑脸的？还是当时还没开笑脸？若已开启，+2 可能是随机，但也可能是高级物品才有。本轮获得 10 个子棋：四级咖啡 ×7、五级咖啡 ×3",
+   "flags": [],
+   "priceCheck": 12
+  },
+  {
+   "no": 71,
+   "items": [
+    {
+     "line": "mint",
+     "level": 5,
+     "name": "冰爽薄荷冰沙",
+     "rg": "柠檬茶5"
+    }
+   ],
+   "coins": 24,
+   "smile": 1,
+   "smileTiming": "afterClaim",
+   "smileRaw": "+1（领奖后补）",
+   "round": 9,
+   "maxOnScreen": 5,
+   "rgItems": "柠檬茶5",
+   "note": "柠檬茶 5 单件单价 24",
+   "flags": [],
+   "priceCheck": 24
+  },
+  {
+   "no": 72,
+   "items": [
+    {
+     "line": "food",
+     "level": 7,
+     "name": "鲜肉猫粮袋",
+     "rg": "面包7"
+    }
+   ],
+   "coins": 20,
+   "smile": 2,
+   "smileTiming": "afterClaim",
+   "smileRaw": "+2（领奖后补）",
+   "round": 9,
+   "maxOnScreen": 5,
+   "rgItems": "面包7",
+   "note": "领奖后 +2。后文订单 74 只有 +1，Allen 怀疑与「高级单是否必给 +2」有关",
+   "flags": [],
+   "priceCheck": 20
+  },
+  {
+   "no": 73,
+   "items": [
+    {
+     "line": "bev",
+     "level": 6,
+     "name": "经典香浓拿铁",
+     "rg": "咖啡6"
+    }
+   ],
+   "coins": 14,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 9,
+   "maxOnScreen": 5,
+   "rgItems": "咖啡6",
+   "note": "第 9 轮",
+   "flags": [],
+   "priceCheck": 14
+  },
+  {
+   "no": 74,
+   "items": [
+    {
+     "line": "bev",
+     "level": 8,
+     "name": "冰爽特调咖啡",
+     "rg": "咖啡8"
+    },
+    {
+     "line": "food",
+     "level": 4,
+     "name": "基础猫粮粒",
+     "rg": "面包4"
+    }
+   ],
+   "coins": 40,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 9,
+   "maxOnScreen": 5,
+   "rgItems": "咖啡8、面包4",
+   "note": "36+4=40。原文：「这个缺 1 个笑脸，72 倒是两个」",
+   "flags": [],
+   "priceCheck": 40
+  },
+  {
+   "no": 75,
+   "items": [
+    {
+     "line": "fish",
+     "level": 3,
+     "name": "鲜嫩小鲫鱼",
+     "rg": "鱼3"
+    }
+   ],
+   "coins": 8,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 9,
+   "maxOnScreen": 5,
+   "rgItems": "鱼3",
+   "note": "",
+   "flags": [],
+   "priceCheck": 8
+  },
+  {
+   "no": 76,
+   "items": [
+    {
+     "line": "food",
+     "level": 3,
+     "name": "混合粗粮团",
+     "rg": "面包3"
+    },
+    {
+     "line": "meat",
+     "level": 4,
+     "name": "香煎大鸡腿",
+     "rg": "薯条4"
+    }
+   ],
+   "coins": 16,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 9,
+   "maxOnScreen": 5,
+   "rgItems": "面包3、薯条4",
+   "note": "2+14=16",
+   "flags": [],
+   "priceCheck": 16
+  },
+  {
+   "no": 77,
+   "items": [
+    {
+     "line": "meat",
+     "level": 3,
+     "name": "鲜嫩肉串",
+     "rg": "薯条3"
+    },
+    {
+     "line": "mint",
+     "level": 3,
+     "name": "舒缓薄荷茶",
+     "rg": "柠檬茶3"
+    }
+   ],
+   "coins": 16,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 9,
+   "maxOnScreen": 5,
+   "rgItems": "薯条3、柠檬茶3",
+   "note": "8+8=16",
+   "flags": [],
+   "priceCheck": 16
+  },
+  {
+   "no": 78,
+   "items": [
+    {
+     "line": "food",
+     "level": 8,
+     "name": "臻选猫粮桶",
+     "rg": "面包8"
+    }
+   ],
+   "coins": 32,
+   "smile": 2,
+   "smileTiming": "afterClaim",
+   "smileRaw": "+2（领奖后补）",
+   "round": 10,
+   "maxOnScreen": 5,
+   "rgItems": "面包8",
+   "note": "完成笑脸订单后还剩 78 没做完，还没有笑脸，领取后 +2 笑脸。奖励：四级面包 ×2、三级柠檬茶 ×1、三级鱼 ×2、四级鱼 ×1、五级咖啡 ×1、四级咖啡 ×2",
+   "flags": [],
+   "priceCheck": 32
+  },
+  {
+   "no": 79,
+   "items": [
+    {
+     "line": "fish",
+     "level": 5,
+     "name": "鲜活肥鲈鱼",
+     "rg": "鱼5"
+    },
+    {
+     "line": "fish",
+     "level": 3,
+     "name": "鲜嫩小鲫鱼",
+     "rg": "鱼3"
+    }
+   ],
+   "coins": 32,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 10,
+   "maxOnScreen": 5,
+   "rgItems": "鱼5、鱼3",
+   "note": "第 10 轮。24+8=32",
+   "flags": [],
+   "priceCheck": 32
+  },
+  {
+   "no": 80,
+   "items": [
+    {
+     "line": "mint",
+     "level": 5,
+     "name": "冰爽薄荷冰沙",
+     "rg": "柠檬茶5"
+    },
+    {
+     "line": "bev",
+     "level": 3,
+     "name": "研磨咖啡粉",
+     "rg": "咖啡3"
+    }
+   ],
+   "coins": 26,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 10,
+   "maxOnScreen": 5,
+   "rgItems": "柠檬茶5、咖啡3",
+   "note": "24+2=26",
+   "flags": [],
+   "priceCheck": 26
+  },
+  {
+   "no": 81,
+   "items": [
+    {
+     "line": "food",
+     "level": 6,
+     "name": "浓香猫粮罐",
+     "rg": "面包6"
+    },
+    {
+     "line": "meat",
+     "level": 4,
+     "name": "香煎大鸡腿",
+     "rg": "薯条4"
+    }
+   ],
+   "coins": 26,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 10,
+   "maxOnScreen": 5,
+   "rgItems": "面包6、薯条4",
+   "note": "原文作「+26，+1笑脸」，未写「金币」二字，数字照抄。12+14=26",
+   "flags": [],
+   "priceCheck": 26
+  },
+  {
+   "no": 82,
+   "items": [
+    {
+     "line": "bev",
+     "level": 7,
+     "name": "猫爪拉花拿铁",
+     "rg": "咖啡7"
+    }
+   ],
+   "coins": 24,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 10,
+   "maxOnScreen": 5,
+   "rgItems": "咖啡7",
+   "note": "原文作「+24，+1笑脸」",
+   "flags": [],
+   "priceCheck": 24
+  },
+  {
+   "no": 83,
+   "items": [
+    {
+     "line": "bev",
+     "level": 6,
+     "name": "经典香浓拿铁",
+     "rg": "咖啡6"
+    },
+    {
+     "line": "meat",
+     "level": 3,
+     "name": "鲜嫩肉串",
+     "rg": "薯条3"
+    }
+   ],
+   "coins": 22,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 10,
+   "maxOnScreen": 5,
+   "rgItems": "咖啡6、薯条3",
+   "note": "14+8=22",
+   "flags": [],
+   "priceCheck": 22
+  },
+  {
+   "no": 84,
+   "items": [
+    {
+     "line": "food",
+     "level": 4,
+     "name": "基础猫粮粒",
+     "rg": "面包4"
+    }
+   ],
+   "coins": 4,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 10,
+   "maxOnScreen": 5,
+   "rgItems": "面包4",
+   "note": "",
+   "flags": [],
+   "priceCheck": 4
+  },
+  {
+   "no": 85,
+   "items": [
+    {
+     "line": "bev",
+     "level": 8,
+     "name": "冰爽特调咖啡",
+     "rg": "咖啡8"
+    }
+   ],
+   "coins": 36,
+   "smile": 2,
+   "smileTiming": "afterClaim",
+   "smileRaw": "+2（领奖后补）",
+   "round": 11,
+   "maxOnScreen": 5,
+   "rgItems": "咖啡8",
+   "note": "原文作「+36（+2）」。完成 8 个订单后获得：三级薯条 ×1、四级面包 ×3、四级咖啡 ×1、5 级面包 ×2。剩下 85 没有笑脸，完成笑脸任务后 85 笑脸 +2",
+   "flags": [],
+   "priceCheck": 36
+  },
+  {
+   "no": 86,
+   "items": [
+    {
+     "line": "food",
+     "level": 8,
+     "name": "臻选猫粮桶",
+     "rg": "面包8"
+    }
+   ],
+   "coins": 32,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 11,
+   "maxOnScreen": 5,
+   "rgItems": "面包8",
+   "note": "第 11 轮。同为面包 8，本单是 +1，不是 +2",
+   "flags": [],
+   "priceCheck": 32
+  },
+  {
+   "no": 87,
+   "items": [
+    {
+     "line": "food",
+     "level": 7,
+     "name": "鲜肉猫粮袋",
+     "rg": "面包7"
+    },
+    {
+     "line": "food",
+     "level": 3,
+     "name": "混合粗粮团",
+     "rg": "面包3"
+    }
+   ],
+   "coins": 22,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 11,
+   "maxOnScreen": 5,
+   "rgItems": "面包7、面包3",
+   "note": "20+2=22",
+   "flags": [],
+   "priceCheck": 22
+  },
+  {
+   "no": 88,
+   "items": [
+    {
+     "line": "food",
+     "level": 6,
+     "name": "浓香猫粮罐",
+     "rg": "面包6"
+    },
+    {
+     "line": "meat",
+     "level": 4,
+     "name": "香煎大鸡腿",
+     "rg": "薯条4"
+    }
+   ],
+   "coins": 26,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 11,
+   "maxOnScreen": 5,
+   "rgItems": "面包6、薯条4",
+   "note": "12+14=26",
+   "flags": [],
+   "priceCheck": 26
+  },
+  {
+   "no": 89,
+   "items": [
+    {
+     "line": "plant",
+     "level": 5,
+     "name": "优雅茉莉盆",
+     "rg": "蛋糕5"
+    },
+    {
+     "line": "fish",
+     "level": 3,
+     "name": "鲜嫩小鲫鱼",
+     "rg": "鱼3"
+    }
+   ],
+   "coins": 32,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 11,
+   "maxOnScreen": 5,
+   "rgItems": "蛋糕5、鱼3",
+   "note": "第一次订单出现蛋糕。32−8=24，故蛋糕5 推算为 24（与难出线 5 级一致）",
+   "flags": [],
+   "priceCheck": 32
+  },
+  {
+   "no": 90,
+   "items": [
+    {
+     "line": "fish",
+     "level": 4,
+     "name": "肥美大鲫鱼",
+     "rg": "鱼4"
+    }
+   ],
+   "coins": 14,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 11,
+   "maxOnScreen": 5,
+   "rgItems": "鱼4",
+   "note": "",
+   "flags": [],
+   "priceCheck": 14
+  },
+  {
+   "no": 91,
+   "items": [
+    {
+     "line": "plant",
+     "level": 2,
+     "name": "破土冒芽盆",
+     "rg": "蛋糕2"
+    },
+    {
+     "line": "plant",
+     "level": 4,
+     "name": "清新雏菊盆",
+     "rg": "蛋糕4"
+    }
+   ],
+   "coins": 18,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 11,
+   "maxOnScreen": 5,
+   "rgItems": "蛋糕2、蛋糕4",
+   "note": "本记录首次出现低于 3 级的订单需求（蛋糕 2）。笑脸订单完成后获得：二级蛋糕 ×3、四级咖啡 ×1、四级面包 ×1、五级面包 ×2、四级鱼 ×2。这次很特殊，一次出 6 个订单，都带着笑脸。由本单与订单 106 可推算蛋糕2 = 4、蛋糕4 = 14",
+   "flags": [
+    "原记录就有 2 级需求（蛋糕2→花草2），照抄；后期自动出单仍只出 3 级以上"
+   ],
+   "priceCheck": 18
+  },
+  {
+   "no": 92,
+   "items": [
+    {
+     "line": "mint",
+     "level": 5,
+     "name": "冰爽薄荷冰沙",
+     "rg": "柠檬茶5"
+    }
+   ],
+   "coins": 24,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 12,
+   "maxOnScreen": 6,
+   "rgItems": "柠檬茶5",
+   "note": "第 12 轮。本轮笑脸订单有 10 个，目标开始增加",
+   "flags": [],
+   "priceCheck": 24
+  },
+  {
+   "no": 93,
+   "items": [
+    {
+     "line": "fish",
+     "level": 4,
+     "name": "肥美大鲫鱼",
+     "rg": "鱼4"
+    },
+    {
+     "line": "plant",
+     "level": 3,
+     "name": "鲜嫩猫草盆",
+     "rg": "蛋糕3"
+    }
+   ],
+   "coins": 22,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 12,
+   "maxOnScreen": 6,
+   "rgItems": "鱼4、蛋糕3",
+   "note": "14+8=22",
+   "flags": [],
+   "priceCheck": 22
+  },
+  {
+   "no": 94,
+   "items": [
+    {
+     "line": "plant",
+     "level": 6,
+     "name": "精致碗莲盆",
+     "rg": "蛋糕6"
+    }
+   ],
+   "coins": 36,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 12,
+   "maxOnScreen": 6,
+   "rgItems": "蛋糕6",
+   "note": "原文作「+36，+1笑脸」。蛋糕 6 单件 36。原文：鱼 6 还能用体力做，蛋糕 6 要等时间；如果马上冷却要花费 40 钻石，或等 1 个小时，很难做，可促使充值或过一会再玩",
+   "flags": [],
+   "priceCheck": 36
+  },
+  {
+   "no": 95,
+   "items": [
+    {
+     "line": "food",
+     "level": 7,
+     "name": "鲜肉猫粮袋",
+     "rg": "面包7"
+    }
+   ],
+   "coins": 20,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 12,
+   "maxOnScreen": 6,
+   "rgItems": "面包7",
+   "note": "",
+   "flags": [],
+   "priceCheck": 20
+  },
+  {
+   "no": 96,
+   "items": [
+    {
+     "line": "fish",
+     "level": 6,
+     "name": "极品大鳊鱼",
+     "rg": "鱼6"
+    }
+   ],
+   "coins": 36,
+   "smile": 2,
+   "smileTiming": "onAppear",
+   "smileRaw": "+2",
+   "round": 12,
+   "maxOnScreen": 6,
+   "rgItems": "鱼6",
+   "note": "鱼 6 单件 36",
+   "flags": [],
+   "priceCheck": 36
+  },
+  {
+   "no": 97,
+   "items": [
+    {
+     "line": "bev",
+     "level": 6,
+     "name": "经典香浓拿铁",
+     "rg": "咖啡6"
+    }
+   ],
+   "coins": 14,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 12,
+   "maxOnScreen": 6,
+   "rgItems": "咖啡6",
+   "note": "",
+   "flags": [],
+   "priceCheck": 14
+  },
+  {
+   "no": 98,
+   "items": [
+    {
+     "line": "fish",
+     "level": 3,
+     "name": "鲜嫩小鲫鱼",
+     "rg": "鱼3"
+    },
+    {
+     "line": "bev",
+     "level": 6,
+     "name": "经典香浓拿铁",
+     "rg": "咖啡6"
+    }
+   ],
+   "coins": 22,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 12,
+   "maxOnScreen": 6,
+   "rgItems": "鱼3、咖啡4",
+   "note": "若按单价相加：鱼3=8、咖啡4 推算=4，和应为 12，与记录的 22 不符。照抄，列入待补",
+   "flags": [
+    "推断更正：原记「鱼3＋咖啡4＝22」，按单价相加改为 鱼3＋咖啡6（8＋14＝22）"
+   ],
+   "priceCheck": 22
+  },
+  {
+   "no": 99,
+   "items": [
+    {
+     "line": "bev",
+     "level": 6,
+     "name": "经典香浓拿铁",
+     "rg": "咖啡6"
+    },
+    {
+     "line": "meat",
+     "level": 3,
+     "name": "鲜嫩肉串",
+     "rg": "薯条3"
+    }
+   ],
+   "coins": 22,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 12,
+   "maxOnScreen": 6,
+   "rgItems": "咖啡6、薯条3",
+   "note": "14+8=22",
+   "flags": [],
+   "priceCheck": 22
+  },
+  {
+   "no": 100,
+   "items": [
+    {
+     "line": "bev",
+     "level": 7,
+     "name": "猫爪拉花拿铁",
+     "rg": "咖啡7"
+    },
+    {
+     "line": "food",
+     "level": 4,
+     "name": "基础猫粮粒",
+     "rg": "面包4"
+    }
+   ],
+   "coins": 28,
+   "smile": 0,
+   "smileTiming": "none",
+   "smileRaw": "—（当时未写笑脸）",
+   "round": 12,
+   "maxOnScreen": 6,
+   "rgItems": "咖啡7、面包4",
+   "note": "24+4=28",
+   "flags": [],
+   "priceCheck": 28
+  },
+  {
+   "no": 101,
+   "items": [
+    {
+     "line": "fish",
+     "level": 6,
+     "name": "极品大鳊鱼",
+     "rg": "鱼6"
+    }
+   ],
+   "coins": 36,
+   "smile": 0,
+   "smileTiming": "none",
+   "smileRaw": "—（当时未写笑脸）",
+   "round": 12,
+   "maxOnScreen": 6,
+   "rgItems": "鱼6",
+   "note": "",
+   "flags": [],
+   "priceCheck": 36
+  },
+  {
+   "no": 102,
+   "items": [
+    {
+     "line": "fish",
+     "level": 5,
+     "name": "鲜活肥鲈鱼",
+     "rg": "鱼5"
+    }
+   ],
+   "coins": 24,
+   "smile": 0,
+   "smileTiming": "none",
+   "smileRaw": "—（当时未写笑脸）",
+   "round": 12,
+   "maxOnScreen": 6,
+   "rgItems": "鱼5",
+   "note": "",
+   "flags": [],
+   "priceCheck": 24
+  },
+  {
+   "no": 103,
+   "items": [
+    {
+     "line": "food",
+     "level": 8,
+     "name": "臻选猫粮桶",
+     "rg": "面包8"
+    }
+   ],
+   "coins": 32,
+   "smile": 2,
+   "smileTiming": "afterClaim",
+   "smileRaw": "+2（领奖后补）",
+   "round": 13,
+   "maxOnScreen": 6,
+   "rgItems": "面包8",
+   "note": "10 个笑脸订单完成后，剩下 103、104 没有做。领取后增加 4 个订单，并且 103 +2 笑脸、104 +1 笑脸，当时有 6 个订单。笑脸获得：面包5 ×3、面包4 ×4、鱼4 ×1、咖啡5 ×3",
+   "flags": [],
+   "priceCheck": 32
+  },
+  {
+   "no": 104,
+   "items": [
+    {
+     "line": "bev",
+     "level": 8,
+     "name": "冰爽特调咖啡",
+     "rg": "咖啡8"
+    },
+    {
+     "line": "mint",
+     "level": 4,
+     "name": "清凉薄荷气泡水",
+     "rg": "柠檬茶4"
+    }
+   ],
+   "coins": 50,
+   "smile": 1,
+   "smileTiming": "afterClaim",
+   "smileRaw": "+1（领奖后补）",
+   "round": 13,
+   "maxOnScreen": 6,
+   "rgItems": "咖啡8、柠檬茶4",
+   "note": "36+14=50，是验证「多件订单单价直接相加、没有折扣」的关键单",
+   "flags": [],
+   "priceCheck": 50
+  },
+  {
+   "no": 105,
+   "items": [
+    {
+     "line": "fish",
+     "level": 6,
+     "name": "极品大鳊鱼",
+     "rg": "鱼6"
+    },
+    {
+     "line": "meat",
+     "level": 5,
+     "name": "秘制酱鸭",
+     "rg": "薯条5"
+    }
+   ],
+   "coins": 60,
+   "smile": 0,
+   "smileTiming": "none",
+   "smileRaw": "—（当时未写笑脸）",
+   "round": 13,
+   "maxOnScreen": 6,
+   "rgItems": "鱼6、薯条5",
+   "note": "36+24=60，同样验证相加",
+   "flags": [],
+   "priceCheck": 60
+  },
+  {
+   "no": 106,
+   "items": [
+    {
+     "line": "food",
+     "level": 7,
+     "name": "鲜肉猫粮袋",
+     "rg": "面包7"
+    },
+    {
+     "line": "plant",
+     "level": 2,
+     "name": "破土冒芽盆",
+     "rg": "蛋糕2"
+    }
+   ],
+   "coins": 24,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 13,
+   "maxOnScreen": 6,
+   "rgItems": "面包7、蛋糕2",
+   "note": "20+4=24，与订单 91 推出的蛋糕2 = 4 一致",
+   "flags": [
+    "原记录就有 2 级需求（蛋糕2→花草2），照抄；后期自动出单仍只出 3 级以上"
+   ],
+   "priceCheck": 24
+  },
+  {
+   "no": 107,
+   "items": [
+    {
+     "line": "mint",
+     "level": 5,
+     "name": "冰爽薄荷冰沙",
+     "rg": "柠檬茶5"
+    }
+   ],
+   "coins": 24,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 13,
+   "maxOnScreen": 6,
+   "rgItems": "柠檬茶5",
+   "note": "第 13 轮",
+   "flags": [],
+   "priceCheck": 24
+  },
+  {
+   "no": 108,
+   "items": [
+    {
+     "line": "plant",
+     "level": 3,
+     "name": "鲜嫩猫草盆",
+     "rg": "蛋糕3"
+    }
+   ],
+   "coins": 8,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 13,
+   "maxOnScreen": 6,
+   "rgItems": "蛋糕3",
+   "note": "蛋糕 3 单件 8",
+   "flags": [],
+   "priceCheck": 8
+  },
+  {
+   "no": 109,
+   "items": [
+    {
+     "line": "fish",
+     "level": 6,
+     "name": "极品大鳊鱼",
+     "rg": "鱼6"
+    }
+   ],
+   "coins": 36,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 13,
+   "maxOnScreen": 6,
+   "rgItems": "鱼6",
+   "note": "",
+   "flags": [],
+   "priceCheck": 36
+  },
+  {
+   "no": 110,
+   "items": [
+    {
+     "line": "fish",
+     "level": 5,
+     "name": "鲜活肥鲈鱼",
+     "rg": "鱼5"
+    },
+    {
+     "line": "plant",
+     "level": 2,
+     "name": "破土冒芽盆",
+     "rg": "蛋糕2"
+    }
+   ],
+   "coins": 28,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 13,
+   "maxOnScreen": 6,
+   "rgItems": "鱼3、蛋糕2",
+   "note": "若按单价相加：8+4=12，与记录的 28 不符。照抄，列入待补",
+   "flags": [
+    "推断更正：原记「鱼3＋蛋糕2＝28」，按单价相加改为 鱼5＋蛋糕2（24＋4＝28）",
+    "原记录就有 2 级需求（蛋糕2→花草2），照抄；后期自动出单仍只出 3 级以上"
+   ],
+   "priceCheck": 28
+  },
+  {
+   "no": 111,
+   "items": [
+    {
+     "line": "meat",
+     "level": 4,
+     "name": "香煎大鸡腿",
+     "rg": "薯条4"
+    }
+   ],
+   "coins": 14,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 13,
+   "maxOnScreen": 6,
+   "rgItems": "薯条4",
+   "note": "",
+   "flags": [],
+   "priceCheck": 14
+  },
+  {
+   "no": 112,
+   "items": [
+    {
+     "line": "bev",
+     "level": 7,
+     "name": "猫爪拉花拿铁",
+     "rg": "咖啡7"
+    }
+   ],
+   "coins": 24,
+   "smile": 0,
+   "smileTiming": "none",
+   "smileRaw": "—（当时未写笑脸）",
+   "round": 13,
+   "maxOnScreen": 6,
+   "rgItems": "咖啡7",
+   "note": "",
+   "flags": [],
+   "priceCheck": 24
+  },
+  {
+   "no": 113,
+   "items": [
+    {
+     "line": "food",
+     "level": 7,
+     "name": "鲜肉猫粮袋",
+     "rg": "面包7"
+    }
+   ],
+   "coins": 20,
+   "smile": 2,
+   "smileTiming": "afterClaim",
+   "smileRaw": "+2（领奖后补）",
+   "round": 14,
+   "maxOnScreen": 6,
+   "rgItems": "面包7",
+   "note": "原文先写「（+2笑脸）」。完成 10 个笑脸后，没做完的 119、120、116、117 多出笑脸 +1，113 这个订单 +2。本轮获得：三级薯条 ×2、四级面包 ×3、三级鱼 ×2、四级鱼 ×1、五级咖啡 ×1。当时树母棋等级低，而且只有一个树母棋，蛋糕订单很难完成，要么充值，要么等时间",
+   "flags": [],
+   "priceCheck": 20
+  },
+  {
+   "no": 114,
+   "items": [
+    {
+     "line": "plant",
+     "level": 6,
+     "name": "精致碗莲盆",
+     "rg": "蛋糕6"
+    }
+   ],
+   "coins": 36,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 14,
+   "maxOnScreen": 6,
+   "rgItems": "蛋糕6",
+   "note": "",
+   "flags": [],
+   "priceCheck": 36
+  },
+  {
+   "no": 115,
+   "items": [
+    {
+     "line": "bev",
+     "level": 6,
+     "name": "经典香浓拿铁",
+     "rg": "咖啡6"
+    },
+    {
+     "line": "bev",
+     "level": 3,
+     "name": "研磨咖啡粉",
+     "rg": "咖啡3"
+    }
+   ],
+   "coins": 16,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 14,
+   "maxOnScreen": 6,
+   "rgItems": "咖啡6、咖啡3",
+   "note": "14+2=16",
+   "flags": [],
+   "priceCheck": 16
+  },
+  {
+   "no": 116,
+   "items": [
+    {
+     "line": "fish",
+     "level": 6,
+     "name": "极品大鳊鱼",
+     "rg": "鱼6"
+    },
+    {
+     "line": "bev",
+     "level": 3,
+     "name": "研磨咖啡粉",
+     "rg": "咖啡3"
+    }
+   ],
+   "coins": 38,
+   "smile": 1,
+   "smileTiming": "afterClaim",
+   "smileRaw": "+1（领奖后补）",
+   "round": 14,
+   "maxOnScreen": 6,
+   "rgItems": "鱼6、咖啡3",
+   "note": "36+2=38",
+   "flags": [],
+   "priceCheck": 38
+  },
+  {
+   "no": 117,
+   "items": [
+    {
+     "line": "bev",
+     "level": 6,
+     "name": "经典香浓拿铁",
+     "rg": "咖啡6"
+    }
+   ],
+   "coins": 14,
+   "smile": 1,
+   "smileTiming": "afterClaim",
+   "smileRaw": "+1（领奖后补）",
+   "round": 14,
+   "maxOnScreen": 6,
+   "rgItems": "咖啡6",
+   "note": "",
+   "flags": [],
+   "priceCheck": 14
+  },
+  {
+   "no": 118,
+   "items": [
+    {
+     "line": "mint",
+     "level": 5,
+     "name": "冰爽薄荷冰沙",
+     "rg": "柠檬茶5"
+    },
+    {
+     "line": "food",
+     "level": 4,
+     "name": "基础猫粮粒",
+     "rg": "面包4"
+    }
+   ],
+   "coins": 28,
+   "smile": 0,
+   "smileTiming": "none",
+   "smileRaw": "—（当时未写「金币 / 笑脸」）",
+   "round": 14,
+   "maxOnScreen": 6,
+   "rgItems": "柠檬茶5、面包4",
+   "note": "原文作「+28」。24+4=28",
+   "flags": [],
+   "priceCheck": 28
+  },
+  {
+   "no": 119,
+   "items": [
+    {
+     "line": "bev",
+     "level": 5,
+     "name": "浓缩咖啡液",
+     "rg": "咖啡5"
+    }
+   ],
+   "coins": 8,
+   "smile": 1,
+   "smileTiming": "afterClaim",
+   "smileRaw": "+1（领奖后补）",
+   "round": 14,
+   "maxOnScreen": 6,
+   "rgItems": "咖啡5",
+   "note": "",
+   "flags": [],
+   "priceCheck": 8
+  },
+  {
+   "no": 120,
+   "items": [
+    {
+     "line": "meat",
+     "level": 4,
+     "name": "香煎大鸡腿",
+     "rg": "薯条4"
+    },
+    {
+     "line": "bev",
+     "level": 4,
+     "name": "滤纸手冲液",
+     "rg": "咖啡4"
+    }
+   ],
+   "coins": 18,
+   "smile": 1,
+   "smileTiming": "afterClaim",
+   "smileRaw": "+1（领奖后补）",
+   "round": 14,
+   "maxOnScreen": 6,
+   "rgItems": "薯条4、咖啡4",
+   "note": "原文作「+18（+1笑脸）」。14+4=18，再次支持咖啡4 = 4",
+   "flags": [],
+   "priceCheck": 18
+  },
+  {
+   "no": 121,
+   "items": [
+    {
+     "line": "fish",
+     "level": 5,
+     "name": "鲜活肥鲈鱼",
+     "rg": "鱼5"
+    },
+    {
+     "line": "fish",
+     "level": 3,
+     "name": "鲜嫩小鲫鱼",
+     "rg": "鱼3"
+    }
+   ],
+   "coins": 32,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 14,
+   "maxOnScreen": 6,
+   "rgItems": "鱼5、鱼3",
+   "note": "第 14 轮。24+8=32",
+   "flags": [],
+   "priceCheck": 32
+  },
+  {
+   "no": 122,
+   "items": [
+    {
+     "line": "fish",
+     "level": 4,
+     "name": "肥美大鲫鱼",
+     "rg": "鱼4"
+    }
+   ],
+   "coins": 14,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 14,
+   "maxOnScreen": 6,
+   "rgItems": "鱼4",
+   "note": "",
+   "flags": [],
+   "priceCheck": 14
+  },
+  {
+   "no": 123,
+   "items": [
+    {
+     "line": "bev",
+     "level": 7,
+     "name": "猫爪拉花拿铁",
+     "rg": "咖啡7"
+    }
+   ],
+   "coins": 24,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 14,
+   "maxOnScreen": 6,
+   "rgItems": "咖啡7",
+   "note": "",
+   "flags": [],
+   "priceCheck": 24
+  },
+  {
+   "no": 124,
+   "items": [
+    {
+     "line": "plant",
+     "level": 3,
+     "name": "鲜嫩猫草盆",
+     "rg": "蛋糕3"
+    }
+   ],
+   "coins": 8,
+   "smile": 1,
+   "smileTiming": "afterClaim",
+   "smileRaw": "+1（领奖后补）",
+   "round": 15,
+   "maxOnScreen": 6,
+   "rgItems": "蛋糕3",
+   "note": "原文作「+8（+1）」。完成笑脸后剩下 124、126 没有完成，照例后续加上笑脸：124 +1，126 +2",
+   "flags": [],
+   "priceCheck": 8
+  },
+  {
+   "no": 125,
+   "items": [
+    {
+     "line": "food",
+     "level": 6,
+     "name": "浓香猫粮罐",
+     "rg": "面包6"
+    },
+    {
+     "line": "mint",
+     "level": 4,
+     "name": "清凉薄荷气泡水",
+     "rg": "柠檬茶4"
+    }
+   ],
+   "coins": 26,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 15,
+   "maxOnScreen": 6,
+   "rgItems": "面包6、柠檬茶4",
+   "note": "12+14=26",
+   "flags": [],
+   "priceCheck": 26
+  },
+  {
+   "no": 126,
+   "items": [
+    {
+     "line": "bev",
+     "level": 8,
+     "name": "冰爽特调咖啡",
+     "rg": "咖啡8"
+    }
+   ],
+   "coins": 36,
+   "smile": 2,
+   "smileTiming": "afterClaim",
+   "smileRaw": "+2（领奖后补）",
+   "round": 15,
+   "maxOnScreen": 6,
+   "rgItems": "咖啡8",
+   "note": "原文作「+36（+2）」。本轮获得：四级咖啡 ×2、五级咖啡 ×2、三级蛋糕 ×1、五级面包 ×3、四级面包 ×1、四级鱼 ×1",
+   "flags": [],
+   "priceCheck": 36
+  },
+  {
+   "no": 127,
+   "items": [
+    {
+     "line": "plant",
+     "level": 5,
+     "name": "优雅茉莉盆",
+     "rg": "蛋糕5"
+    },
+    {
+     "line": "food",
+     "level": 4,
+     "name": "基础猫粮粒",
+     "rg": "面包4"
+    }
+   ],
+   "coins": 28,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 15,
+   "maxOnScreen": 6,
+   "rgItems": "蛋糕5、面包4",
+   "note": "24+4=28，与订单 89 推出的蛋糕5 = 24 一致",
+   "flags": [],
+   "priceCheck": 28
+  },
+  {
+   "no": 128,
+   "items": [
+    {
+     "line": "food",
+     "level": 8,
+     "name": "臻选猫粮桶",
+     "rg": "面包8"
+    },
+    {
+     "line": "toy",
+     "level": 4,
+     "name": "铃铛布老鼠",
+     "rg": "泳圈4"
+    }
+   ],
+   "coins": 46,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 15,
+   "maxOnScreen": 6,
+   "rgItems": "面包8、泳圈4",
+   "note": "开始出现泳圈。储物箱是前面的订单就得到了，但之前还有 5–6 个订单没有完成；完成后是刷新了笑脸后，才刷新出泳圈订单。32+?=46，故泳圈4 推算为 14。单凭这一单不能定整条泳圈线，列入待补",
+   "flags": [],
+   "priceCheck": 46
+  },
+  {
+   "no": 129,
+   "items": [
+    {
+     "line": "fish",
+     "level": 5,
+     "name": "鲜活肥鲈鱼",
+     "rg": "鱼5"
+    },
+    {
+     "line": "fish",
+     "level": 4,
+     "name": "肥美大鲫鱼",
+     "rg": "鱼4"
+    }
+   ],
+   "coins": 38,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 15,
+   "maxOnScreen": 6,
+   "rgItems": "鱼5、鱼4",
+   "note": "24+14=38",
+   "flags": [],
+   "priceCheck": 38
+  },
+  {
+   "no": 130,
+   "items": [
+    {
+     "line": "food",
+     "level": 6,
+     "name": "浓香猫粮罐",
+     "rg": "面包6"
+    },
+    {
+     "line": "mint",
+     "level": 3,
+     "name": "舒缓薄荷茶",
+     "rg": "柠檬茶3"
+    }
+   ],
+   "coins": 20,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 15,
+   "maxOnScreen": 6,
+   "rgItems": "面包6、柠檬茶3",
+   "note": "12+8=20",
+   "flags": [],
+   "priceCheck": 20
+  },
+  {
+   "no": 131,
+   "items": [
+    {
+     "line": "meat",
+     "level": 4,
+     "name": "香煎大鸡腿",
+     "rg": "薯条4"
+    }
+   ],
+   "coins": 14,
+   "smile": 1,
+   "smileTiming": "onAppear",
+   "smileRaw": "+1",
+   "round": 15,
+   "maxOnScreen": 6,
+   "rgItems": "薯条4",
+   "note": "记到这里，棋盘上 a9、b8、b9、d8、d9、e8、e9、g1、g2、g7、g8、g9 仍是半遮掩",
+   "flags": [],
+   "priceCheck": 14
+  }
+ ],
+ "smileRounds": [
+  {
+   "round": 1,
+   "target": 6,
+   "targetSrc": "原文",
+   "reward": [
+    {
+     "line": "food",
+     "level": 4,
+     "count": 2,
+     "name": "基础猫粮粒"
+    },
+    {
+     "line": "food",
+     "level": 5,
+     "count": 2,
+     "name": "酥脆猫粮饼"
+    },
+    {
+     "line": "bev",
+     "level": 4,
+     "count": 2,
+     "name": "滤纸手冲液"
+    },
+    {
+     "line": "bev",
+     "level": 5,
+     "count": 1,
+     "name": "浓缩咖啡液"
+    }
+   ],
+   "rewardSrc": "【推断】原文忘记记录，按第2–3轮的样子补 7 件"
+  },
+  {
+   "round": 2,
+   "target": 6,
+   "targetSrc": "原文",
+   "reward": [
+    {
+     "line": "food",
+     "level": 4,
+     "count": 1,
+     "name": "基础猫粮粒"
+    },
+    {
+     "line": "food",
+     "level": 5,
+     "count": 1,
+     "name": "酥脆猫粮饼"
+    },
+    {
+     "line": "bev",
+     "level": 4,
+     "count": 1,
+     "name": "滤纸手冲液"
+    },
+    {
+     "line": "bev",
+     "level": 5,
+     "count": 5,
+     "name": "浓缩咖啡液"
+    }
+   ],
+   "rewardSrc": "原文"
+  },
+  {
+   "round": 3,
+   "target": 6,
+   "targetSrc": "原文",
+   "reward": [
+    {
+     "line": "bev",
+     "level": 4,
+     "count": 3,
+     "name": "滤纸手冲液"
+    },
+    {
+     "line": "bev",
+     "level": 5,
+     "count": 2,
+     "name": "浓缩咖啡液"
+    },
+    {
+     "line": "food",
+     "level": 5,
+     "count": 3,
+     "name": "酥脆猫粮饼"
+    }
+   ],
+   "rewardSrc": "原文（9 件）"
+  },
+  {
+   "round": 4,
+   "target": 8,
+   "targetSrc": "原文",
+   "reward": [
+    {
+     "line": "food",
+     "level": 4,
+     "count": 5,
+     "name": "基础猫粮粒"
+    },
+    {
+     "line": "food",
+     "level": 5,
+     "count": 3,
+     "name": "酥脆猫粮饼"
+    }
+   ],
+   "rewardSrc": "原文"
+  },
+  {
+   "round": 5,
+   "target": 8,
+   "targetSrc": "原文",
+   "reward": [
+    {
+     "line": "bev",
+     "level": 4,
+     "count": 4,
+     "name": "滤纸手冲液"
+    },
+    {
+     "line": "bev",
+     "level": 5,
+     "count": 2,
+     "name": "浓缩咖啡液"
+    },
+    {
+     "line": "meat",
+     "level": 3,
+     "count": 2,
+     "name": "鲜嫩肉串"
+    }
+   ],
+   "rewardSrc": "原文"
+  },
+  {
+   "round": 6,
+   "target": 8,
+   "targetSrc": "【推断】原文未写",
+   "reward": [
+    {
+     "line": "food",
+     "level": 5,
+     "count": 5,
+     "name": "酥脆猫粮饼"
+    },
+    {
+     "line": "food",
+     "level": 4,
+     "count": 1,
+     "name": "基础猫粮粒"
+    },
+    {
+     "line": "bev",
+     "level": 5,
+     "count": 1,
+     "name": "浓缩咖啡液"
+    }
+   ],
+   "rewardSrc": "原文"
+  },
+  {
+   "round": 7,
+   "target": 8,
+   "targetSrc": "【推断】原文未写",
+   "reward": [
+    {
+     "line": "bev",
+     "level": 4,
+     "count": 2,
+     "name": "滤纸手冲液"
+    },
+    {
+     "line": "bev",
+     "level": 5,
+     "count": 4,
+     "name": "浓缩咖啡液"
+    },
+    {
+     "line": "food",
+     "level": 4,
+     "count": 1,
+     "name": "基础猫粮粒"
+    },
+    {
+     "line": "food",
+     "level": 5,
+     "count": 1,
+     "name": "酥脆猫粮饼"
+    }
+   ],
+   "rewardSrc": "原文"
+  },
+  {
+   "round": 8,
+   "target": 8,
+   "targetSrc": "原文",
+   "reward": [
+    {
+     "line": "bev",
+     "level": 4,
+     "count": 7,
+     "name": "滤纸手冲液"
+    },
+    {
+     "line": "bev",
+     "level": 5,
+     "count": 3,
+     "name": "浓缩咖啡液"
+    }
+   ],
+   "rewardSrc": "原文"
+  },
+  {
+   "round": 9,
+   "target": 8,
+   "targetSrc": "【推断】原文未写",
+   "reward": [
+    {
+     "line": "food",
+     "level": 4,
+     "count": 2,
+     "name": "基础猫粮粒"
+    },
+    {
+     "line": "mint",
+     "level": 3,
+     "count": 1,
+     "name": "舒缓薄荷茶"
+    },
+    {
+     "line": "fish",
+     "level": 3,
+     "count": 2,
+     "name": "鲜嫩小鲫鱼"
+    },
+    {
+     "line": "fish",
+     "level": 4,
+     "count": 1,
+     "name": "肥美大鲫鱼"
+    },
+    {
+     "line": "bev",
+     "level": 5,
+     "count": 1,
+     "name": "浓缩咖啡液"
+    },
+    {
+     "line": "bev",
+     "level": 4,
+     "count": 2,
+     "name": "滤纸手冲液"
+    }
+   ],
+   "rewardSrc": "原文"
+  },
+  {
+   "round": 10,
+   "target": 8,
+   "targetSrc": "原文",
+   "reward": [
+    {
+     "line": "meat",
+     "level": 3,
+     "count": 1,
+     "name": "鲜嫩肉串"
+    },
+    {
+     "line": "food",
+     "level": 4,
+     "count": 3,
+     "name": "基础猫粮粒"
+    },
+    {
+     "line": "bev",
+     "level": 4,
+     "count": 1,
+     "name": "滤纸手冲液"
+    },
+    {
+     "line": "food",
+     "level": 5,
+     "count": 2,
+     "name": "酥脆猫粮饼"
+    }
+   ],
+   "rewardSrc": "原文"
+  },
+  {
+   "round": 11,
+   "target": 8,
+   "targetSrc": "【推断】原文未写",
+   "reward": [
+    {
+     "line": "plant",
+     "level": 2,
+     "count": 3,
+     "name": "破土冒芽盆"
+    },
+    {
+     "line": "bev",
+     "level": 4,
+     "count": 1,
+     "name": "滤纸手冲液"
+    },
+    {
+     "line": "food",
+     "level": 4,
+     "count": 1,
+     "name": "基础猫粮粒"
+    },
+    {
+     "line": "food",
+     "level": 5,
+     "count": 2,
+     "name": "酥脆猫粮饼"
+    },
+    {
+     "line": "fish",
+     "level": 4,
+     "count": 2,
+     "name": "肥美大鲫鱼"
+    }
+   ],
+   "rewardSrc": "原文"
+  },
+  {
+   "round": 12,
+   "target": 10,
+   "targetSrc": "原文",
+   "reward": [
+    {
+     "line": "food",
+     "level": 5,
+     "count": 3,
+     "name": "酥脆猫粮饼"
+    },
+    {
+     "line": "food",
+     "level": 4,
+     "count": 4,
+     "name": "基础猫粮粒"
+    },
+    {
+     "line": "fish",
+     "level": 4,
+     "count": 1,
+     "name": "肥美大鲫鱼"
+    },
+    {
+     "line": "bev",
+     "level": 5,
+     "count": 3,
+     "name": "浓缩咖啡液"
+    }
+   ],
+   "rewardSrc": "原文"
+  },
+  {
+   "round": 13,
+   "target": 10,
+   "targetSrc": "原文",
+   "reward": [
+    {
+     "line": "meat",
+     "level": 3,
+     "count": 2,
+     "name": "鲜嫩肉串"
+    },
+    {
+     "line": "food",
+     "level": 4,
+     "count": 3,
+     "name": "基础猫粮粒"
+    },
+    {
+     "line": "fish",
+     "level": 3,
+     "count": 2,
+     "name": "鲜嫩小鲫鱼"
+    },
+    {
+     "line": "fish",
+     "level": 4,
+     "count": 1,
+     "name": "肥美大鲫鱼"
+    },
+    {
+     "line": "bev",
+     "level": 5,
+     "count": 1,
+     "name": "浓缩咖啡液"
+    }
+   ],
+   "rewardSrc": "原文"
+  },
+  {
+   "round": 14,
+   "target": 10,
+   "targetSrc": "【推断】原文未写",
+   "reward": [
+    {
+     "line": "bev",
+     "level": 4,
+     "count": 2,
+     "name": "滤纸手冲液"
+    },
+    {
+     "line": "bev",
+     "level": 5,
+     "count": 2,
+     "name": "浓缩咖啡液"
+    },
+    {
+     "line": "plant",
+     "level": 3,
+     "count": 1,
+     "name": "鲜嫩猫草盆"
+    },
+    {
+     "line": "food",
+     "level": 5,
+     "count": 3,
+     "name": "酥脆猫粮饼"
+    },
+    {
+     "line": "food",
+     "level": 4,
+     "count": 1,
+     "name": "基础猫粮粒"
+    },
+    {
+     "line": "fish",
+     "level": 4,
+     "count": 1,
+     "name": "肥美大鲫鱼"
+    }
+   ],
+   "rewardSrc": "原文"
+  },
+  {
+   "round": 15,
+   "target": 10,
+   "targetSrc": "【推断】进行中",
+   "reward": [
+    {
+     "line": "food",
+     "level": 4,
+     "count": 3,
+     "name": "基础猫粮粒"
+    },
+    {
+     "line": "food",
+     "level": 5,
+     "count": 2,
+     "name": "酥脆猫粮饼"
+    },
+    {
+     "line": "bev",
+     "level": 4,
+     "count": 2,
+     "name": "滤纸手冲液"
+    },
+    {
+     "line": "bev",
+     "level": 5,
+     "count": 2,
+     "name": "浓缩咖啡液"
+    },
+    {
+     "line": "fish",
+     "level": 4,
+     "count": 1,
+     "name": "肥美大鲫鱼"
+    }
+   ],
+   "rewardSrc": "【推断】记录在此轮中途结束"
+  }
+ ],
+ "ordersLate": {
+  "maxOnScreen": 6,
+  "foodDrinkShare": 0.8,
+  "levelRange": {
+   "早期(<10级)": [
+    3,
+    6
+   ],
+   "10级起好出线": [
+    3,
+    8
+   ],
+   "难出线上限": 6
+  },
+  "itemsPerOrder": {
+   "1件": 0.45,
+   "2件": 0.45,
+   "3件": 0.1
+  },
+  "smileRounds": [
+   6,
+   6,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   10,
+   10,
+   10,
+   "之后 10"
+  ],
+  "highValue": "好出线 ≥8 级 或 难出线 ≥6 级 → +2 笑脸，否则 +1",
+  "blockFromLevel": 10,
+  "src": "Allen 定的规则 + 划划归纳；比例数字为【推断】"
+ },
+ "stories": [
+  {
+   "no": 1,
+   "cost": 26,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "订单 2 后当时有 34 金币，可完成此剧情",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "build",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 2,
+   "cost": 16,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "做完后升到 2 级，见 4.2",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": 2,
+   "src": "原文",
+   "type": "dialogue",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 3,
+   "cost": 24,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "此后剧情不强制，仅提醒",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "build",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 4,
+   "cost": 46,
+   "xp": 15,
+   "rgReward": "泳圈1 ×1",
+   "note": "此时进度中，2a 的半遮掩就是一个泳圈 1",
+   "reward": "老鼠玩具1 ×1",
+   "hasReward": true,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "dialogue",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 5,
+   "cost": 25,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "做完后升到 3 级",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": 3,
+   "src": "原文",
+   "type": "build",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 6,
+   "cost": 24,
+   "xp": 15,
+   "rgReward": "新手大礼包：10 个钻石、50 点体力",
+   "note": "出现弹窗：达到 4 级可领取下一档礼包",
+   "reward": "新手大礼包：钻石 ×10、体力 50",
+   "hasReward": true,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "dialogue",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 7,
+   "cost": 24,
+   "xp": 15,
+   "rgReward": "一级红色宝箱 ×1、狗窝1 ×1",
+   "note": "",
+   "reward": "一级红色宝箱 ×1、狗窝1 ×1",
+   "hasReward": true,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "build",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 8,
+   "cost": 26,
+   "xp": 15,
+   "rgReward": "生鱼3 ×1",
+   "note": "",
+   "reward": "渔货3 ×1",
+   "hasReward": true,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "dialogue",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 9,
+   "cost": 54,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "做完后升到 4 级",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": 4,
+   "src": "原文",
+   "type": "build",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 10,
+   "cost": 26,
+   "xp": 15,
+   "rgReward": "二级狗窝母棋 ×1",
+   "note": "",
+   "reward": "狗窝2 ×1",
+   "hasReward": true,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "dialogue",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 11,
+   "cost": 26,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "过了这个剧情，回到合成页开始出现气泡，见 4.4",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "build",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 12,
+   "cost": 54,
+   "xp": 15,
+   "rgReward": "一级购物车母棋",
+   "note": "",
+   "reward": "猫粮母棋1 ×1",
+   "hasReward": true,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "dialogue",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 13,
+   "cost": 26,
+   "xp": 15,
+   "rgReward": "柠檬茶3 ×1",
+   "note": "原文「3级橙汁子棋」",
+   "reward": "猫薄荷3 ×1",
+   "hasReward": true,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "build",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 14,
+   "cost": 54,
+   "xp": 15,
+   "rgReward": "一级红色宝箱 ×1、狗窝 ×1",
+   "note": "做完后升到 5 级。此处狗窝未写等级",
+   "reward": "一级红色宝箱 ×1、狗窝 ×1（原文未写等级，【推断】1级）",
+   "hasReward": true,
+   "levelUpTo": 5,
+   "src": "原文",
+   "type": "dialogue",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 15,
+   "cost": 26,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "build",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 16,
+   "cost": 26,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "dialogue",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 17,
+   "cost": 54,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "build",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 18,
+   "cost": 26,
+   "xp": 15,
+   "rgReward": "3 级咖啡 ×1 子棋",
+   "note": "",
+   "reward": "饮料3 ×1",
+   "hasReward": true,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "dialogue",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 19,
+   "cost": 26,
+   "xp": 15,
+   "rgReward": "3 级生鱼消耗类母棋 ×1",
+   "note": "做完后升到 6 级",
+   "reward": "渔货3 ×1（消耗类母棋）",
+   "hasReward": true,
+   "levelUpTo": 6,
+   "src": "原文",
+   "type": "build",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 20,
+   "cost": 26,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "dialogue",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 21,
+   "cost": 54,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "build",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 22,
+   "cost": 26,
+   "xp": 15,
+   "rgReward": "一级红色宝箱 ×1",
+   "note": "",
+   "reward": "一级红色宝箱 ×1",
+   "hasReward": true,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "dialogue",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 23,
+   "cost": 26,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "build",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 24,
+   "cost": 54,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "dialogue",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 25,
+   "cost": 54,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "做完后升到 7 级",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": 7,
+   "src": "原文",
+   "type": "build",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 26,
+   "cost": 54,
+   "xp": 15,
+   "rgReward": "柠檬茶3 ×1",
+   "note": "原文「3级柠茶茶x1」",
+   "reward": "猫薄荷3 ×1",
+   "hasReward": true,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "dialogue",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 27,
+   "cost": 26,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "build",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 28,
+   "cost": 80,
+   "xp": 15,
+   "rgReward": "2 级狗 ×1",
+   "note": "",
+   "reward": "狗2 ×1",
+   "hasReward": true,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "dialogue",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 29,
+   "cost": 54,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "build",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 30,
+   "cost": 54,
+   "xp": 15,
+   "rgReward": "一级红色宝箱 ×1",
+   "note": "",
+   "reward": "一级红色宝箱 ×1",
+   "hasReward": true,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "dialogue",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 31,
+   "cost": 30,
+   "xp": 15,
+   "rgReward": "一级树母棋 ×1",
+   "note": "做完后升到 8 级（原文「生到8级」）",
+   "reward": "花盆母棋1 ×1",
+   "hasReward": true,
+   "levelUpTo": 8,
+   "src": "原文",
+   "type": "build",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 32,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "dialogue",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 33,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": "一级蛋糕子棋 ×1",
+   "note": "",
+   "reward": "花草1 ×1",
+   "hasReward": true,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "build",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 34,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "dialogue",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 35,
+   "cost": 30,
+   "xp": 15,
+   "rgReward": "六级面包子棋 ×1",
+   "note": "",
+   "reward": "猫粮6 ×1",
+   "hasReward": true,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "build",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 36,
+   "cost": 30,
+   "xp": 15,
+   "rgReward": "二级金币 ×1",
+   "note": "",
+   "reward": "金币2 ×1",
+   "hasReward": true,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "dialogue",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 37,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "build",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 38,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": "一级红色宝箱 ×1",
+   "note": "做完后升到 9 级",
+   "reward": "一级红色宝箱 ×1",
+   "hasReward": true,
+   "levelUpTo": 9,
+   "src": "原文",
+   "type": "dialogue",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 39,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "build",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 40,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "dialogue",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 41,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "build",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 42,
+   "cost": 30,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "dialogue",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 43,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": "一级树母棋 ×1",
+   "note": "",
+   "reward": "花盆母棋1 ×1",
+   "hasReward": true,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "build",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 44,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "dialogue",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 45,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": "一级红色宝箱 ×1",
+   "note": "做完后升到 10 级",
+   "reward": "一级红色宝箱 ×1",
+   "hasReward": true,
+   "levelUpTo": 10,
+   "src": "原文",
+   "type": "build",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 46,
+   "cost": 30,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "dialogue",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 47,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "build",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 48,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "这时候出现狗的特殊订单。Allen 说稍后截图，待补",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "dialogue",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 49,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "build",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 50,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": "一级蛋糕子棋 ×1",
+   "note": "",
+   "reward": "花草1 ×1",
+   "hasReward": true,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "dialogue",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 51,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "build",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 52,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "做完后升到 11 级",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": 11,
+   "src": "原文",
+   "type": "dialogue",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 53,
+   "cost": 100,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "build",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 54,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": "一级红色宝箱 ×1",
+   "note": "",
+   "reward": "一级红色宝箱 ×1",
+   "hasReward": true,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "dialogue",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 55,
+   "cost": 30,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "build",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 56,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "dialogue",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 57,
+   "cost": 30,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "build",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 58,
+   "cost": 150,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "本记录中最贵的剧情",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "dialogue",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 59,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "build",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 60,
+   "cost": 30,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "做完后升到 12 级",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": 12,
+   "src": "原文",
+   "type": "dialogue",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 61,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": "三级泳圈子棋 ×1",
+   "note": "这里刚好合成到五级储物箱（打开宝箱，加上剧情送的母棋，用低级母棋合成到的）",
+   "reward": "老鼠玩具3 ×1",
+   "hasReward": true,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "build",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 62,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": "—",
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "dialogue",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 63,
+   "cost": 120,
+   "xp": 15,
+   "rgReward": "三级贝壳子棋 ×1",
+   "note": "记录到此。12 级以后的剧情待补",
+   "reward": "猫窝3 ×1",
+   "hasReward": true,
+   "levelUpTo": null,
+   "src": "原文",
+   "type": "build",
+   "typeSrc": "【占位】剧情文案定后按文案填"
+  },
+  {
+   "no": 64,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 65,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 66,
+   "cost": 30,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 67,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 68,
+   "cost": 120,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": 13,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 69,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 70,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 71,
+   "cost": 30,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 72,
+   "cost": 100,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 73,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 74,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 75,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 76,
+   "cost": 30,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": 14,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 77,
+   "cost": 150,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 78,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 79,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 80,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 81,
+   "cost": 120,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 82,
+   "cost": 30,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 83,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 84,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": 15,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 85,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 86,
+   "cost": 120,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 87,
+   "cost": 30,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 88,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 89,
+   "cost": 100,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 90,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 91,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 92,
+   "cost": 150,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 93,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": 16,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 94,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 95,
+   "cost": 30,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 96,
+   "cost": 120,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 97,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 98,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 99,
+   "cost": 100,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 100,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 101,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 102,
+   "cost": 150,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": 17,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 103,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 104,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 105,
+   "cost": 120,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 106,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 107,
+   "cost": 150,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 108,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 109,
+   "cost": 100,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 110,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 111,
+   "cost": 120,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": 18,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 112,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 113,
+   "cost": 150,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 114,
+   "cost": 30,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 115,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 116,
+   "cost": 120,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 117,
+   "cost": 100,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 118,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 119,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 120,
+   "cost": 150,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": 19,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 121,
+   "cost": 120,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 122,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 123,
+   "cost": 100,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 124,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 125,
+   "cost": 120,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 126,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 127,
+   "cost": 150,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 128,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 129,
+   "cost": 100,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 130,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": 20,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 131,
+   "cost": 120,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 132,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 133,
+   "cost": 150,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 134,
+   "cost": 30,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 135,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 136,
+   "cost": 120,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 137,
+   "cost": 100,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 138,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 139,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 140,
+   "cost": 150,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": 21,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 141,
+   "cost": 120,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 142,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 143,
+   "cost": 100,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 144,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 145,
+   "cost": 120,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 146,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 147,
+   "cost": 150,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 148,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 149,
+   "cost": 100,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 150,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": 22,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 151,
+   "cost": 120,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 152,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 153,
+   "cost": 150,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 154,
+   "cost": 30,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 155,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 156,
+   "cost": 120,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 157,
+   "cost": 100,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 158,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 159,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 160,
+   "cost": 150,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": 23,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 161,
+   "cost": 120,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 162,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 163,
+   "cost": 100,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 164,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 165,
+   "cost": 120,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 166,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 167,
+   "cost": 150,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 168,
+   "cost": 90,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 169,
+   "cost": 100,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 170,
+   "cost": 60,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": null,
+   "src": "【推断】",
+   "type": "dialogue",
+   "typeSrc": "【占位】"
+  },
+  {
+   "no": 171,
+   "cost": 120,
+   "xp": 15,
+   "rgReward": null,
+   "note": "",
+   "reward": null,
+   "hasReward": false,
+   "levelUpTo": 24,
+   "src": "【推断】",
+   "type": "build",
+   "typeSrc": "【占位】"
+  }
+ ],
+ "storyXp": 15,
+ "levels": [
+  {
+   "level": 2,
+   "stories": "1–2",
+   "count": 2,
+   "xp": 30,
+   "xpSrc": "原文",
+   "reward": "体力宝箱 ×1（首次点击必出 体力4×1、体力3×1、体力2×1、体力1×2）；欢迎礼盒 ×1；猫粮母棋4 ×1；弹窗新手大礼包送钻石 ×50",
+   "gift": "领取后弹出上锁的新手大礼包：再完成 4 个剧情任务即可领取下一档",
+   "unlock": "欢迎礼盒"
+  },
+  {
+   "level": 3,
+   "stories": "3–5",
+   "count": 3,
+   "xp": 45,
+   "xpSrc": "原文",
+   "reward": "存钱罐（金猪）×1；饮料母棋1 ×1；商店开启；送钻石 ×10、体力 100",
+   "gift": "下一档在剧情 6 领取：钻石 10、体力 50，并提示达到 4 级可领下一档",
+   "unlock": "商店"
+  },
+  {
+   "level": 4,
+   "stories": "6–9",
+   "count": 4,
+   "xp": 60,
+   "xpSrc": "推算（=4×15；Allen 口述参考 3→4 为 60）",
+   "reward": "体力宝箱 ×1；笑脸（评分）开启，第1轮 6 个笑脸，强制教学",
+   "gift": "新手大礼包：体力 50、食物礼盒（=猫粮补给箱【推断】）；弹窗：到达 5 级可领下一档",
+   "unlock": "笑脸"
+  },
+  {
+   "level": 5,
+   "stories": "10–14",
+   "count": 5,
+   "xp": 75,
+   "xpSrc": "推算（Allen 口述参考 75）",
+   "reward": "一级红色宝箱 ×1；存钱罐 ×1；（卡牌系统弹出——本作不做）",
+   "gift": "新手大礼包：存钱罐 ×1、体力 50；上锁下一档：到达 6 级",
+   "unlock": "（卡牌：不做）"
+  },
+  {
+   "level": 6,
+   "stories": "15–19",
+   "count": 5,
+   "xp": 75,
+   "xpSrc": "推算（Allen 口述参考 75）",
+   "reward": "一级红色宝箱 ×1；体力宝箱 ×1；玩具母棋（原文未写等级，【推断】1级）×1；每日任务开启",
+   "gift": "新手大礼包：2星卡包（不做，先不发）、钻石 ×10；上锁下一档：达到 7 级",
+   "unlock": "每日任务"
+  },
+  {
+   "level": 7,
+   "stories": "20–25",
+   "count": 6,
+   "xp": 90,
+   "xpSrc": "推算",
+   "reward": "绿色宝箱 ×1；体力宝箱 ×1；花盆母棋1 ×1；每日奖励开启（以后做）",
+   "gift": "新手大礼包：3级卡包（不做）、聪明宝箱 ×1",
+   "unlock": "每日奖励（以后做）"
+  },
+  {
+   "level": 8,
+   "stories": "26–31",
+   "count": 6,
+   "xp": 90,
+   "xpSrc": "推算",
+   "reward": "一级绿色宝箱 ×1；体力宝箱 ×1；花盆母棋3 ×1",
+   "gift": "新手大礼包：3级卡包（不做）、体力 50",
+   "unlock": ""
+  },
+  {
+   "level": 9,
+   "stories": "32–38",
+   "count": 7,
+   "xp": 105,
+   "xpSrc": "推算",
+   "reward": "一级绿色宝箱 ×1；体力宝箱 ×2；花盆母棋4 ×1（与棋盘 e1 的花盆5 线合到 6 级才出花草）",
+   "gift": "新手大礼包：4星卡包（不做）、钻石 ×10",
+   "unlock": ""
+  },
+  {
+   "level": 10,
+   "stories": "39–45",
+   "count": 7,
+   "xp": 105,
+   "xpSrc": "推算",
+   "reward": "一级红色宝箱 ×1；体力宝箱 ×1",
+   "gift": "新手大礼包：5星卡包 ×1（不做）、体力 50",
+   "unlock": "狗特殊订单（约剧情 48，以后做）；后期卡关规则从本级起生效"
+  },
+  {
+   "level": 11,
+   "stories": "46–52",
+   "count": 7,
+   "xp": 105,
+   "xpSrc": "推算",
+   "reward": "一级绿色宝箱 ×1；体力宝箱 ×1；玩具母棋1 ×1",
+   "gift": "新手大礼包：肉类补给箱 ×1（原「薯条礼包」）、钻石 ×10",
+   "unlock": ""
+  },
+  {
+   "level": 12,
+   "stories": "53–60",
+   "count": 8,
+   "xp": 120,
+   "xpSrc": "推算",
+   "reward": "一级绿色宝箱 ×1；体力宝箱 ×1；玩具母棋2 ×1",
+   "gift": "没有新人礼包了",
+   "unlock": ""
+  },
+  {
+   "level": 13,
+   "stories": "61–68",
+   "count": 8,
+   "xp": 120,
+   "xpSrc": "【推断】",
+   "reward": "【推断】一级绿色宝箱 ×1；体力宝箱 ×1",
+   "gift": "—",
+   "unlock": ""
+  },
+  {
+   "level": 14,
+   "stories": "69–76",
+   "count": 8,
+   "xp": 120,
+   "xpSrc": "【推断】",
+   "reward": "【推断】一级绿色宝箱 ×1；体力宝箱 ×1；一级红色宝箱 ×1",
+   "gift": "—",
+   "unlock": ""
+  },
+  {
+   "level": 15,
+   "stories": "77–84",
+   "count": 8,
+   "xp": 120,
+   "xpSrc": "【推断】",
+   "reward": "【推断】一级绿色宝箱 ×1；体力宝箱 ×1",
+   "gift": "—",
+   "unlock": ""
+  },
+  {
+   "level": 16,
+   "stories": "85–93",
+   "count": 9,
+   "xp": 135,
+   "xpSrc": "【推断】",
+   "reward": "【推断】一级绿色宝箱 ×1；体力宝箱 ×1；一级红色宝箱 ×1",
+   "gift": "—",
+   "unlock": ""
+  },
+  {
+   "level": 17,
+   "stories": "94–102",
+   "count": 9,
+   "xp": 135,
+   "xpSrc": "【推断】",
+   "reward": "【推断】一级绿色宝箱 ×1；体力宝箱 ×1",
+   "gift": "—",
+   "unlock": ""
+  },
+  {
+   "level": 18,
+   "stories": "103–111",
+   "count": 9,
+   "xp": 135,
+   "xpSrc": "【推断】",
+   "reward": "【推断】一级绿色宝箱 ×1；体力宝箱 ×1；一级红色宝箱 ×1",
+   "gift": "—",
+   "unlock": ""
+  },
+  {
+   "level": 19,
+   "stories": "112–120",
+   "count": 9,
+   "xp": 135,
+   "xpSrc": "【推断】",
+   "reward": "【推断】一级绿色宝箱 ×1；体力宝箱 ×1",
+   "gift": "—",
+   "unlock": ""
+  },
+  {
+   "level": 20,
+   "stories": "121–130",
+   "count": 10,
+   "xp": 150,
+   "xpSrc": "【推断】",
+   "reward": "【推断】一级绿色宝箱 ×1；体力宝箱 ×1；一级红色宝箱 ×1",
+   "gift": "—",
+   "unlock": ""
+  },
+  {
+   "level": 21,
+   "stories": "131–140",
+   "count": 10,
+   "xp": 150,
+   "xpSrc": "【推断】",
+   "reward": "【推断】一级绿色宝箱 ×1；体力宝箱 ×1",
+   "gift": "—",
+   "unlock": ""
+  },
+  {
+   "level": 22,
+   "stories": "141–150",
+   "count": 10,
+   "xp": 150,
+   "xpSrc": "【推断】",
+   "reward": "【推断】一级绿色宝箱 ×1；体力宝箱 ×1；一级红色宝箱 ×1",
+   "gift": "—",
+   "unlock": ""
+  },
+  {
+   "level": 23,
+   "stories": "151–160",
+   "count": 10,
+   "xp": 150,
+   "xpSrc": "【推断】",
+   "reward": "【推断】一级绿色宝箱 ×1；体力宝箱 ×1",
+   "gift": "—",
+   "unlock": ""
+  },
+  {
+   "level": 24,
+   "stories": "161–171",
+   "count": 11,
+   "xp": 165,
+   "xpSrc": "【推断】",
+   "reward": "【推断】一级绿色宝箱 ×1；体力宝箱 ×1；一级红色宝箱 ×1",
+   "gift": "—",
+   "unlock": ""
+  }
+ ],
+ "openingBoard": [
+  {
+   "cell": "a1",
+   "type": "producer",
+   "id": "p_plant",
+   "level": 2,
+   "name": "花盆母棋 2级",
+   "kind": "冷却类母棋",
+   "rg": "树 2级（冷却类母棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "b1",
+   "type": "producer",
+   "id": "p_catch",
+   "level": 1,
+   "name": "渔货 1级（一卷渔线）",
+   "kind": "消耗类母棋",
+   "rg": "生鱼 1级（消耗类母棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "c1",
+   "type": "item",
+   "line": "dog",
+   "level": 1,
+   "name": "狗 1级（文字）",
+   "rg": "狗 1级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "d1",
+   "type": "item",
+   "line": "mint",
+   "level": 3,
+   "name": "舒缓薄荷茶（猫薄荷3）",
+   "rg": "柠檬茶 3级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "e1",
+   "type": "producer",
+   "id": "p_plant",
+   "level": 5,
+   "name": "花盆母棋 5级",
+   "kind": "冷却类母棋",
+   "rg": "树 5级（冷却类母棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "f1",
+   "type": "producer",
+   "id": "p_net",
+   "level": 4,
+   "name": "渔网母棋 4级",
+   "kind": "特殊母棋（产母棋）",
+   "rg": "渔网 4级（特殊母棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "g1",
+   "type": "item",
+   "line": "wand",
+   "level": 1,
+   "name": "飘逸羽毛（逗猫棒1）",
+   "rg": "泳镜 1级（子棋（储物箱第二条线））",
+   "cover": "closed"
+  },
+  {
+   "cell": "a2",
+   "type": "item",
+   "line": "toy",
+   "level": 1,
+   "name": "零散旧毛线（老鼠玩具1）",
+   "rg": "泳圈 1级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "b2",
+   "type": "item",
+   "line": "food",
+   "level": 7,
+   "name": "鲜肉猫粮袋（猫粮7）",
+   "rg": "面包 7级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "c2",
+   "type": "item",
+   "line": "meat",
+   "level": 4,
+   "name": "香煎大鸡腿（肉类4）",
+   "rg": "薯条 4级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "d2",
+   "type": "item",
+   "line": "bev",
+   "level": 3,
+   "name": "研磨咖啡粉（饮料3）",
+   "rg": "咖啡 3级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "e2",
+   "type": "item",
+   "line": "toy",
+   "level": 2,
+   "name": "缠绕毛线球（老鼠玩具2）",
+   "rg": "泳圈 2级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "f2",
+   "type": "item",
+   "line": "bev",
+   "level": 2,
+   "name": "饱满咖啡豆（饮料2）",
+   "rg": "咖啡 2级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "g2",
+   "type": "item",
+   "line": "fish",
+   "level": 6,
+   "name": "极品大鳊鱼（鱼类食品6）",
+   "rg": "熟鱼 6级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "a3",
+   "type": "coin",
+   "level": 1,
+   "name": "金币 1级",
+   "rg": "金币 1级",
+   "cover": "closed"
+  },
+  {
+   "cell": "b3",
+   "type": "item",
+   "line": "food",
+   "level": 7,
+   "name": "鲜肉猫粮袋（猫粮7）",
+   "rg": "面包 7级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "c3",
+   "type": "item",
+   "line": "food",
+   "level": 6,
+   "name": "浓香猫粮罐（猫粮6）",
+   "rg": "面包 6级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "d3",
+   "type": "item",
+   "line": "food",
+   "level": 6,
+   "name": "浓香猫粮罐（猫粮6）",
+   "rg": "面包 6级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "e3",
+   "type": "item",
+   "line": "bev",
+   "level": 1,
+   "name": "单颗咖啡豆（饮料1）",
+   "rg": "咖啡 1级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "f3",
+   "type": "item",
+   "line": "food",
+   "level": 6,
+   "name": "浓香猫粮罐（猫粮6）",
+   "rg": "面包 6级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "g3",
+   "type": "coin",
+   "level": 4,
+   "name": "金币 4级",
+   "rg": "金币 4级",
+   "cover": "closed"
+  },
+  {
+   "cell": "a4",
+   "type": "item",
+   "line": "food",
+   "level": 4,
+   "name": "基础猫粮粒（猫粮4）",
+   "rg": "面包 4级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "b4",
+   "type": "producer",
+   "id": "p_food",
+   "level": 2,
+   "name": "猫粮母棋 2级",
+   "kind": "普通母棋",
+   "rg": "购物车 2级（普通母棋·开局）",
+   "cover": "open"
+  },
+  {
+   "cell": "c4",
+   "type": "item",
+   "line": "food",
+   "level": 2,
+   "name": "营养面粉（猫粮2）",
+   "rg": "面包 2级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "d4",
+   "type": "item",
+   "line": "meat",
+   "level": 2,
+   "name": "精选肉丁（肉类2）",
+   "rg": "薯条 2级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "e4",
+   "type": "item",
+   "line": "food",
+   "level": 2,
+   "name": "营养面粉（猫粮2）",
+   "rg": "面包 2级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "f4",
+   "type": "item",
+   "line": "bev",
+   "level": 5,
+   "name": "浓缩咖啡液（饮料5）",
+   "rg": "咖啡 5级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "g4",
+   "type": "producer",
+   "id": "p_net",
+   "level": 2,
+   "name": "渔网母棋 2级",
+   "kind": "特殊母棋（产母棋）",
+   "rg": "渔网 2级（特殊母棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "a5",
+   "type": "item",
+   "line": "food",
+   "level": 3,
+   "name": "混合粗粮团（猫粮3）",
+   "rg": "面包 3级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "b5",
+   "type": "producer",
+   "id": "p_food",
+   "level": 2,
+   "name": "猫粮母棋 2级",
+   "kind": "普通母棋",
+   "rg": "购物车 2级（普通母棋·开局）",
+   "cover": "open"
+  },
+  {
+   "cell": "c5",
+   "type": "producer",
+   "id": "p_food",
+   "level": 3,
+   "name": "猫粮母棋 3级",
+   "kind": "普通母棋",
+   "rg": "购物车 3级（普通母棋·开局半遮）",
+   "cover": "half"
+  },
+  {
+   "cell": "d5",
+   "type": "producer",
+   "id": "p_food",
+   "level": 3,
+   "name": "猫粮母棋 3级",
+   "kind": "普通母棋",
+   "rg": "购物车 3级（普通母棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "e5",
+   "type": "item",
+   "line": "food",
+   "level": 5,
+   "name": "酥脆猫粮饼（猫粮5）",
+   "rg": "面包 5级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "f5",
+   "type": "producer",
+   "id": "p_bev",
+   "level": 3,
+   "name": "饮料母棋 3级",
+   "kind": "普通母棋",
+   "rg": "咖啡机 3级（普通母棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "g5",
+   "type": "producer",
+   "id": "p_net",
+   "level": 1,
+   "name": "渔网母棋 1级",
+   "kind": "特殊母棋（产母棋）",
+   "rg": "渔网 1级（特殊母棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "a6",
+   "type": "producer",
+   "id": "p_bev",
+   "level": 1,
+   "name": "饮料母棋 1级",
+   "kind": "普通母棋",
+   "rg": "咖啡机 1级（普通母棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "b6",
+   "type": "item",
+   "line": "meat",
+   "level": 3,
+   "name": "鲜嫩肉串（肉类3）",
+   "rg": "薯条 3级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "c6",
+   "type": "item",
+   "line": "meat",
+   "level": 1,
+   "name": "新鲜生肉（肉类1）",
+   "rg": "薯条 1级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "d6",
+   "type": "item",
+   "line": "food",
+   "level": 5,
+   "name": "酥脆猫粮饼（猫粮5）",
+   "rg": "面包 5级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "e6",
+   "type": "item",
+   "line": "food",
+   "level": 3,
+   "name": "混合粗粮团（猫粮3）",
+   "rg": "面包 3级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "f6",
+   "type": "item",
+   "line": "meat",
+   "level": 3,
+   "name": "鲜嫩肉串（肉类3）",
+   "rg": "薯条 3级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "g6",
+   "type": "producer",
+   "id": "p_catch",
+   "level": 3,
+   "name": "渔货 3级（竹柄渔网）",
+   "kind": "消耗类母棋",
+   "rg": "生鱼 3级（消耗类母棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "a7",
+   "type": "item",
+   "line": "dog",
+   "level": 3,
+   "name": "狗 3级（文字）",
+   "rg": "狗 3级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "b7",
+   "type": "producer",
+   "id": "p_toy",
+   "level": 1,
+   "name": "玩具母棋 1级",
+   "kind": "普通母棋",
+   "rg": "储物箱 1级（普通母棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "c7",
+   "type": "producer",
+   "id": "p_bev",
+   "level": 2,
+   "name": "饮料母棋 2级",
+   "kind": "普通母棋",
+   "rg": "咖啡机 2级（普通母棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "d7",
+   "type": "producer",
+   "id": "p_dog",
+   "level": 1,
+   "name": "狗窝 1级",
+   "kind": "冷却类母棋（文字）",
+   "rg": "狗窝 1级（普通母棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "e7",
+   "type": "producer",
+   "id": "p_plant",
+   "level": 1,
+   "name": "花盆母棋 1级",
+   "kind": "冷却类母棋",
+   "rg": "树 1级（冷却类母棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "f7",
+   "type": "producer",
+   "id": "p_toy",
+   "level": 2,
+   "name": "玩具母棋 2级",
+   "kind": "普通母棋",
+   "rg": "储物箱 2级（普通母棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "g7",
+   "type": "item",
+   "line": "bev",
+   "level": 10,
+   "name": "殿堂级咖啡大师杯（饮料10）",
+   "rg": "咖啡 10级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "a8",
+   "type": "item",
+   "line": "plant",
+   "level": 3,
+   "name": "鲜嫩猫草盆（花草3）",
+   "rg": "蛋糕 3级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "b8",
+   "type": "item",
+   "line": "food",
+   "level": 10,
+   "name": "皇家猫粮大粮仓（猫粮10）",
+   "rg": "面包 10级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "c8",
+   "type": "item",
+   "line": "plant",
+   "level": 4,
+   "name": "清新雏菊盆（花草4）",
+   "rg": "蛋糕 4级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "d8",
+   "type": "item",
+   "line": "toy",
+   "level": 7,
+   "name": "机械遥控鼠（老鼠玩具7）",
+   "rg": "泳圈 7级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "e8",
+   "type": "item",
+   "line": "bed",
+   "level": 1,
+   "name": "暖心碎稻草（猫窝1）",
+   "rg": "贝壳 1级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "f8",
+   "type": "producer",
+   "id": "p_bed",
+   "level": 1,
+   "name": "猫窝母棋 1级",
+   "kind": "普通母棋",
+   "rg": "珊瑚 1级（普通母棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "g8",
+   "type": "item",
+   "line": "fish",
+   "level": 7,
+   "name": "巨型青波鱼（鱼类食品7）",
+   "rg": "熟鱼 7级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "a9",
+   "type": "item",
+   "line": "bed",
+   "level": 5,
+   "name": "经典纸箱窝（猫窝5）",
+   "rg": "贝壳 5级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "b9",
+   "type": "item",
+   "line": "toy",
+   "level": 5,
+   "name": "仿真跳跳鼠（老鼠玩具5）",
+   "rg": "泳圈 5级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "c9",
+   "type": "producer",
+   "id": "p_bed",
+   "level": 2,
+   "name": "猫窝母棋 2级",
+   "kind": "普通母棋",
+   "rg": "珊瑚 2级（普通母棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "d9",
+   "type": "item",
+   "line": "food",
+   "level": 9,
+   "name": "营养猫粮箱（猫粮9）",
+   "rg": "面包 9级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "e9",
+   "type": "item",
+   "line": "bed",
+   "level": 4,
+   "name": "质朴竹编篮（猫窝4）",
+   "rg": "贝壳 4级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "f9",
+   "type": "item",
+   "line": "bed",
+   "level": 5,
+   "name": "经典纸箱窝（猫窝5）",
+   "rg": "贝壳 5级（子棋）",
+   "cover": "closed"
+  },
+  {
+   "cell": "g9",
+   "type": "item",
+   "line": "wand",
+   "level": 5,
+   "name": "缤纷彩带棒（逗猫棒5）",
+   "rg": "潜水脚蹼 5级（子棋（储物箱第二条线））",
+   "cover": "closed"
+  }
+ ],
+ "calibration": [
+  {
+   "playerLevel": 1,
+   "fromOrder": 1
+  },
+  {
+   "playerLevel": 2,
+   "fromOrder": 4
+  },
+  {
+   "playerLevel": 3,
+   "fromOrder": 9
+  },
+  {
+   "playerLevel": 4,
+   "fromOrder": 15
+  },
+  {
+   "playerLevel": 5,
+   "fromOrder": 26
+  },
+  {
+   "playerLevel": 6,
+   "fromOrder": 34
+  },
+  {
+   "playerLevel": 7,
+   "fromOrder": 48
+  },
+  {
+   "playerLevel": 8,
+   "fromOrder": 61
+  },
+  {
+   "playerLevel": 9,
+   "fromOrder": 79
+  },
+  {
+   "playerLevel": 10,
+   "fromOrder": 95
+  },
+  {
+   "playerLevel": 11,
+   "fromOrder": 109
+  },
+  {
+   "playerLevel": 12,
+   "fromOrder": 128
+  }
+ ],
+ "orderXp": 0,
+ "startCoins": "【推断】0（订单2后正好 2+32=34）"
+}

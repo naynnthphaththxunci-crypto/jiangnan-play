@@ -5,6 +5,7 @@ import type {
   GameEvent,
   GameState,
   Item,
+  LevelRewardEntry,
   LootDrop,
   Order,
   Pos,
@@ -13,6 +14,12 @@ import type {
   TaskDef,
 } from '../types'
 import { COLS, ROWS } from '../types'
+import { formatMs } from '../format'
+import { producerPieceName } from '../itemArt'
+import openingBoard from '../data/openingBoard.json'
+import { BALANCE, earlyOrder, levelGiftText, parseLevelGift, parseRewardText, smileRoundReward, smileRoundTarget, storyDef, storyNote, unitPrice } from '../balance1120'
+import { bubbleReward } from '../boardCover'
+import { pickOrderCast } from '../orderCast'
 
 export function mulberry32(seed: number): Rng {
   let a = seed >>> 0
@@ -80,13 +87,21 @@ export function makeProduct(state: GameState, line: string, level: number): Item
 
 export function makeProducer(state: GameState, id: string, cfg: GameConfig, level = 1): ProducerItem {
   const def = cfg.producers.find((p) => p.id === id)
+  const kind = def?.kind ?? 'normal'
+  const burst = def?.bursts?.find((row) => row.level === level)
+  let charges = chargesForLevel(cfg, level)
+  if (kind === 'consumable') charges = burst?.items ?? cfg.economy.consumableTaps ?? 12
+  else if (burst) charges = level >= (def?.produceFrom ?? 1) ? burst.items : 0
+  else if (def?.tapCooldown) charges = def.tapCooldown.taps[0]
+  else if (kind === 'normal' && !(cfg.economy.producerCooldownOn > 0)) charges = 999
+  if (kind === 'plant' && !burst) charges = level >= (def?.produceFrom ?? cfg.economy.plantOutputLevel ?? 6) ? (cfg.economy.plantBurst ?? 8) : 0
   const item: ProducerItem = {
     uid: nextUid(state, 'p'),
     kind: 'producer',
     producerId: id,
     line: def?.line ?? id,
     level,
-    charges: chargesForLevel(cfg, level),
+    charges,
     cooldownUntil: 0,
   }
   noteProducer(state, id, level)
@@ -108,10 +123,17 @@ export function makeGem(state: GameState, tier: number): Item {
 }
 
 export function chargesForLevel(cfg: GameConfig, level: number): number {
-  const table = cfg.economy.producerChargesByLevel
-  const fromTable = table?.[level]
-  if (fromTable != null && fromTable > 0) return fromTable
-  return cfg.economy.producerCharges
+  const start = cfg.economy.producerOutputLevel ?? 4
+  if (level < start) return 0
+  const base = cfg.economy.producerRoundBase ?? 200
+  const step = cfg.economy.producerRoundStep ?? 40
+  return base + (level - start) * step
+}
+
+export function producerCap(cfg: GameConfig, id: string): number {
+  if (id === 'net') return cfg.economy.netMaxLevel ?? 5
+  const def = cfg.producers.find((entry) => entry.id === id)
+  return def?.maxLevel ?? cfg.economy.producerMaxLevel ?? 10
 }
 
 export function inProducerGrace(state: GameState, cfg: GameConfig): boolean {
@@ -133,7 +155,7 @@ export function gemEnergyPrice(cfg: GameConfig, buys: number): number {
 }
 
 export function makeChest(state: GameState): Item {
-  return { uid: nextUid(state, 'c'), kind: 'chest' }
+  return { uid: nextUid(state, 'c'), kind: 'chest', box: 'energy' }
 }
 
 export function productName(cfg: GameConfig, line: string, level: number): string {
@@ -162,6 +184,16 @@ export function tierForEnergy(cfg: GameConfig, energy: number): number {
   return cfg.items.potions.find((p) => p.energy === energy)?.tier ?? 1
 }
 
+export function makeEnergyPotion(state: GameState, cfg: GameConfig, energy: number): Item {
+  const known = cfg.items.potions.find((potion) => potion.energy === energy)
+  if (known) return makePotion(state, known.tier)
+  return { uid: nextUid(state, 'p'), kind: 'potion', tier: tierForEnergy(cfg, energy), energy }
+}
+
+export function bottleEnergy(cfg: GameConfig, item: { tier: number; energy?: number }): number {
+  return item.energy ?? potionEnergy(cfg, item.tier)
+}
+
 export function producerName(cfg: GameConfig, id: string): string {
   return cfg.producers.find((p) => p.id === id)?.name ?? '母棋'
 }
@@ -184,7 +216,79 @@ export function isHalfLock(lock: CellLock): boolean {
   return lock.cover === 'gift' || lock.veil !== 'full'
 }
 
-function revealAround(state: GameState, row: number, col: number): void {
+function placeBuried(state: GameState, cfg: GameConfig, lock: CellLock): void {
+  const buried = lock.buried
+  let item: Item | null = null
+  if (buried.kind === 'producer') item = makeProducer(state, buried.id, cfg, buried.level)
+  else if (buried.kind === 'product') item = makeProduct(state, buried.line, buried.level)
+  else if (buried.kind === 'potion') item = makePotion(state, buried.tier)
+  else if (buried.kind === 'gem') item = makeGem(state, buried.tier)
+  state.board[lock.row][lock.col] = item
+  if (item?.kind === 'product') noteUnlock(state, item.line, item.level)
+  if (item?.kind === 'producer') state.hasProducer[item.producerId] = true
+}
+
+function grantPrize(state: GameState, _cfg: GameConfig, lock: CellLock): void {
+  const prize = lock.prize
+  if (!prize) return
+  if (prize.energy) state.energy += prize.energy
+  if (prize.coins) state.coins += prize.coins
+  if (prize.gems) state.gems += prize.gems
+  if (prize.chest) queueReward(state, makeChest(state))
+}
+
+function openRewardLock(state: GameState, cfg: GameConfig, lock: CellLock): void {
+  grantPrize(state, cfg, lock)
+  placeBuried(state, cfg, lock)
+  state.locks = state.locks.filter((entry) => entry !== lock)
+}
+
+function hasBuriedPiece(lock: CellLock): boolean {
+  return lock.buried.kind === 'product' || lock.buried.kind === 'producer'
+}
+
+function shakeHalf(lock: CellLock): void {
+  lock.veil = 'half'
+  lock.shakeAt = Date.now()
+}
+
+/** 气泡格发奖后变成半遮掩。下面没有棋子就留空。 */
+function claimBubble(state: GameState, lock: CellLock): void {
+  const reward = bubbleReward(lock.row, lock.col)
+  if (!reward) return
+  if (reward.energy) state.energy += reward.energy
+  if (reward.gems) state.gems += reward.gems
+  lock.prize = undefined
+  if (hasBuriedPiece(lock)) shakeHalf(lock)
+  else {
+    state.board[lock.row][lock.col] = null
+    state.locks = state.locks.filter((entry) => entry !== lock)
+  }
+}
+
+function revealLock(state: GameState, lock: CellLock, cfg?: GameConfig): void {
+  if (bubbleReward(lock.row, lock.col)) {
+    claimBubble(state, lock)
+    return
+  }
+  if (lock.prize && cfg) {
+    openRewardLock(state, cfg, lock)
+    return
+  }
+  shakeHalf(lock)
+}
+
+function revealAround(state: GameState, row: number, col: number, cfg?: GameConfig): void {
+  if (row === 4 && col === 2) {
+    for (const [r, c] of [
+      [3, 3],
+      [5, 3],
+      [4, 4],
+    ]) {
+      const extra = lockAt(state, r, c)
+      if (extra && extra.veil === 'full' && extra.cover !== 'gift') revealLock(state, extra, cfg)
+    }
+  }
   const near = [
     [1, 0],
     [-1, 0],
@@ -193,7 +297,8 @@ function revealAround(state: GameState, row: number, col: number): void {
   ]
   for (const [dr, dc] of near) {
     const lock = lockAt(state, row + (dr ?? 0), col + (dc ?? 0))
-    if (lock && lock.veil === 'full' && lock.cover !== 'gift') lock.veil = 'half'
+    if (!lock || lock.veil !== 'full' || lock.cover === 'gift') continue
+    revealLock(state, lock, cfg)
   }
 }
 
@@ -229,25 +334,29 @@ export function rewardName(cfg: GameConfig, item: Item): string {
   if (item.kind === 'gem') return gemName(cfg, item.tier)
   if (item.kind === 'rewardBox') {
     if (item.box === 'smile') return `笑脸 ×${item.n ?? 1}`
-    return item.box === 'blue' ? '蓝宝箱' : item.box === 'purple' ? '紫礼盒' : '购物袋'
+    return item.box === 'purple' ? '紫礼盒' : '购物袋'
   }
   return cfg.items.chestName
 }
 
 export function takeReward(state: GameState): ActionResult {
-  const item = state.rewards[0]
+  const chestAt = state.rewards.findIndex((item) => item.kind === 'chest')
+  const index = chestAt >= 0 ? chestAt : 0
+  const item = state.rewards[index]
   if (!item) return { ok: false, reason: 'empty', events: [] }
   if (item.kind === 'rewardBox' && item.box === 'smile') {
-    state.rewards.shift()
+    state.rewards.splice(index, 1)
     state.smiles += item.n ?? 1
     return { ok: true, events: [{ type: 'toast', text: `笑脸 +${item.n ?? 1}` }] }
   }
+  const before = state.energy
   const spot = findEmpty(state)[0]
   if (!spot) {
     resolveGuides(state, undefined)
-    return { ok: false, reason: 'full', events: [{ type: 'toast', text: '棋盘满了，奖励先留着' }] }
+    return { ok: false, reason: 'full', events: [{ type: 'toast', text: '棋盘已满' }] }
   }
-  state.rewards.shift()
+  state.rewards.splice(index, 1)
+  state.energy = before
   state.board[spot.row][spot.col] = item
   if (item.kind === 'product') noteUnlock(state, item.line, item.level)
   if (item.kind === 'producer') state.hasProducer[item.producerId] = true
@@ -278,13 +387,13 @@ export function levelSpec(cfg: GameConfig, line: string, level: number) {
   return cfg.items.lines.find((entry) => entry.id === line)?.levels.find((entry) => entry.level === level)
 }
 
-export function makeChainItem(state: GameState, cfg: GameConfig, line: string, level: number): Item {
-  const spec = levelSpec(cfg, line, level)
-  if (spec?.producer || level >= cfg.economy.producerSpawnLevel) return makeProducer(state, line, cfg, level)
+export function makeChainItem(state: GameState, _cfg: GameConfig, line: string, level: number): Item {
   return makeProduct(state, line, level)
 }
 
 export function canMerge(a: Item, b: Item, cap = PRODUCT_CAP): boolean {
+  if (a.kind === 'product' && a.tag === 'bubble') return false
+  if (b.kind === 'product' && b.tag === 'bubble') return false
   if (a.kind === 'product' && b.kind === 'product') {
     return a.line === b.line && a.level === b.level && a.level < cap
   }
@@ -311,13 +420,23 @@ export function atStep(state: GameState, cfg: GameConfig, id: string): boolean {
 
 export function advanceTutorial(state: GameState, cfg: GameConfig): void {
   if (state.phase !== 'opening') return
+  const currentId = cfg.copy.tutorial[state.openingStep]?.id
   const next = state.openingStep + 1
   if (next >= cfg.copy.tutorial.length) {
+    if (currentId === 'mergeD' && state.board.some((row) => row.some((item) => item?.kind === 'producer' && item.producerId === 'food' && item.level >= 4))) {
+      state.openingStep = next
+      state.lesson = 'focus'
+      syncEarlyOrders(state, cfg)
+      return
+    }
     state.phase = 'play'
     state.openingStep = cfg.copy.tutorial.length
+    if (state.lesson !== 'free') state.lesson = 'free'
     return
   }
   state.openingStep = next
+  const id = cfg.copy.tutorial[next]?.id
+  if (id === 'merge' || id === 'mergeC' || id === 'mergeD') state.lesson = id
 }
 
 export function advanceDialogue(state: GameState, cfg: GameConfig): boolean {
@@ -343,6 +462,20 @@ export function tutorialDropOk(state: GameState, cfg: GameConfig, from: Pos, to:
     const a = cfg.board.roles.mergeA
     const b = cfg.board.roles.mergeB
     return (samePos(from, a) && samePos(to, b)) || (samePos(from, b) && samePos(to, a))
+  }
+  if (step.id === 'mergeC') {
+    const target = cfg.board.roles.unlock
+    if (!samePos(to, target) && !samePos(from, target)) return false
+    const moving = samePos(to, target) ? from : to
+    const item = state.board[moving.row]?.[moving.col]
+    return item?.kind === 'producer' && item.producerId === 'food' && item.level === 2
+  }
+  if (step.id === 'mergeD') {
+    const target = cfg.board.roles.mergeD
+    if (!target || (!samePos(to, target) && !samePos(from, target))) return false
+    const moving = samePos(to, target) ? from : to
+    const item = state.board[moving.row]?.[moving.col]
+    return item?.kind === 'producer' && item.producerId === 'food' && item.level === 3
   }
   if (step.id === 'unlock') {
     const target = cfg.board.roles.unlock
@@ -417,10 +550,19 @@ export function syncEnergy(state: GameState, now: number, cfg: GameConfig): numb
   return add
 }
 
+function restoredCharges(cfg: GameConfig, item: ProducerItem): number {
+  const def = cfg.producers.find((entry) => entry.id === item.producerId)
+  const burst = def?.bursts?.find((row) => row.level === item.level)
+  if (burst) return burst.items
+  if (def?.tapCooldown) return def.tapCooldown.taps[0]
+  if ((def?.kind ?? 'normal') === 'normal' && !(cfg.economy.producerCooldownOn > 0)) return 999
+  return chargesForLevel(cfg, item.level)
+}
+
 export function refreshProducers(state: GameState, now: number, cfg: GameConfig): void {
   const refill = (item: Item) => {
     if (item.kind === 'producer' && item.cooldownUntil > 0 && now >= item.cooldownUntil) {
-      item.charges = chargesForLevel(cfg, item.level)
+      item.charges = restoredCharges(cfg, item)
       item.cooldownUntil = 0
     }
   }
@@ -487,8 +629,12 @@ export function createGame(now: number, cfg: GameConfig): GameState {
     locks: [],
     phase: 'story',
     openingStep: 0,
+    lesson: 'home1',
+    storyBookOn: false,
+    storyForce: false,
     storyStep: 0,
     storySeen: false,
+    soundMuted: false,
     storageOpen: false,
     bagPhase: 'place',
     smiles: 0,
@@ -497,98 +643,96 @@ export function createGame(now: number, cfg: GameConfig): GameState {
     playStartedAt: now,
     levelModal: null,
     levelQueue: [],
+    giftModal: null,
+    smileTaught: false,
+    smileLesson: 'off',
+    welcomeFreeUsed: false,
+    bubbleDue: false,
+    bubbleDropped: false,
     smileModal: null,
     orderBias: null,
+    spawnMult: 1,
+    mintStep: 'off',
+    shopOpen: false,
+    shopClaimDate: null,
+    shopPackClaimed: false,
+    detailLine: null,
+    meatGuided: false,
+    bevGuided: false,
+    mintGuided: false,
     idCounter: 0,
     orderCounter: 0,
+    orderSeq: 1,
+    heldOrders: [],
+    orderedLines: [],
+    lateBlock: false,
+    smileRound: 1,
+    storyCard: null,
     stats: { producerTaps: 0, ordersDone: 0, adClicks: 0, visits: [], log: [] },
   }
   for (const line of cfg.items.lines) state.unlocked[line.id] = 0
   applyOpening(state, cfg)
-  state.orders = [
-    {
-      id: 'tutorial',
-      customerId: 'xiaotao',
-      slots: [{ line: 'food', level: 3, filled: false }],
-      big: false,
-      scripted: true,
-    },
-  ]
+  state.orders = []
   return state
 }
 
 function applyOpening(state: GameState, cfg: GameConfig): void {
-  const open: [number, number][] = [
-    [3, 2],
-    [3, 3],
-    [4, 2],
-    [4, 3],
-    [4, 4],
-    [5, 2],
-    [5, 3],
-  ]
-  const openKey = new Set(open.map(([row, col]) => `${row},${col}`))
-  state.hasProducer.food = true
-  state.board[4][3] = makeProducer(state, 'food', cfg, cfg.economy.producerSpawnLevel)
-  state.board[3][2] = makeProduct(state, 'food', 1)
-  state.board[3][3] = makeProduct(state, 'food', 1)
-  noteUnlock(state, 'food', 1)
-  let seq = 0
-  for (let row = 0; row < ROWS; row++) {
-    for (let col = 0; col < COLS; col++) {
-      if (openKey.has(`${row},${col}`)) continue
-      let ring = 99
-      for (const [or, oc] of open) ring = Math.min(ring, Math.abs(row - or) + Math.abs(col - oc))
-      seq += 1
-      const line = 'food'
-      const level = Math.min(8, 6 + Math.max(0, ring - 3))
-      const lock: CellLock = {
-        row,
-        col,
-        cover: ring >= 4 ? 'web' : 'sand',
+  const cells = openingBoard as {
+    row: number
+    col: number
+    open: boolean
+    half: boolean
+    item: { kind: 'product'; line: string; level: number } | { kind: 'producer'; id: string; level: number }
+    prize?: CellLock['prize']
+  }[]
+  const open: { row: number; col: number }[] = []
+  for (const cell of cells) {
+    if (cell.item.kind === 'producer' && cell.item.id === 'bev') {
+      state.locks.push({
+        row: cell.row,
+        col: cell.col,
+        cover: 'sand',
         veil: 'full',
-        buried: { kind: 'product', line, level: Math.min(8, level) },
-      }
-      state.locks.push(lock)
+        buried: { kind: 'coin', amount: 2, line: 'coin', level: 1 },
+      })
+      continue
     }
+    if (cell.open) {
+      open.push({ row: cell.row, col: cell.col })
+      state.board[cell.row][cell.col] = spawnOpening(state, cfg, cell.item)
+      continue
+    }
+    const buried =
+      cell.item.kind === 'producer'
+        ? { kind: 'producer' as const, id: cell.item.id, level: cell.item.level }
+        : { kind: 'product' as const, line: cell.item.line, level: cell.item.level }
+    state.locks.push({
+      row: cell.row,
+      col: cell.col,
+      cover: 'sand',
+      veil: cell.half ? 'half' : 'full',
+      buried,
+      prize: cell.prize,
+    })
   }
-  const patch = (row: number, col: number, lock: CellLock) => {
-    const index = state.locks.findIndex((entry) => entry.row === row && entry.col === col)
-    if (index >= 0) state.locks[index] = lock
-  }
-  patch(3, 4, { row: 3, col: 4, cover: 'sand', veil: 'half', buried: { kind: 'product', line: 'food', level: 2 } })
-  patch(4, 5, { row: 4, col: 5, cover: 'sand', veil: 'half', buried: { kind: 'product', line: 'food', level: 2 } })
-  patch(3, 1, { row: 3, col: 1, cover: 'sand', veil: 'full', buried: { kind: 'product', line: 'food', level: 2 } })
-  patch(2, 3, { row: 2, col: 3, cover: 'sand', veil: 'full', buried: { kind: 'product', line: 'food', level: 2 } })
-  patch(5, 1, { row: 5, col: 1, cover: 'sand', veil: 'full', buried: { kind: 'product', line: 'food', level: 3 } })
-  patch(6, 2, { row: 6, col: 2, cover: 'sand', veil: 'full', buried: { kind: 'product', line: 'food', level: 3 } })
-  patch(6, 3, { row: 6, col: 3, cover: 'sand', veil: 'full', buried: { kind: 'product', line: 'food', level: 3 } })
-  patch(4, 1, { row: 4, col: 1, cover: 'sand', veil: 'full', buried: { kind: 'product', line: 'food', level: 3 } })
-  patch(2, 2, { row: 2, col: 2, cover: 'sand', veil: 'full', buried: { kind: 'product', line: 'food', level: 4 } })
-  patch(2, 4, { row: 2, col: 4, cover: 'sand', veil: 'full', buried: { kind: 'product', line: 'food', level: 4 } })
-  patch(6, 4, { row: 6, col: 4, cover: 'sand', veil: 'full', buried: { kind: 'product', line: 'food', level: 4 } })
-  patch(3, 5, { row: 3, col: 5, cover: 'sand', veil: 'full', buried: { kind: 'product', line: 'food', level: 5 } })
-  patch(5, 5, { row: 5, col: 5, cover: 'sand', veil: 'full', buried: { kind: 'product', line: 'food', level: 5 } })
-  patch(5, 4, { row: 5, col: 4, cover: 'gift', veil: 'half', buried: { kind: 'product', line: 'food', level: 1 } })
-  patch(0, 2, { row: 0, col: 2, cover: 'web', veil: 'full', buried: { kind: 'coin', amount: 8, line: 'food', level: 6 } })
-  patch(0, 4, { row: 0, col: 4, cover: 'web', veil: 'full', buried: { kind: 'coin', amount: 12, line: 'food', level: 7 } })
-  patch(8, 2, { row: 8, col: 2, cover: 'web', veil: 'full', buried: { kind: 'coin', amount: 20, line: 'food', level: 7 } })
-  patch(0, 0, { row: 0, col: 0, cover: 'web', veil: 'full', buried: { kind: 'gem', tier: 1, line: 'food', level: 6 } })
-  patch(8, 6, { row: 8, col: 6, cover: 'web', veil: 'full', buried: { kind: 'gem', tier: 2, line: 'food', level: 7 } })
-  patch(1, 6, { row: 1, col: 6, cover: 'web', veil: 'full', buried: { kind: 'gem', tier: 3, line: 'food', level: 8 } })
-  patch(8, 0, { row: 8, col: 0, cover: 'web', veil: 'full', buried: { kind: 'potion', tier: 1, line: 'food', level: 6 } })
-  patch(7, 6, { row: 7, col: 6, cover: 'web', veil: 'full', buried: { kind: 'potion', tier: 2, line: 'food', level: 7 } })
-  patch(2, 0, { row: 2, col: 0, cover: 'web', veil: 'full', buried: { kind: 'potion', tier: 3, line: 'food', level: 6 } })
+  state.hasProducer.food = true
   cfg.board.roles = {
-    mergeA: { row: 3, col: 2 },
-    mergeB: { row: 3, col: 3 },
-    unlock: { row: 3, col: 4 },
-    producer: { row: 4, col: 3 },
-    gift: { row: 5, col: 4 },
+    mergeA: { row: 3, col: 1 },
+    mergeB: { row: 4, col: 1 },
+    unlock: { row: 4, col: 2 },
+    producer: { row: 3, col: 1 },
+    mergeD: { row: 4, col: 3 },
+    gift: { row: 7, col: 6 },
     bagSpot: { row: 4, col: 4 },
   }
-  cfg.board.open = open.map(([row, col]) => ({ row, col }))
+  cfg.board.open = open
   cfg.board.locks = state.locks.map((lock) => ({ ...lock, buried: { ...lock.buried } }))
+}
+
+function spawnOpening(state: GameState, cfg: GameConfig, item: { kind: 'product'; line: string; level: number } | { kind: 'producer'; id: string; level: number }): Item {
+  if (item.kind === 'producer') return makeProducer(state, item.id, cfg, item.level)
+  noteUnlock(state, item.line, item.level)
+  return makeProduct(state, item.line, item.level)
 }
 
 export function findProducer(state: GameState, id: string): Occupied | null {
@@ -626,19 +770,133 @@ export function tutorialHint(state: GameState): string {
   return '点砂锅，拿出猫草。'
 }
 
+function producerKind(cfg: GameConfig, id: string): 'normal' | 'netSource' | 'plant' | 'consumable' {
+  return cfg.producers.find((entry) => entry.id === id)?.kind ?? 'normal'
+}
+
+/** 点一下会扣玩家体力。猫粮、饮料从 4 级起，和 PSD 上的闪电一致。花盆和消耗品不扣。 */
+export function producerTapCostsEnergy(cfg: GameConfig, item: ProducerItem): boolean {
+  const kind = producerKind(cfg, item.producerId)
+  if (kind === 'consumable' || kind === 'plant') return false
+  return item.level >= (cfg.economy.producerOutputLevel ?? 4)
+}
+
+export function producerCanSpawn(cfg: GameConfig, item: ProducerItem, now: number): boolean {
+  const kind = producerKind(cfg, item.producerId)
+  if (kind === 'consumable') return item.charges > 0
+  const def = cfg.producers.find((entry) => entry.id === item.producerId)
+  const minLevel = def?.produceFrom ?? (kind === 'plant' ? (cfg.economy.plantOutputLevel ?? 6) : (cfg.economy.producerOutputLevel ?? 4))
+  if (item.level < minLevel || item.charges <= 0 || item.cooldownUntil > now) return false
+  return true
+}
+
+export function producerCooldown(cfg: GameConfig, item: ProducerItem, now: number): { left: number; total: number } | null {
+  const kind = producerKind(cfg, item.producerId)
+  if (kind === 'consumable') return null
+  const minLevel = kind === 'plant' ? (cfg.economy.plantOutputLevel ?? 6) : (cfg.economy.producerOutputLevel ?? 4)
+  if (item.level < minLevel || item.charges > 0 || item.cooldownUntil <= now) return null
+  const total = kind === 'plant' ? (cfg.economy.plantCooldownMs ?? 1_800_000) : (cfg.economy.producerRoundCooldownMs ?? 120_000)
+  const left = item.cooldownUntil - now
+  return { left, total: Math.max(left, total) }
+}
+
+export function spawnTier(cfg: GameConfig, mult: number) {
+  return cfg.economy.spawnTable?.find((tier) => tier.mult === mult)
+}
+
+function rollSpawnLevel(cfg: GameConfig, mult: 1 | 2 | 4 | 8, rng: Rng): number {
+  const tier = spawnTier(cfg, mult)
+  const weights = tier?.weights?.filter((entry) => entry.p > 0) ?? []
+  if (!weights.length) return 1
+  const total = weights.reduce((sum, entry) => sum + entry.p, 0) || 1
+  let roll = rng() * total
+  for (const entry of weights) {
+    roll -= entry.p
+    if (roll <= 0) return entry.level
+  }
+  return weights[weights.length - 1]?.level ?? 1
+}
+
+export function enabledMults(cfg: GameConfig): (1 | 2 | 4 | 8)[] {
+  const list = (cfg.economy.spawnTable ?? []).filter((tier) => tier.enabled).map((tier) => tier.mult)
+  return list.length ? list : [1]
+}
+
+function noteProducerLevel(state: GameState, _cfg: GameConfig, id: string, level: number): void {
+  if (id === 'food' && level >= 5) state.meatGuided = true
+  if (id === 'bev' && level >= 4) state.bevGuided = true
+  if (id === 'bev' && level >= 5) state.mintGuided = true
+}
+
+export type Overlay = 'level' | 'gift' | 'smile' | 'story' | 'shop' | 'detail' | 'talk' | 'mint'
+
+/** 同一时间只算最前面的一个弹窗。升级优先，然后商城、详情卡、对话，最后才是强制教学。 */
+export function activeOverlay(state: GameState): Overlay | null {
+  if (state.levelModal) return 'level'
+  if (state.giftModal) return 'gift'
+  if (state.smileModal) return 'smile'
+  if (state.storyCard) return 'story'
+  if (state.shopOpen) return 'shop'
+  if (state.detailLine) return 'detail'
+  if (state.notice || state.guide === 'buildTalk' || state.guide === 'backTalk') return 'talk'
+  if (state.mintStep === 'select' || state.mintStep === 'produce' || state.mintStep === 'merge' || state.mintStep === 'deliver') return 'mint'
+  return null
+}
+
+export function dismissDetail(state: GameState): void {
+  state.detailLine = null
+  if (state.mintStep === 'talk' && !state.notice) {
+    state.notice = { text: '5 级饮料能出猫薄荷了。这单要猫薄荷，跟着做。' }
+  }
+}
+
+export function dismissNotice(state: GameState): void {
+  const starting = state.mintStep === 'talk'
+  state.notice = null
+  if (!starting) return
+  if (findEmpty(state).length < 2) {
+    state.mintStep = 'wait'
+    state.notice = { text: '棋盘满了。先腾出两个空格，再跟着做猫薄荷。' }
+    return
+  }
+  state.mintStep = 'select'
+}
+
+export function pumpMint(state: GameState): void {
+  if (state.mintStep !== 'wait' || activeOverlay(state)) return
+  if (findEmpty(state).length < 2) return
+  const mints = occupied(state).filter((cell) => cell.item.kind === 'product' && cell.item.line === 'mint')
+  const pair = mints.some((cell, index) =>
+    mints.slice(index + 1).some((other) => other.item.kind === 'product' && cell.item.kind === 'product' && other.item.level === cell.item.level),
+  )
+  const ready = state.orders.some((order) => order.slots.some((slot) => slot.line === 'mint') && orderSatisfied(state, order))
+  state.mintStep = ready ? 'deliver' : pair ? 'merge' : 'select'
+}
+
 export function tapProducer(state: GameState, pos: Pos, cfg: GameConfig, rng: Rng, now: number): ActionResult {
   syncEnergy(state, now, cfg)
   refreshProducers(state, now, cfg)
   const item = inBoard(pos.row, pos.col) ? state.board[pos.row][pos.col] : null
   if (!item || item.kind !== 'producer') return { ok: false, reason: 'not-producer', events: [] }
   const name = producerName(cfg, item.producerId)
-  const spec = levelSpec(cfg, item.line, item.level)
-  const drops = spec?.drops ?? []
-  if (item.level < cfg.economy.producerSpawnLevel || !drops.length) {
-    return { ok: false, reason: 'low', events: [{ type: 'toast', text: '合到 6 级才能产出' }] }
+  const spot = nearestEmpty(state, pos.row, pos.col)
+  const teaching = state.mintStep === 'produce' && item.producerId === 'bev'
+  if (!spot && !teaching) {
+    resolveGuides(state)
+    return { ok: false, reason: 'full', events: [{ type: 'toast', text: '没有空格了' }] }
   }
-  const grace = inProducerGrace(state, cfg)
-  if (!grace && item.charges <= 0 && item.cooldownUntil > now) {
+  const kind = producerKind(cfg, item.producerId)
+  const def = cfg.producers.find((entry) => entry.id === item.producerId)
+  const minLevel = def?.produceFrom ?? (kind === 'plant' ? (cfg.economy.plantOutputLevel ?? 6) : (cfg.economy.producerOutputLevel ?? 4))
+  if (kind !== 'consumable' && item.level < minLevel) {
+    return { ok: false, reason: 'low', events: [{ type: 'toast', text: `合到 ${minLevel} 级才能产出` }] }
+  }
+  if (item.charges <= 0 && item.cooldownUntil > now) {
+    if (kind === 'plant') {
+      item.charges = cfg.economy.plantBurst ?? 8
+      item.cooldownUntil = 0
+      return { ok: true, events: [{ type: 'toast', text: '广告看完，花盆可以再出了' }] }
+    }
     return {
       ok: false,
       reason: 'cooldown',
@@ -648,35 +906,165 @@ export function tapProducer(state: GameState, pos: Pos, cfg: GameConfig, rng: Rn
       ],
     }
   }
-  const spot = nearestEmpty(state, pos.row, pos.col)
-  if (!spot) {
-    if (state.producerLesson === item.producerId) resolveGuides(state)
-    return { ok: false, reason: 'full', events: [{ type: 'toast', text: '没有空格了' }] }
-  }
+  const mult = allowedSpawnMults(state, cfg).includes((state.spawnMult ?? 1) as 1 | 2 | 4) ? (state.spawnMult ?? 1) : 1
   const taught = state.producerLesson === item.producerId
-  if (!taught && state.energy < cfg.economy.energyCost) {
-    return { ok: false, reason: 'energy', events: [{ type: 'needEnergy' }] }
-  }
-  const wasFull = state.energy >= cfg.economy.energyMax
-  if (!taught) {
-    state.energy -= cfg.economy.energyCost
+  const tierCost = spawnTier(cfg, mult)?.cost ?? mult
+  const cost = kind === 'plant' || taught ? 0 : kind === 'consumable' ? 1 : tierCost
+  if (cost > 0 && state.energy < cost) return { ok: false, reason: 'energy', events: [{ type: 'needEnergy' }] }
+  if (taught) state.producerLesson = null
+  if (cost > 0) {
+    const wasFull = state.energy >= cfg.economy.energyMax
+    state.energy -= cost
     if (wasFull && state.energy < cfg.economy.energyMax) state.energyTs = now
-  } else state.producerLesson = null
-  if (!grace && !taught) {
-    item.charges = 0
-    item.cooldownUntil = now + (spec?.cooldownMs ?? cfg.economy.producerCooldownMs)
   }
-  const dropLevel = drops[Math.min(drops.length - 1, Math.floor(rng() * drops.length))] ?? drops[0] ?? 1
-  const product = makeChainItem(state, cfg, item.line, dropLevel)
-  noteUnlock(state, item.line, dropLevel)
-  state.board[spot.row][spot.col] = product
+  item.charges = Math.max(0, item.charges - 1)
+  if (item.charges <= 0 && def?.tapCooldown) {
+    const [lo, hi] = def.tapCooldown.seconds
+    const sec = lo + Math.floor(rng() * (Math.max(0, hi - lo) + 1))
+    item.cooldownUntil = now + sec * 1000
+  } else if (item.charges <= 0 && kind === 'normal' && cfg.economy.producerCooldownOn > 0) {
+    item.cooldownUntil = now + (cfg.economy.producerRoundCooldownMs ?? cfg.economy.producerCooldownMs)
+  }
+  const made = spawnFromProducer(state, cfg, item, rng, mult)
+  if (spot) state.board[spot.row][spot.col] = made
+  else {
+    queueReward(state, made)
+    state.mintStep = 'wait'
+    state.notice = { text: '棋盘满了，猫薄荷先放在奖励栏。腾出空格后再继续。' }
+  }
+  if (made.kind === 'product') noteUnlock(state, made.line, made.level)
+  if (made.kind === 'producer') state.hasProducer[made.producerId] = true
   state.stats.producerTaps += 1
   logAction(state, now, 'tap')
+  if ((kind === 'consumable' && item.charges <= 0) || (kind === 'plant' && item.charges <= 0)) {
+    if (kind === 'plant') {
+      const burst = def?.bursts?.find((row) => row.level === item.level)
+      item.cooldownUntil = now + (burst?.cooldownMin ?? 40) * 60 * 1000
+    } else state.board[pos.row][pos.col] = null
+  }
   if (atStep(state, cfg, 'produce')) advanceTutorial(state, cfg)
+  promoteFocusLesson(state)
+  if (spot && state.mintStep === 'produce' && item.producerId === 'bev') {
+    const mints = occupied(state).filter((cell) => cell.item.kind === 'product' && cell.item.line === 'mint')
+    const pair = mints.find((cell, index) =>
+      mints.slice(index + 1).some((other) => other.item.kind === 'product' && cell.item.kind === 'product' && other.item.level === cell.item.level),
+    )
+    const ready = state.orders.some(
+      (order) => order.slots.some((slot) => slot.line === 'mint') && orderSatisfied(state, order),
+    )
+    state.mintStep = ready ? 'deliver' : pair ? 'merge' : 'produce'
+  }
   return {
     ok: true,
-    events: [{ type: 'spawn', row: spot.row, col: spot.col, fromRow: pos.row, fromCol: pos.col }],
+    events: [{ type: 'spawn', row: spot?.row ?? -1, col: spot?.col ?? -1, fromRow: pos.row, fromCol: pos.col }],
   }
+}
+
+function rollWeighted(rng: Rng, weights: { key: string; p: number }[]): string {
+  const usable = weights.filter((entry) => entry.p > 0)
+  const total = usable.reduce((sum, entry) => sum + entry.p, 0) || 1
+  let roll = rng() * total
+  for (const entry of usable) {
+    roll -= entry.p
+    if (roll <= 0) return entry.key
+  }
+  return usable[usable.length - 1]?.key ?? 'e1'
+}
+
+function spawnFromProducer(state: GameState, cfg: GameConfig, item: ProducerItem, rng: Rng, mult: 1 | 2 | 4 | 8): Item {
+  const def = cfg.producers.find((entry) => entry.id === item.producerId)
+  const kind = def?.kind ?? 'normal'
+  if (item.producerId === 'basket') {
+    const level = rng() < (cfg.economy.basketLowChance ?? 0.7) ? 2 : 3
+    return makeProduct(state, 'food', level)
+  }
+  if (item.producerId === 'piggy') {
+    const level = 1 + Math.floor(rng() * rng() * 5)
+    return makeProduct(state, 'coin', Math.min(5, Math.max(1, level)))
+  }
+  const row = def?.drops?.find((entry) => entry.level === item.level) ?? def?.drops?.[0]
+  if (row && (row.catch1 != null || row.catch2 != null)) {
+    const key = rollWeighted(rng, [
+      { key: '1', p: row.catch1 ?? 0 },
+      { key: '2', p: row.catch2 ?? 0 },
+      { key: '3', p: row.catch3 ?? 0 },
+    ])
+    return makeProducer(state, 'net', cfg, Number(key))
+  }
+  if (kind === 'plant' || item.producerId === 'dog') {
+    return makeProduct(state, def?.line ?? 'plant', 1)
+  }
+  if (row) {
+    const sideReady = !!def?.side && item.level >= (def.sideFrom ?? 99)
+    const key = rollWeighted(rng, [
+      { key: 'hard', p: sideReady ? row.hard : 0 },
+      { key: 'e1', p: row.e1 + (sideReady ? 0 : row.hard) },
+      { key: 'e2', p: row.e2 },
+      { key: 'e3', p: row.e3 },
+      { key: 'rare', p: row.rare },
+    ])
+    if (key === 'hard' && def?.side) return makeProduct(state, def.side, 1)
+    const level = key === 'e2' ? 2 : key === 'e3' ? 3 : key === 'rare' ? 4 : 1
+    let capped = Math.min(lineCap(cfg, def?.line ?? 'food'), level)
+    if (state.lesson === 'focus' && item.producerId === 'food') {
+      const need = state.orders.find((order) => order.scripted)?.slots.find((slot) => slot.line === 'food')?.level ?? 3
+      capped = Math.min(capped, Math.max(1, need - 1))
+    }
+    return makeProduct(state, def?.line ?? 'food', Math.max(1, capped))
+  }
+  if (item.producerId === 'net') {
+    const level = rollSpawnLevel(cfg, mult, rng)
+    return makeProduct(state, 'fish', Math.min(lineCap(cfg, 'fish'), level))
+  }
+  const line = def?.line ?? 'food'
+  let level = Math.min(lineCap(cfg, line), rollSpawnLevel(cfg, mult, rng))
+  if (state.lesson === 'focus' && item.producerId === 'food') {
+    const need = state.orders.find((order) => order.scripted)?.slots.find((slot) => slot.line === 'food')?.level ?? 3
+    level = Math.min(level, Math.max(1, need - 1))
+  }
+  return makeProduct(state, line, Math.max(1, level))
+}
+
+export function collectBoardProduct(state: GameState, pos: Pos, cfg: GameConfig): ActionResult {
+  const item = inBoard(pos.row, pos.col) ? state.board[pos.row][pos.col] : null
+  if (!item || item.kind !== 'product') return { ok: false, reason: 'not-product', events: [] }
+  const line = cfg.items.lines.find((entry) => entry.id === item.line)
+  if (!line?.collect) return { ok: false, reason: 'not-collect', events: [] }
+  const amount = coinOf(cfg, item.line, item.level)
+  state.board[pos.row][pos.col] = null
+  if (line.collect === 'gem') state.gems += amount
+  else state.coins += amount
+  return { ok: true, events: [{ type: 'toast', text: line.collect === 'gem' ? `钻石 +${amount}` : `铜钱 +${amount}` }] }
+}
+
+/** 按钮这一轮只在 x1 / x2 / x4 之间转。20 级前没有 x4，x8 留给以后的付费档。 */
+export function allowedSpawnMults(state: GameState, cfg: GameConfig): (1 | 2 | 4)[] {
+  const unlock = cfg.economy.speed4Level ?? 10
+  return state.level >= unlock ? [1, 2, 4] : [1]
+}
+
+export function cycleSpawnMult(state: GameState, cfg: GameConfig): 1 | 2 | 4 | 8 {
+  const list = allowedSpawnMults(state, cfg)
+  const current = list.includes(state.spawnMult as 1 | 2 | 4) ? state.spawnMult : 1
+  const index = list.indexOf(current as 1 | 2 | 4)
+  state.spawnMult = list[(index + 1) % list.length] ?? 1
+  return state.spawnMult
+}
+
+export function claimShopDaily(state: GameState, cfg: GameConfig, now: number): ActionResult {
+  const today = dayKey(now)
+  if (state.shopClaimDate === today) return { ok: false, reason: 'used', events: [{ type: 'toast', text: '今天领过了' }] }
+  state.shopClaimDate = today
+  state.energy += cfg.economy.shopDailyEnergy ?? 50
+  return { ok: true, events: [{ type: 'toast', text: `体力 +${cfg.economy.shopDailyEnergy ?? 50}` }] }
+}
+
+export function claimShopPack(state: GameState, cfg: GameConfig): ActionResult {
+  if (state.shopPackClaimed) return { ok: false, reason: 'used', events: [{ type: 'toast', text: '这个礼包领过了' }] }
+  state.shopPackClaimed = true
+  state.gems += cfg.economy.shopPackGems ?? 10
+  state.energy += cfg.economy.shopPackEnergy ?? 50
+  return { ok: true, events: [{ type: 'toast', text: '新手礼包：钻石和体力已到账' }] }
 }
 
 export function tapConsumable(state: GameState, pos: Pos, cfg: GameConfig, now: number): ActionResult {
@@ -696,7 +1084,7 @@ export function tapConsumable(state: GameState, pos: Pos, cfg: GameConfig, now: 
 export function drinkPotion(state: GameState, pos: Pos, cfg: GameConfig, now: number): ActionResult {
   const item = inBoard(pos.row, pos.col) ? state.board[pos.row][pos.col] : null
   if (!item || item.kind !== 'potion') return { ok: false, reason: 'not-potion', events: [] }
-  const amount = potionEnergy(cfg, item.tier)
+  const amount = bottleEnergy(cfg, item)
   state.board[pos.row][pos.col] = null
   state.energy += amount
   if (state.energy >= cfg.economy.energyMax) state.energyTs = now
@@ -728,17 +1116,99 @@ function popLoot(state: GameState, cfg: GameConfig, pos: Pos, drops: LootDrop[])
   return drops.length
 }
 
-export function openChest(state: GameState, pos: Pos, cfg: GameConfig, rng: Rng): ActionResult {
-  const item = inBoard(pos.row, pos.col) ? state.board[pos.row][pos.col] : null
-  if (!item || item.kind !== 'chest') return { ok: false, reason: 'not-chest', events: [] }
-  if (!item.drops) {
+function chestTaps(box: string, rng: Rng): number {
+  if (box === 'welcome') return rng() < 0.5 ? 7 : 8
+  if (box === 'red') return 8
+  if (box === 'green') return 10
+  if (box === 'smart') return 6
+  if (box === 'food') return 6
+  if (box === 'meat') return 9
+  return 5
+}
+
+function labelToItem(state: GameState, cfg: GameConfig, label: string): Item {
+  const producer = label.match(/^(猫粮母棋|饮料母棋|玩具母棋|猫窝母棋|花盆母棋|渔网母棋)(\d+)/)
+  if (producer) {
+    const id = producer[1] === '猫粮母棋' ? 'food' : producer[1] === '饮料母棋' ? 'bev' : producer[1] === '玩具母棋' ? 'toy' : producer[1] === '猫窝母棋' ? 'bed' : producer[1] === '花盆母棋' ? 'plant' : 'boat'
+    return makeProducer(state, id, cfg, Number(producer[2]))
+  }
+  const piece = label.match(/^(金币|钻石|体力|猫粮|肉类|饮料|猫薄荷|花草)(\d+)/)
+  const level = Number(piece?.[2] ?? 1)
+  if (piece?.[1] === '钻石') return makeGem(state, level)
+  if (piece?.[1] === '体力') return makeEnergyPotion(state, cfg, BALANCE.resources.energy[level - 1] ?? 2)
+  const line = piece?.[1] === '金币' ? 'coin' : piece?.[1] === '肉类' ? 'meat' : piece?.[1] === '饮料' ? 'bev' : piece?.[1] === '猫薄荷' ? 'mint' : piece?.[1] === '花草' ? 'plant' : 'food'
+  return makeProduct(state, line, level)
+}
+
+function rollLabels(table: Record<string, number>, count: number, rng: Rng): string[] {
+  const entries = Object.entries(table)
+  const total = entries.reduce((sum, [, weight]) => sum + weight, 0) || 1
+  const out: string[] = []
+  for (let i = 0; i < count; i++) {
+    let roll = rng() * total
+    let pick = entries[entries.length - 1]?.[0] ?? '体力1'
+    for (const [label, weight] of entries) {
+      roll -= weight
+      if (roll <= 0) {
+        pick = label
+        break
+      }
+    }
+    out.push(pick)
+  }
+  return out
+}
+
+function chestTable(id: string): Record<string, number> | null {
+  const chest = BALANCE.chests.find((entry) => entry.id === id)
+  return chest && chest.table && typeof chest.table === 'object' ? chest.table : null
+}
+
+function fillChest(state: GameState, cfg: GameConfig, item: Extract<Item, { kind: 'chest' }>, rng: Rng): void {
+  const box = item.box ?? 'energy'
+  if (box === 'energy') {
     const fixed = cfg.economy.newbieChestFixed && state.chestsOpened < cfg.economy.newbieChestCount
     const energies = fixed ? cfg.economy.newbieChest.slice() : Array.from({ length: 5 }, () => rollEnergy(cfg, rng))
     state.chestsOpened += 1
-    item.drops = energies.map((energy) => ({ item: makePotion(state, tierForEnergy(cfg, energy)) }))
+    item.drops = energies.map((energy) => ({ item: makeEnergyPotion(state, cfg, energy) }))
     maybeLateProducer(state, cfg, rng)
+    return
   }
-  const left = popLoot(state, cfg, pos, item.drops)
+  if (box === 'smart') {
+    const need = state.orders.flatMap((order) => order.slots.map((slot) => ({ line: slot.line, level: slot.level })))
+    item.drops = Array.from({ length: chestTaps(box, rng) }, () => {
+      const slot = need.length ? need[Math.floor(rng() * need.length)] : null
+      const made = slot ? makeProduct(state, slot.line, slot.level) : makeEnergyPotion(state, cfg, 2)
+      return { item: made }
+    })
+    return
+  }
+  const tableId = box === 'welcome' ? 'welcome' : box === 'red' ? 'red1' : box === 'green' ? 'green1' : box === 'food' ? 'food_box' : 'meat_box'
+  const table = chestTable(tableId) ?? { 体力1: 1 }
+  item.drops = rollLabels(table, chestTaps(box, rng), rng).map((label) => ({ item: labelToItem(state, cfg, label) }))
+}
+
+export function openChest(state: GameState, pos: Pos, cfg: GameConfig, rng: Rng, now = 0): ActionResult {
+  const item = inBoard(pos.row, pos.col) ? state.board[pos.row][pos.col] : null
+  if (!item || item.kind !== 'chest') return { ok: false, reason: 'not-chest', events: [] }
+  if (item.box === 'welcome' && item.readyAt && now && item.readyAt > now) {
+    if (!state.welcomeFreeUsed) state.welcomeFreeUsed = true
+    else {
+      const cost = cfg.economy.giftRushGems ?? 2
+      if (!item.confirmGem) {
+        item.confirmGem = true
+        return { ok: false, reason: 'wait', events: [{ type: 'toast', text: `再点一次，花 ${cost} 钻石立刻打开` }] }
+      }
+      if (state.gems < cost) return { ok: false, reason: 'gems', events: [{ type: 'toast', text: '钻石不够' }] }
+      state.gems -= cost
+    }
+    item.readyAt = now
+  }
+  if (!item.drops) fillChest(state, cfg, item, rng)
+  if (!nearestEmpty(state, pos.row, pos.col)) {
+    return { ok: false, reason: 'full', events: [{ type: 'toast', text: '棋盘已满' }] }
+  }
+  const left = popLoot(state, cfg, pos, item.drops ?? [])
   if (left <= 0) state.board[pos.row][pos.col] = null
   if (state.chestLesson === 2) state.chestLesson = 3
   return { ok: true, events: [{ type: 'openChest', row: pos.row, col: pos.col, count: 1 }] }
@@ -805,6 +1275,12 @@ export function claimDailyChest(state: GameState, now: number, cfg: GameConfig):
   }
 }
 
+function promoteFocusLesson(state: GameState): void {
+  if (state.lesson !== 'focus') return
+  const order = state.orders.find((entry) => entry.scripted)
+  if (order && orderSatisfied(state, order)) state.lesson = 'deliver'
+}
+
 export function dropItem(state: GameState, from: Pos, to: Pos, cfg?: GameConfig): ActionResult {
   if (!inBoard(from.row, from.col) || !inBoard(to.row, to.col)) {
     return { ok: false, reason: 'oob', events: [{ type: 'bounce' }] }
@@ -823,6 +1299,29 @@ export function dropItem(state: GameState, from: Pos, to: Pos, cfg?: GameConfig)
     }
     const buried = lock.buried
     if (
+      buried.kind === 'producer' &&
+      item.kind === 'producer' &&
+      cfg &&
+      item.producerId === buried.id &&
+      item.level === buried.level &&
+      item.level < producerCap(cfg, item.producerId)
+    ) {
+      const level = item.level + 1
+      state.board[from.row][from.col] = null
+      state.board[to.row][to.col] = makeProducer(state, item.producerId, cfg, level)
+      state.locks = state.locks.filter((entry) => entry.row !== to.row || entry.col !== to.col)
+      noteProducerLevel(state, cfg, item.producerId, level)
+      if (atStep(state, cfg, 'unlock') || atStep(state, cfg, 'mergeC') || atStep(state, cfg, 'mergeD')) advanceTutorial(state, cfg)
+      revealAround(state, to.row, to.col, cfg)
+      return {
+        ok: true,
+        events: [
+          { type: 'merge', row: to.row, col: to.col, line: item.line, level, kind: 'product' },
+          { type: 'unlock', row: to.row, col: to.col, line: item.line, level },
+        ],
+      }
+    }
+    if (
       buried.kind === 'product' &&
       item.kind === 'product' &&
       item.line === buried.line &&
@@ -834,8 +1333,10 @@ export function dropItem(state: GameState, from: Pos, to: Pos, cfg?: GameConfig)
       state.board[to.row][to.col] = makeProduct(state, item.line, level)
       state.locks = state.locks.filter((entry) => entry.row !== to.row || entry.col !== to.col)
       noteUnlock(state, item.line, level)
+      dropBubble(state, item.line, level)
       if (cfg && atStep(state, cfg, 'unlock')) advanceTutorial(state, cfg)
-      revealAround(state, to.row, to.col)
+      promoteFocusLesson(state)
+      revealAround(state, to.row, to.col, cfg)
       return {
         ok: true,
         events: [
@@ -851,7 +1352,7 @@ export function dropItem(state: GameState, from: Pos, to: Pos, cfg?: GameConfig)
       if (buried.kind === 'coin') state.coins += buried.amount
       if (buried.kind === 'gem' && cfg) state.gems += gemAmount(cfg, buried.tier)
       if (buried.kind === 'potion' && cfg) state.energy += potionEnergy(cfg, buried.tier)
-      revealAround(state, to.row, to.col)
+      revealAround(state, to.row, to.col, cfg)
       const text = buried.kind === 'coin' ? `铜钱 +${buried.amount}` : buried.kind === 'gem' ? '获得钻石' : '获得体力'
       return {
         ok: true,
@@ -872,16 +1373,27 @@ export function dropItem(state: GameState, from: Pos, to: Pos, cfg?: GameConfig)
       events: [{ type: 'move', fromRow: from.row, fromCol: from.col, toRow: to.row, toCol: to.col }],
     }
   }
-  const mergeCap = cfg && (item.kind === 'product' || item.kind === 'producer') ? lineCap(cfg, item.line) : PRODUCT_CAP
+  const mergeCap =
+    item.kind === 'producer' && cfg
+      ? producerCap(cfg, item.producerId)
+      : cfg && item.kind === 'product'
+        ? lineCap(cfg, item.line)
+        : PRODUCT_CAP
   if (canMerge(item, other, mergeCap)) {
     if (other.kind === 'product' && item.kind === 'product') {
       const level = other.level + 1
       state.board[to.row][to.col] = cfg ? makeChainItem(state, cfg, other.line, level) : makeProduct(state, other.line, level)
       state.board[from.row][from.col] = null
       noteUnlock(state, other.line, level)
+      dropBubble(state, other.line, level)
       if (cfg && (atStep(state, cfg, 'merge') || atStep(state, cfg, 'bagMerge'))) advanceTutorial(state, cfg)
-      revealAround(state, to.row, to.col)
-      revealAround(state, from.row, from.col)
+      promoteFocusLesson(state)
+      if (state.mintStep === 'merge' && other.line === 'mint') {
+        const ready = state.orders.some((order) => order.slots.some((slot) => slot.line === 'mint') && orderSatisfied(state, order))
+        state.mintStep = ready ? 'deliver' : 'produce'
+      }
+      revealAround(state, to.row, to.col, cfg)
+      revealAround(state, from.row, from.col, cfg)
       return {
         ok: true,
         events: [{ type: 'merge', row: to.row, col: to.col, line: other.line, level, kind: 'product' }],
@@ -908,12 +1420,14 @@ export function dropItem(state: GameState, from: Pos, to: Pos, cfg?: GameConfig)
       }
     }
     if (other.kind === 'producer' && item.kind === 'producer' && cfg) {
-      const level = Math.min(lineCap(cfg, other.line), other.level + 1)
+      const level = Math.min(producerCap(cfg, other.producerId), other.level + 1)
       state.board[to.row][to.col] = makeProducer(state, other.producerId, cfg, level)
       state.board[from.row][from.col] = null
+      noteProducerLevel(state, cfg, other.producerId, level)
+      if (other.producerId === 'food' && atStep(state, cfg, 'merge') && level === 2) advanceTutorial(state, cfg)
       if (other.producerId === 'food' && atStep(state, cfg, 'producerL2') && level === 2) advanceTutorial(state, cfg)
       if (other.producerId === 'food' && atStep(state, cfg, 'producerL3') && level >= 3) advanceTutorial(state, cfg)
-      revealAround(state, to.row, to.col)
+      revealAround(state, to.row, to.col, cfg)
       return {
         ok: true,
         events: [{ type: 'merge', row: to.row, col: to.col, line: other.line, level, kind: 'product' }],
@@ -962,7 +1476,7 @@ export function slotChecked(state: GameState, order: Order, index: number): bool
   }
   let have = 0
   eachCell(state.board, (item, row, col) => {
-    if (!item || item.kind !== 'product' || lockAt(state, row, col)) return
+    if (!item || item.kind !== 'product' || item.tag === 'bubble' || lockAt(state, row, col)) return
     if (item.line === slot.line && item.level === slot.level) have += 1
   })
   return have >= need
@@ -992,17 +1506,26 @@ export function producerLevelOwned(state: GameState, id: string): number {
 }
 
 export function orderCraftable(state: GameState, cfg: GameConfig, line: string, level: number): boolean {
-  const producer = cfg.producers.find((entry) => entry.line === line)
-  if (!producer) return false
-  if (producerLevelOwned(state, producer.id) < cfg.economy.producerSpawnLevel) return false
   const cap = cfg.items.lines.find((entry) => entry.id === line)?.levels.length ?? PRODUCT_CAP
-  return level >= 1 && level <= cap
+  if (level < 1 || level > cap) return false
+  const need = cfg.economy.producerOutputLevel ?? cfg.economy.producerSpawnLevel
+  const direct = cfg.producers.find((entry) => entry.line === line && entry.kind !== 'consumable')
+  if (direct && direct.line !== 'net') return producerLevelOwned(state, direct.id) >= need
+  const parent = cfg.producers.find((entry) => entry.side === line)
+  if (!parent) return false
+  return producerLevelOwned(state, parent.id) >= (cfg.economy.producerSideLevel ?? 5)
 }
 
 function ownedLines(state: GameState, cfg: GameConfig): string[] {
-  return cfg.producers
-    .filter((producer) => producerLevelOwned(state, producer.id) >= cfg.economy.producerSpawnLevel)
-    .map((producer) => producer.line)
+  const lines: string[] = []
+  for (const producer of cfg.producers) {
+    if (producer.kind === 'consumable' || producer.line === 'net') continue
+    if (producerLevelOwned(state, producer.id) <= 0 && !state.hasProducer[producer.id]) continue
+    lines.push(producer.line)
+    if (producer.side && producerLevelOwned(state, producer.id) >= (cfg.economy.producerSideLevel ?? 5)) lines.push(producer.side)
+  }
+  if (!lines.length) lines.push('food')
+  return [...new Set(lines)]
 }
 
 function maxOrderLevel(state: GameState, line: string): number {
@@ -1012,15 +1535,30 @@ function maxOrderLevel(state: GameState, line: string): number {
   return 3
 }
 
-const GUEST_ROTATION = ['boatman', 'embroider', 'fisherman', 'squire', 'scholar', 'teaGuest']
-
-function nextGuest(state: GameState): string {
-  const busy = new Set(state.orders.map((order) => order.customerId))
-  for (let step = 0; step < GUEST_ROTATION.length; step++) {
-    const id = GUEST_ROTATION[(state.orderCounter + step) % GUEST_ROTATION.length]
-    if (id && !busy.has(id)) return id
+/** 调参打开时，订单区固定带上两个新角色，方便看动画。默认关闭。 */
+export function applyTestGuests(state: GameState, cfg: GameConfig): void {
+  if ((cfg.economy.testOrderGuests ?? 0) < 1) return
+  if (state.phase === 'story') return
+  const wanted = ['ajiang', 'ghost']
+  const missing = wanted.filter((id) => !state.orders.some((order) => order.customerId === id))
+  for (const id of missing) {
+    const donor = state.orders.find((order) => !wanted.includes(order.customerId))
+    if (donor) {
+      donor.customerId = id
+      continue
+    }
+    state.orderCounter += 1
+    state.orders.push({
+      id: `test${state.orderCounter}`,
+      customerId: id,
+      slots: [{ line: 'food', level: 1, filled: false }],
+      big: false,
+    })
   }
-  return GUEST_ROTATION[state.orderCounter % GUEST_ROTATION.length] ?? 'teaGuest'
+}
+
+function nextGuest(rng: Rng): string {
+  return pickOrderCast(rng())
 }
 
 function pickWeightedLine(state: GameState, cfg: GameConfig, rng: Rng, lines: string[]): string {
@@ -1057,7 +1595,7 @@ function generateEarlyOrder(state: GameState, cfg: GameConfig, rng: Rng, lines: 
     slots.push({ line: second, level: min + Math.floor(rng() * span), filled: false })
   }
   if (!slots.every((slot) => orderCraftable(state, cfg, slot.line, slot.level))) return null
-  const customerId = nextGuest(state)
+  const customerId = nextGuest(rng)
   state.orderCounter += 1
   return { id: `o${state.orderCounter}`, customerId, slots, big: false, chest: false }
 }
@@ -1094,12 +1632,12 @@ export function generateOrder(state: GameState, cfg: GameConfig, rng: Rng): Orde
       slots.push({ line: line2, level: 3 + Math.floor(rng() * span2), filled: false })
     }
   }
-  const customerId = nextGuest(state)
+  const customerId = nextGuest(rng)
   const chest = state.phase === 'play' && rng() < cfg.economy.chestOrderChance
   state.orderCounter += 1
   const order: Order = {
     id: `o${state.orderCounter}`,
-    customerId: chest ? 'raccoon' : customerId,
+    customerId,
     slots,
     big,
     chest,
@@ -1108,13 +1646,175 @@ export function generateOrder(state: GameState, cfg: GameConfig, rng: Rng): Orde
   return order
 }
 
-export function fillOrders(state: GameState, cfg: GameConfig, rng: Rng): void {
+function producerLevel(state: GameState, id: string): number {
+  let level = 0
+  eachCell(state.board, (item) => {
+    if (item?.kind === 'producer' && item.producerId === id) level = Math.max(level, item.level)
+  })
+  for (const item of [...state.pending, ...state.rewards]) {
+    if (item.kind === 'producer' && item.producerId === id) level = Math.max(level, item.level)
+  }
+  return level
+}
+
+const LINE_PRODUCER: Record<string, string> = {
+  food: 'food',
+  meat: 'food',
+  bev: 'bev',
+  mint: 'bev',
+  toy: 'toy',
+  wand: 'toy',
+  bed: 'bed',
+  fish: 'boat',
+  plant: 'plant',
+}
+
+function lineUnlocked(state: GameState, cfg: GameConfig, line: string): boolean {
+  const id = LINE_PRODUCER[line]
+  if (!id) return false
+  const def = cfg.producers.find((entry) => entry.id === id)
+  const from = line === def?.side ? (def?.sideFrom ?? 99) : (def?.produceFrom ?? 99)
+  return producerLevel(state, id) >= from
+}
+
+function rememberLines(state: GameState, slots: { line: string }[]): void {
+  state.orderedLines ??= []
+  for (const slot of slots) {
+    if (!state.orderedLines.includes(slot.line)) state.orderedLines.push(slot.line)
+  }
+}
+
+function pushEarly(state: GameState, cfg: GameConfig, spec: NonNullable<ReturnType<typeof earlyOrder>>): void {
+  state.orderCounter += 1
+  let paySmile = 0
+  let smilePending = 0
+  let smileWait: Order['smileWait']
+  if (spec.smile > 0 && spec.smileTiming === 'onAppear') paySmile = spec.smile
+  else if (spec.smile > 0 && spec.smileTiming === 'onSmileUnlock') {
+    if (state.level >= (cfg.economy.smileUnlockLevel ?? 4)) paySmile = spec.smile
+    else {
+      smilePending = spec.smile
+      smileWait = 'unlock'
+    }
+  } else if (spec.smile > 0 && spec.smileTiming === 'afterClaim') {
+    smilePending = spec.smile
+    smileWait = 'claim'
+  }
+  state.orders.push({
+    id: `e${spec.no}`,
+    customerId: pickOrderCast((spec.no * 0.17) % 1),
+    slots: spec.items.map((item) => ({ line: item.line, level: item.level, filled: false })),
+    big: false,
+    scripted: spec.no === 1,
+    earlyNo: spec.no,
+    payCoins: spec.coins,
+    paySmile,
+    smilePending,
+    smileWait,
+  })
+  rememberLines(state, spec.items)
+}
+
+export function syncEarlyOrders(state: GameState, cfg: GameConfig): void {
+  state.orderSeq ??= 1
+  state.heldOrders ??= []
+  if (state.lesson === 'home1' || state.lesson === 'talk1' || state.lesson === 'merge' || state.lesson === 'mergeC' || state.lesson === 'mergeD') return
+  if (state.orderSeq > 131) return
   let guard = 0
-  while (state.orders.length < cfg.orders.maxActive && guard < 8) {
-    const order = generateOrder(state, cfg, rng)
+  while (guard < 12 && state.orderSeq <= 131) {
+    const spec = earlyOrder(state.orderSeq)
+    if (!spec) break
+    const shownCaps = state.orders.map((order) => earlyOrder(order.earlyNo ?? 0)?.maxOnScreen ?? spec.maxOnScreen)
+    const cap = Math.min(spec.maxOnScreen, ...shownCaps)
+    if (state.orders.length >= cap) break
+    state.orderSeq += 1
+    pushEarly(state, cfg, spec)
+    guard += 1
+  }
+}
+
+const FOOD_LINES = ['food', 'meat', 'bev', 'mint', 'fish']
+const EASY_LINES = new Set(['food', 'bev'])
+
+function lateLevel(line: string, playerLevel: number, rng: Rng): number {
+  if (EASY_LINES.has(line)) {
+    if (playerLevel >= 10 && rng() < 0.25) return rng() < 0.5 ? 7 : 8
+    return 3 + Math.floor(rng() * 4)
+  }
+  if (line === 'toy' || line === 'wand' || line === 'bed') return 3 + Math.floor(rng() * 4)
+  if (line === 'plant') return 3 + Math.floor(rng() * (playerLevel >= 10 ? 4 : 3))
+  return 3 + Math.floor(rng() * (playerLevel >= 10 ? 4 : 3))
+}
+
+function lateOrder(state: GameState, cfg: GameConfig, slots: { line: string; level: number }[], blocker = false): Order {
+  const coins = slots.reduce((sum, slot) => sum + unitPrice(slot.line, slot.level), 0)
+  const high = slots.some((slot) => (EASY_LINES.has(slot.line) ? slot.level >= 8 : slot.level >= 6))
+  const smile = high ? 2 : 1
+  const roundFull = state.smiles >= cfg.economy.smileGoal
+  state.orderCounter += 1
+  rememberLines(state, slots)
+  return {
+    id: `l${state.orderCounter}`,
+    customerId: pickOrderCast((state.orderCounter * 0.37) % 1),
+    slots: slots.map((slot) => ({ line: slot.line, level: slot.level, filled: false })),
+    big: high,
+    payCoins: coins,
+    paySmile: roundFull ? 0 : smile,
+    smilePending: roundFull ? smile : 0,
+    smileWait: roundFull ? 'claim' : undefined,
+    blocker,
+  }
+}
+
+function generateLateOrder(state: GameState, cfg: GameConfig, rng: Rng): Order | null {
+  const lines = ['food', 'meat', 'bev', 'mint', 'toy', 'wand', 'bed', 'fish', 'plant'].filter((line) => lineUnlocked(state, cfg, line))
+  if (!lines.length) return null
+  const fresh = lines.find((line) => !(state.orderedLines ?? []).includes(line))
+  if (fresh) return lateOrder(state, cfg, [{ line: fresh, level: lateLevel(fresh, state.level, rng) }])
+  const goal = cfg.economy.smileGoal
+  if (state.level >= (cfg.economy.blockFromLevel ?? 10) && state.smiles >= goal - 1 && state.smiles < goal) {
+    const pool = [
+      lineUnlocked(state, cfg, 'fish') ? { line: 'fish', level: 6 } : null,
+      lineUnlocked(state, cfg, 'plant') ? { line: 'plant', level: state.level >= 10 ? 6 : 5 } : null,
+      lineUnlocked(state, cfg, 'mint') ? { line: 'mint', level: 6 } : null,
+      lineUnlocked(state, cfg, 'meat') ? { line: 'meat', level: 6 } : null,
+      lineUnlocked(state, cfg, 'bev') ? { line: 'bev', level: 8 } : null,
+    ].filter((entry): entry is { line: string; level: number } => !!entry)
+    const pick = pool[Math.floor(rng() * pool.length)]
+    if (pick) {
+      state.lateBlock = true
+      return lateOrder(state, cfg, [pick], true)
+    }
+  }
+  const share = cfg.economy.foodDrinkShare ?? BALANCE.ordersLate.foodDrinkShare
+  const food = lines.filter((line) => FOOD_LINES.includes(line))
+  const other = lines.filter((line) => !FOOD_LINES.includes(line))
+  const wantFood = rng() < share
+  let group = wantFood && food.length ? food : other.length ? other : lines
+  const crowded = (line: string) => state.orders.filter((order) => order.slots[0]?.line === line).length >= 2
+  const open = group.filter((line) => !crowded(line))
+  if (open.length) group = open
+  const line = group[Math.floor(rng() * group.length)] ?? lines[0]
+  if (!line) return null
+  const roll = rng()
+  const count = roll < 0.45 ? 1 : roll < 0.9 ? 2 : 3
+  const slots = Array.from({ length: count }, () => ({ line, level: lateLevel(line, state.level, rng) }))
+  return lateOrder(state, cfg, slots)
+}
+
+export function fillOrders(state: GameState, cfg: GameConfig, rng: Rng): void {
+  syncEarlyOrders(state, cfg)
+  if ((state.orderSeq ?? 1) <= 131) return
+  if (state.lateBlock) return
+  if (state.smiles >= cfg.economy.smileGoal) return
+  const cap = Math.min(cfg.orders.maxActive, BALANCE.ordersLate.maxOnScreen)
+  let guard = 0
+  while (state.orders.length < cap && guard < 8) {
+    const order = generateLateOrder(state, cfg, rng)
     if (!order) break
     state.orders.push(order)
     guard += 1
+    if (order.blocker) break
   }
 }
 
@@ -1126,7 +1826,7 @@ export function orderSatisfied(state: GameState, order: Order): boolean {
   }
   const have = new Map<string, number>()
   eachCell(state.board, (item, row, col) => {
-    if (!item || item.kind !== 'product' || lockAt(state, row, col)) return
+    if (!item || item.kind !== 'product' || item.tag === 'bubble' || lockAt(state, row, col)) return
     const key = `${item.line}:${item.level}`
     have.set(key, (have.get(key) ?? 0) + 1)
   })
@@ -1145,7 +1845,7 @@ export function orderTakeCells(state: GameState, order: Order): Pos[] {
   }
   const cells: Pos[] = []
   eachCell(state.board, (item, row, col) => {
-    if (!item || item.kind !== 'product' || lockAt(state, row, col)) return
+    if (!item || item.kind !== 'product' || item.tag === 'bubble' || lockAt(state, row, col)) return
     const key = `${item.line}:${item.level}`
     const left = need.get(key) ?? 0
     if (left <= 0) return
@@ -1161,29 +1861,51 @@ function takeMatches(state: GameState, order: Order): void {
 
 export function orderMarks(state: GameState): { check: string[]; ready: string[] } {
   const check: string[] = []
-  const ready = new Set<string>()
+  const pool = new Map<string, Pos[]>()
   eachCell(state.board, (item, row, col) => {
-    if (!item || item.kind !== 'product' || lockAt(state, row, col)) return
+    if (!item || item.kind !== 'product' || item.tag === 'bubble' || lockAt(state, row, col)) return
+    const key = `${item.line}:${item.level}`
+    const list = pool.get(key)
+    if (list) list.push({ row, col })
+    else pool.set(key, [{ row, col }])
     const hit = state.orders.some((order) =>
       order.slots.some((slot) => slot.line === item.line && slot.level === item.level),
     )
     if (hit) check.push(`${row},${col}`)
   })
+  const ready = new Set<string>()
+  const left = new Map<string, Pos[]>()
+  for (const [key, cells] of pool) left.set(key, cells.slice())
   for (const order of state.orders) {
-    for (const pos of orderTakeCells(state, order)) ready.add(`${pos.row},${pos.col}`)
+    const need = new Map<string, number>()
+    for (const slot of order.slots) {
+      const key = `${slot.line}:${slot.level}`
+      need.set(key, (need.get(key) ?? 0) + 1)
+    }
+    let enough = true
+    for (const [key, count] of need) {
+      if ((left.get(key)?.length ?? 0) < count) {
+        enough = false
+        break
+      }
+    }
+    if (!enough) continue
+    for (const [key, count] of need) {
+      const cells = left.get(key) ?? []
+      for (let i = 0; i < count; i++) {
+        const pos = cells.shift()
+        if (pos) ready.add(`${pos.row},${pos.col}`)
+      }
+    }
   }
   return { check, ready: [...ready] }
 }
 
 export function orderPayout(order: Order, cfg: GameConfig): { coins: number; xp: number; smiles: number } {
+  if (order.payCoins != null) return { coins: order.payCoins, xp: 0, smiles: order.paySmile ?? 0 }
   let coins = orderReward(order, cfg)
-  let xp = order.big ? cfg.economy.bigOrderXp : cfg.economy.orderXp
-  const smiles = order.big || order.chest ? 2 : 1
-  if (order.chest) {
-    coins = Math.round(coins * cfg.economy.chestRewardTimes)
-    xp = Math.round(xp * cfg.economy.chestRewardTimes)
-  }
-  return { coins, xp, smiles }
+  if (order.chest) coins = Math.round(coins * cfg.economy.chestRewardTimes)
+  return { coins, xp: 0, smiles: order.paySmile ?? 0 }
 }
 
 function makeBag(state: GameState): Item {
@@ -1236,15 +1958,26 @@ export function completeOrder(
   takeMatches(state, order)
   const pay = orderPayout(order, cfg)
   state.coins += pay.coins
-  state.xp += pay.xp
   state.smiles += pay.smiles
   state.stats.ordersDone += 1
   logAction(state, now, 'order')
   const dialogue = order.big || order.chest ? talkOf(cfg, order.customerId, true) : undefined
   state.orders = state.orders.filter((entry) => entry.id !== orderId)
-  if (state.phase === 'play') fillOrders(state, cfg, rng)
+  if (order.blocker) state.lateBlock = false
+  if (state.phase === 'play' || state.lesson === 'deliver') fillOrders(state, cfg, rng)
+  if (order.scripted && state.lesson === 'deliver') state.lesson = 'free'
+  if (order.earlyNo === 2 && !state.tasksDone.includes('s1')) {
+    state.storyCard = { no: 1 }
+    state.storyForce = true
+  }
+  if (order.earlyNo === 4 && nextTask(state, cfg)?.id === 's2') {
+    state.storyCard = { no: 2, line: '想要更多顾客？快来收拾一下餐厅吧！' }
+    state.storyForce = true
+  }
+  if (state.smileLesson === 'order' && ((order.paySmile ?? 0) > 0 || (order.smilePending ?? 0) > 0)) state.smileLesson = 'off'
   arrangeOrders(state, now)
   if (order.chest) grantMaterials(state, cfg, rng, cfg.economy.chestBonusItems)
+  if (state.mintStep === 'deliver' && order.slots.some((slot) => slot.line === 'mint')) state.mintStep = 'off'
   if (order.scripted && atStep(state, cfg, 'deliver')) {
     advanceTutorial(state, cfg)
     state.bagPhase = 'place'
@@ -1273,41 +2006,44 @@ export function completeOrder(
   return { ok: true, events }
 }
 
-function smileMaterial(state: GameState, cfg: GameConfig, rng: Rng): { line: string; level: number } {
-  const min = cfg.economy.smilePieceMin ?? 2
-  const max = Math.max(min, cfg.economy.smilePieceMax ?? 3)
-  const needs = state.orders.flatMap((order) => order.slots.map((slot) => slot.line))
-  const lines = needs.length ? needs : ownedLines(state, cfg)
-  const line = lines[Math.floor(rng() * Math.max(1, lines.length))] ?? 'food'
-  const level = min + Math.floor(rng() * (max - min + 1))
-  return { line, level }
-}
-
 export function openSmilePrize(state: GameState, cfg: GameConfig, rng: Rng): ActionResult {
   const goal = cfg.economy.smileGoal
   if (state.smiles < goal) return { ok: false, reason: 'smiles', events: [] }
   const extra = state.smiles - goal
+  for (const order of state.orders) {
+    if (order.smileWait === 'claim' && order.smilePending) {
+      order.paySmile = (order.paySmile ?? 0) + order.smilePending
+      order.smilePending = 0
+      order.smileWait = undefined
+    }
+  }
   state.smiles = 0
+  const finished = state.smileRound ?? 1
+  state.smileRound = finished + 1
+  cfg.economy.smileGoal = smileRoundTarget(finished + 1) ?? 10
+  state.lateBlock = false
   if (extra > 0) {
     queueReward(state, { uid: nextUid(state, 's'), kind: 'rewardBox', box: 'smile', n: extra })
   }
-  const count = cfg.economy.smilePrizeCount ?? 15
   const names: string[] = []
-  for (let i = 0; i < count; i++) {
-    const mat = smileMaterial(state, cfg, rng)
-    const item = makeProduct(state, mat.line, mat.level)
-    noteUnlock(state, mat.line, mat.level)
-    const spot = findEmpty(state)[0]
-    if (spot) state.board[spot.row][spot.col] = item
-    else queueReward(state, item)
-    names.push(productName(cfg, mat.line, mat.level))
+  for (const piece of smileRoundReward(finished)) {
+    for (let i = 0; i < piece.count; i++) {
+      const item = makeProduct(state, piece.line, piece.level)
+      noteUnlock(state, piece.line, piece.level)
+      const spot = findEmpty(state)[0]
+      if (spot) state.board[spot.row][spot.col] = item
+      else queueReward(state, item)
+      names.push(piece.name || productName(cfg, piece.line, piece.level))
+    }
   }
   state.smileModal = { names }
   if (state.guide === 'smile') state.guide = 'none'
-  return { ok: true, events: [{ type: 'smile', count }] }
+  fillOrders(state, cfg, rng)
+  return { ok: true, events: [{ type: 'smile', count: names.length }] }
 }
 
 export function smilesVisible(state: GameState, cfg: GameConfig, now: number): boolean {
+  if (state.level >= (cfg.economy.smileUnlockLevel ?? 4)) return true
   return now - state.playStartedAt >= cfg.economy.smileUiAfterMs
 }
 
@@ -1360,13 +2096,42 @@ export function orderStripAction(input: {
   return 'none'
 }
 
-export function scrollOrders(start: number, dx: number, max: number): number {
-  return Math.min(Math.max(0, max), Math.max(0, start - dx))
+/** 越界后阻力变大，位移趋近 limit，到不了更远。 */
+export function rubberOffset(distance: number, limit: number): number {
+  if (limit <= 0 || distance <= 0) return 0
+  return (distance * limit) / (distance + limit)
+}
+
+export function scrollOrders(start: number, dx: number, max: number, limit = 120): number {
+  const raw = start - dx
+  const cap = Math.max(0, max)
+  if (raw < 0) return -rubberOffset(-raw, limit)
+  if (raw > cap) return cap + rubberOffset(raw - cap, limit)
+  return raw
+}
+
+/** 把订单条上的目标滚进屏幕。已经完全可见时不动。 */
+export function revealOrderTarget(scroll: number, rect: { x: number; w: number }, viewW: number, max: number): number {
+  const cap = Math.max(0, max)
+  if (rect.w <= 0) return Math.min(cap, Math.max(0, scroll))
+  const margin = 8
+  let next = scroll
+  if (rect.x < margin) next = scroll + rect.x - margin
+  if (rect.x + rect.w > viewW - margin) next = scroll + rect.x + rect.w - (viewW - margin)
+  return Math.min(cap, Math.max(0, next))
+}
+
+/** 松手后把客人吸到最近的固定桌位。 */
+export function snapOrderScroll(scroll: number, pitch: number, max: number): number {
+  const limit = Math.max(0, max)
+  const clamped = Math.min(limit, Math.max(0, scroll))
+  if (!(pitch > 0)) return clamped
+  const snapped = Math.round(clamped / pitch) * pitch
+  return Math.min(limit, Math.max(0, snapped))
 }
 
 export function storyLength(cfg: GameConfig): number {
-  const cut = cfg.opening.findIndex((step) => step.scene.startsWith('棋盘'))
-  return cut === -1 ? cfg.opening.length : cut
+  return cfg.opening.pages.reduce((sum, page) => sum + page.beats.length, 0)
 }
 
 export function advanceStory(state: GameState, cfg: GameConfig): void {
@@ -1377,6 +2142,7 @@ export function advanceStory(state: GameState, cfg: GameConfig): void {
     state.storyStep = storyLength(cfg)
     state.phase = 'opening'
     state.openingStep = 0
+    state.lesson = 'home1'
     return
   }
   state.storyStep = next
@@ -1387,6 +2153,7 @@ export function skipStory(state: GameState): void {
   state.storySeen = true
   state.phase = 'opening'
   state.openingStep = 0
+  state.lesson = 'home1'
 }
 
 export const INFO_EMPTY = '点击棋子，在这里查看详细信息。'
@@ -1395,16 +2162,21 @@ export function feedsOrder(state: GameState, row: number, col: number): boolean 
   return orderMarks(state).check.includes(`${row},${col}`)
 }
 
-export function infoCaption(cfg: GameConfig, item: Item): { title: string; usage: string } {
+export function infoCaption(cfg: GameConfig, item: Item, now = 0): { title: string; usage: string } {
   if (item.kind === 'product') {
+    const line = cfg.items.lines.find((entry) => entry.id === item.line)
     const name = item.tag === 'bag' ? '购物袋' : productName(cfg, item.line, item.level)
-    return { title: `${name}（等级 ${item.level}）`, usage: cfg.copy.infoMerge }
+    const chain = line?.name ?? item.line
+    const collect = line?.collect === 'gem' ? '再点一次收钻石' : line?.collect === 'coin' ? '再点一次收金币' : '两个相同的可以合成'
+    return { title: name, usage: `${cnLevel(item.level)} · ${chain} · ${collect}` }
   }
   if (item.kind === 'producer') {
-    const lineName = cfg.items.lines.find((line) => line.id === item.line)?.name ?? '原料'
+    const lineName = cfg.items.lines.find((line) => line.id === item.line)?.name ?? producerName(cfg, item.producerId)
+    const cooling = producerCooldown(cfg, item, now)
+    const status = cooling ? `冷却中，还剩 ${formatMs(cooling.left)}` : `剩余体力 ${item.charges}`
     return {
-      title: `${producerName(cfg, item.producerId)}（等级 ${item.level}）`,
-      usage: cfg.copy.infoProducer.replace('{line}', lineName),
+      title: producerPieceName(item.producerId, item.level) ?? producerName(cfg, item.producerId),
+      usage: `${cnLevel(item.level)} · ${lineName} · ${status}`,
     }
   }
   if (item.kind === 'potion') {
@@ -1422,10 +2194,10 @@ export function infoCaption(cfg: GameConfig, item: Item): { title: string; usage
     }
   }
   if (item.kind === 'rewardBox') {
-    const title = item.box === 'blue' ? '蓝宝箱' : item.box === 'purple' ? '紫礼盒' : '购物袋'
-    return { title: `${title}（奖励）`, usage: item.box === 'blue' ? '点开得到体力瓶。' : '点开得到一些棋子。' }
+    const title = item.box === 'purple' ? '紫礼盒' : '购物袋'
+    return { title: `${title}（奖励）`, usage: '点开得到一些棋子。' }
   }
-  return { title: `${cfg.items.chestName}（宝箱）`, usage: '点一下拆出体力。' }
+  return { title: `${cfg.items.chestName}（宝箱）`, usage: '再点一次，出一瓶体力。出完这只宝箱就消失。' }
 }
 
 export interface ChainSlot {
@@ -1461,8 +2233,8 @@ export function producerChain(state: GameState, producerId: string, current: num
   })
 }
 
-export function tryAdvanceStory(state: GameState, cfg: GameConfig, hotspot: boolean): boolean {
-  if (state.phase !== 'story' || !hotspot) return false
+export function tryAdvanceStory(state: GameState, cfg: GameConfig, tapped: boolean): boolean {
+  if (state.phase !== 'story' || !tapped) return false
   advanceStory(state, cfg)
   return true
 }
@@ -1578,37 +2350,54 @@ export function cnLevel(level: number): string {
 }
 
 export function levelForTaskCount(count: number, cfg: GameConfig): number {
+  return levelForXp(count * (cfg.economy.xpPerTask || 15), cfg)
+}
+
+/** 从这一级升到下一级要的经验。表用完后，每级再加 15。升级后经验重新累计，不把前面的级加在一起。 */
+export function levelCost(cfg: GameConfig, fromLevel: number): number {
+  const costs = cfg.economy.levelTaskThresholds.length ? cfg.economy.levelTaskThresholds : [30]
+  const index = Math.max(0, fromLevel - 1)
+  if (index < costs.length) return costs[index]!
+  let cost = costs[costs.length - 1] ?? 30
+  for (let i = costs.length; i <= index; i++) cost += 15
+  return cost
+}
+
+/** 从 1 级起把总经验逐级扣掉，算出能到哪一级。 */
+export function levelForXp(totalXp: number, cfg: GameConfig): number {
   let level = 1
-  const thresholds = cfg.economy.levelTaskThresholds
-  for (let i = 0; i < thresholds.length; i++) {
-    if (count >= thresholds[i]) level = i + 2
+  let left = Math.max(0, totalXp)
+  for (let guard = 0; guard < 80; guard++) {
+    const need = levelCost(cfg, level)
+    if (left < need) break
+    left -= need
+    level += 1
   }
   return level
 }
 
 export function xpThresholds(cfg: GameConfig): number[] {
-  return cfg.economy.levelTaskThresholds.map((count) => count * cfg.economy.xpPerTask)
-}
-
-export function levelForXp(xp: number, cfg: GameConfig): number {
-  let level = 1
-  const thresholds = xpThresholds(cfg)
-  for (let i = 0; i < thresholds.length; i++) {
-    if (xp >= thresholds[i]) level = i + 2
+  const out: number[] = []
+  let sum = 0
+  const limit = Math.max(cfg.economy.levelTaskThresholds.length, 24)
+  for (let level = 1; level <= limit; level++) {
+    sum += levelCost(cfg, level)
+    out.push(sum)
   }
-  return level
+  return out
 }
 
-function grantProducer(state: GameState, cfg: GameConfig, rng: Rng, id: string): GameEvent[] {
-  if (state.hasProducer[id] || producerLevelOwned(state, id) > 0) return []
+function grantProducer(state: GameState, cfg: GameConfig, rng: Rng, id: string, level?: number, tray = false): GameEvent[] {
   const def = cfg.producers.find((p) => p.id === id)
   if (!def) return []
+  const owned = producerLevelOwned(state, id) > 0
+  const give = level ?? (owned ? 1 : (cfg.economy.firstProducerLevel ?? 4))
   state.hasProducer[id] = true
   state.newestLine = def.line
   state.orderBias = def.line
   state.producerLesson = id
-  const made = makeProducer(state, id, cfg, cfg.economy.producerSpawnLevel)
-  const spot = findEmpty(state)[0]
+  const made = makeProducer(state, id, cfg, give)
+  const spot = tray ? null : findEmpty(state)[0]
   if (spot) {
     state.board[spot.row][spot.col] = made
     nudgeOrder(state, cfg, rng, def.line)
@@ -1632,7 +2421,7 @@ export function nudgeOrder(state: GameState, cfg: GameConfig, rng: Rng, line: st
   if (state.phase !== 'play') return
   for (let i = state.orders.length - 1; i >= 0; i--) {
     const order = state.orders[i]
-    if (order.scripted) continue
+    if (order.scripted || order.earlyNo != null) continue
     if (order.slots.some((slot) => slot.filled)) continue
     const next = generateOrder(state, cfg, rng)
     if (next) state.orders[i] = next
@@ -1642,9 +2431,20 @@ export function nudgeOrder(state: GameState, cfg: GameConfig, rng: Rng, line: st
 
 export function reconcileLevel(state: GameState, cfg: GameConfig, _rng: Rng): GameEvent[] {
   const events: GameEvent[] = []
-  const should = levelForXp(state.xp, cfg)
-  while (state.level < should) {
+  for (let guard = 0; guard < 40; guard++) {
+    const need = levelCost(cfg, state.level)
+    if (state.xp < need) break
+    state.xp -= need
     state.level += 1
+    if (state.level >= (cfg.economy.smileUnlockLevel ?? 4)) {
+      for (const order of state.orders) {
+        if (order.smileWait === 'unlock' && order.smilePending) {
+          order.paySmile = (order.paySmile ?? 0) + order.smilePending
+          order.smilePending = 0
+          order.smileWait = undefined
+        }
+      }
+    }
     const table = cfg.economy.levelRewards.find((entry) => entry.level === state.level)
     const rewards = table?.rewards.map((entry) => ({ ...entry })) ?? []
     const modal = { level: state.level, rewards }
@@ -1664,29 +2464,34 @@ export function claimLevelModal(state: GameState, cfg: GameConfig, rng: Rng): Ac
   const modal = state.levelModal
   if (!modal) return { ok: false, reason: 'none', events: [] }
   const events: GameEvent[] = []
+  const giftBundle = modal.rewards.filter((reward) => reward.id === 'gift').flatMap((reward) => reward.bundle ?? [])
   for (const reward of modal.rewards) {
-    if (cfg.producers.some((entry) => entry.id === reward.id)) {
-      events.push(...grantProducer(state, cfg, rng, reward.id).filter((event) => event.type !== 'toast'))
-    } else if (reward.id === 'gem') {
-      const gem = makeGem(state, 1)
-      queueReward(state, gem)
-      events.push({ type: 'grant', kind: 'box', name: reward.name, row: -1, col: -1, pending: true })
-    } else if (reward.id === 'chest') {
-      const chest = makeChest(state)
-      if (state.chestLesson === 0) state.chestLesson = 1
-      queueReward(state, chest)
-      events.push({ type: 'grant', kind: 'chest', name: reward.name, row: -1, col: -1, pending: true })
-    } else if (reward.id === 'blue' || reward.id === 'purple' || reward.id === 'bag') {
-      queueReward(state, makeRewardBox(state, cfg, rng, reward.id))
-      events.push({ type: 'grant', kind: 'box', name: reward.name, row: -1, col: -1, pending: true })
+    if (reward.id === 'gift') continue
+    events.push(...grantRewardEntry(state, cfg, rng, reward))
+  }
+  const fromField = parseLevelGift(levelGiftText(modal.level))
+  const giftRewards = giftBundle.length ? giftBundle : fromField.rewards
+  if (giftRewards.length || fromField.lock) {
+    state.giftModal = {
+      mode: giftRewards.length ? 'claim' : 'locked',
+      title: giftRewards.length ? '新手大礼包' : '新手大礼包上锁',
+      rewards: giftRewards,
+      lockText: fromField.lock,
     }
+  }
+  if (modal.level === 3) {
+    state.shopOpen = true
+    state.notice = { text: '商城开了。每天可以领 50 体力。' }
+  }
+  if (modal.level === 4 && !state.smileTaught) {
+    state.smileTaught = true
+    state.smileLesson = state.giftModal ? 'wait' : 'order'
   }
   state.levelModal = state.levelQueue.shift() ?? null
   return { ok: true, events }
 }
 
-function rollBoxDrops(state: GameState, cfg: GameConfig, rng: Rng, box: 'blue' | 'purple' | 'bag'): LootDrop[] {
-  if (box === 'blue') return cfg.economy.blueBoxPotions.map((energy) => ({ item: makePotion(state, tierForEnergy(cfg, energy)) }))
+function rollBoxDrops(state: GameState, cfg: GameConfig, rng: Rng, box: 'purple' | 'bag'): LootDrop[] {
   const count = box === 'purple' ? cfg.economy.purpleBoxCount : cfg.economy.bagBoxCount
   const drops: LootDrop[] = []
   const goods = box === 'purple' ? Math.max(0, count - 2) : count
@@ -1703,7 +2508,7 @@ function rollBoxDrops(state: GameState, cfg: GameConfig, rng: Rng, box: 'blue' |
   return drops
 }
 
-export function makeRewardBox(state: GameState, cfg: GameConfig, rng: Rng, box: 'blue' | 'purple' | 'bag'): Item {
+export function makeRewardBox(state: GameState, cfg: GameConfig, rng: Rng, box: 'purple' | 'bag'): Item {
   const item: Item = { uid: nextUid(state, 'g'), kind: 'rewardBox', box, drops: rollBoxDrops(state, cfg, rng, box) }
   if (state.chestLesson === 0) state.chestLesson = 1
   return item
@@ -1720,7 +2525,6 @@ export function openRewardBox(state: GameState, pos: Pos, cfg: GameConfig, rng: 
   if (!item.drops) item.drops = rollBoxDrops(state, cfg, rng, item.box)
   const left = popLoot(state, cfg, pos, item.drops)
   if (left <= 0) state.board[pos.row][pos.col] = null
-  if (state.chestLesson === 2) state.chestLesson = 3
   return { ok: true, events: [{ type: 'openChest', row: pos.row, col: pos.col, count: 1 }] }
 }
 
@@ -1732,14 +2536,16 @@ export function unlockGift(state: GameState, pos: Pos, cfg?: GameConfig): Action
   if (buried.kind === 'coin') state.coins += buried.amount
   else if (buried.kind === 'gem') state.board[pos.row][pos.col] = makeGem(state, buried.tier)
   else if (buried.kind === 'potion') state.board[pos.row][pos.col] = makePotion(state, buried.tier)
-  else {
+  else if (buried.kind === 'producer' && cfg) {
+    state.board[pos.row][pos.col] = makeProducer(state, buried.id, cfg, buried.level)
+  } else if (buried.kind === 'product') {
     state.board[pos.row][pos.col] = makeProduct(state, buried.line, buried.level)
     noteUnlock(state, buried.line, buried.level)
   }
   revealAround(state, pos.row, pos.col)
   if (cfg && (atStep(state, cfg, 'giftTap') || atStep(state, cfg, 'giftRush'))) advanceTutorial(state, cfg)
-  const level = buried.kind === 'product' ? buried.level : buried.kind === 'coin' ? 1 : buried.kind === 'gem' ? buried.tier : buried.tier
-  const line = buried.kind === 'product' ? buried.line : buried.kind
+  const level = buried.kind === 'product' || buried.kind === 'producer' ? buried.level : buried.kind === 'coin' ? 1 : buried.tier
+  const line = buried.kind === 'product' ? buried.line : buried.kind === 'producer' ? buried.id : buried.kind
   return { ok: true, events: [{ type: 'unlock', row: pos.row, col: pos.col, line, level }] }
 }
 
@@ -1783,7 +2589,7 @@ export function guideSpot(state: GameState, cfg?: GameConfig): GuideSpot | null 
 }
 
 function isLootBox(item: Item | null | undefined): boolean {
-  return !!item && (item.kind === 'chest' || (item.kind === 'rewardBox' && item.box !== 'smile'))
+  return item?.kind === 'chest'
 }
 
 function findBoardBox(state: GameState): Pos | null {
@@ -1795,8 +2601,68 @@ function findBoardBox(state: GameState): Pos | null {
   return null
 }
 
+function openingStepPossible(state: GameState, cfg: GameConfig): boolean {
+  const step = currentTutorial(cfg, state)
+  if (!step) return true
+  const hasFood = (level: number) =>
+    state.board.some((row) => row.some((item) => item?.kind === 'producer' && item.producerId === 'food' && item.level === level))
+  if (step.id === 'merge') {
+    const a = cfg.board.roles.mergeA
+    const b = cfg.board.roles.mergeB
+    const piece = (pos: { row: number; col: number }) => state.board[pos.row]?.[pos.col]
+    const left = piece(a)
+    const right = piece(b)
+    return left?.kind === 'producer' && left.producerId === 'food' && right?.kind === 'producer' && right.producerId === 'food'
+  }
+  if (step.id === 'mergeC' || step.id === 'unlock') return hasFood(2)
+  if (step.id === 'mergeD') return hasFood(3)
+  return true
+}
+
+export function guideLockKey(state: GameState): string {
+  return [state.phase, state.openingStep, state.chestLesson, state.producerLesson ?? '', state.mintStep, state.storageLesson, state.guide].join('|')
+}
+
+export function guideIsLocking(state: GameState, cfg?: GameConfig): boolean {
+  if (state.phase === 'opening') return true
+  if (guideSpot(state, cfg)) return true
+  if (state.storageLesson > 0 && state.storageLesson < 4) return true
+  if (state.mintStep === 'select' || state.mintStep === 'produce' || state.mintStep === 'merge' || state.mintStep === 'deliver') return true
+  return false
+}
+
+/** 引导对不上棋盘，或玩家连点别处时，收起所有会锁输入的引导。 */
+export function dismissStuckGuide(state: GameState, cfg: GameConfig): void {
+  if (state.phase === 'opening') {
+    state.phase = 'play'
+    state.openingStep = cfg.copy.tutorial.length
+    state.storySeen = true
+  }
+  if (state.chestLesson < 3) state.chestLesson = 3
+  state.chestCell = null
+  state.producerLesson = null
+  if (state.mintStep === 'select' || state.mintStep === 'produce' || state.mintStep === 'merge' || state.mintStep === 'deliver' || state.mintStep === 'talk') {
+    state.mintStep = 'off'
+  }
+  if (state.storageLesson > 0 && state.storageLesson < 4) state.storageLesson = 4
+  if (state.guide !== 'none') state.guide = 'none'
+  state.notice = null
+}
+
+function promoteOldBlueBox(item: Item): Item {
+  if (item.kind === 'rewardBox' && (item as { box?: string }).box === 'blue') return { uid: item.uid, kind: 'chest' }
+  return item
+}
+
 export function resolveGuides(state: GameState, cfg?: GameConfig): string[] {
   const notes: string[] = []
+  state.rewards = state.rewards.map(promoteOldBlueBox)
+  state.pending = state.pending.map(promoteOldBlueBox)
+  state.board.forEach((row) => {
+    row.forEach((item, col) => {
+      if (item) row[col] = promoteOldBlueBox(item)
+    })
+  })
   const empty = findEmpty(state).length
   if (state.chestLesson === 1) {
     const index = state.rewards.findIndex((item) => isLootBox(item))
@@ -1822,6 +2688,12 @@ export function resolveGuides(state: GameState, cfg?: GameConfig): string[] {
         notes.push('chest')
       }
     }
+  }
+  if (cfg && state.phase === 'opening' && !openingStepPossible(state, cfg)) {
+    state.phase = 'play'
+    state.openingStep = cfg.copy.tutorial.length
+    state.lesson = 'free'
+    notes.push('opening')
   }
   if (state.producerLesson) {
     const onBoard = findProducer(state, state.producerLesson)
@@ -1858,6 +2730,47 @@ export function resolveGuides(state: GameState, cfg?: GameConfig): string[] {
     state.storageLesson = 4
     notes.push('storage')
   }
+  if (state.mintStep === 'select' || state.mintStep === 'produce') {
+    const bev = state.board.some((row) => row.some((item) => item?.kind === 'producer' && item.producerId === 'bev' && item.level >= 5))
+    if (!bev) {
+      state.mintStep = 'off'
+      notes.push('mint')
+    }
+  } else if (state.mintStep === 'merge') {
+    const piece = state.board.some((row) => row.some((item) => item?.kind === 'product' && item.line === 'mint'))
+    if (!piece) {
+      state.mintStep = 'off'
+      notes.push('mint')
+    }
+  } else if (state.mintStep === 'deliver') {
+    const ready = state.orders.some((order) => order.slots.some((slot) => slot.line === 'mint') && orderSatisfied(state, order))
+    if (!ready) {
+      state.mintStep = 'off'
+      notes.push('mint')
+    }
+  }
+  if (state.storageLesson === 2) {
+    const any = state.board.some((row) => row.some((item) => item))
+    if (!any) {
+      state.storageLesson = 4
+      notes.push('storage')
+    }
+  }
+  if (cfg && state.phase === 'opening' && !currentTutorial(cfg, state)) {
+    state.phase = 'play'
+    state.openingStep = cfg.copy.tutorial.length
+    state.storySeen = true
+    notes.push('opening')
+  }
+  promoteFocusLesson(state)
+  if (cfg && state.phase === 'opening') {
+    let guard = 0
+    while (state.phase === 'opening' && guard < 6 && !openingStepPossible(state, cfg)) {
+      advanceTutorial(state, cfg)
+      guard += 1
+      notes.push('opening')
+    }
+  }
   if (cfg && state.phase === 'opening' && empty === 0 && currentTutorial(cfg, state)?.id === 'produce') {
     advanceTutorial(state, cfg)
     notes.push('produce')
@@ -1888,6 +2801,7 @@ export function rushGift(state: GameState, pos: Pos, cfg: GameConfig, mode: 'fre
 }
 
 export function settleGifts(state: GameState, cfg: GameConfig, now: number): void {
+  settleClocks(state, now)
   if (atStep(state, cfg, 'giftTap') || atStep(state, cfg, 'giftRush')) return
   for (const lock of state.locks.slice()) {
     if (lock.cover !== 'gift' || lock.giftUntil == null || now < lock.giftUntil) continue
@@ -1897,21 +2811,8 @@ export function settleGifts(state: GameState, cfg: GameConfig, now: number): voi
 
 export function collectLock(state: GameState, pos: Pos): ActionResult {
   const lock = lockAt(state, pos.row, pos.col)
-  if (!lock || lock.cover === 'gift') return { ok: false, reason: 'not-cache', events: [] }
-  if (lock.veil === 'full') return { ok: false, reason: 'covered', events: [{ type: 'toast', text: '这格还盖着' }] }
-  if (lock.buried.kind === 'coin') {
-    state.locks = state.locks.filter((entry) => entry.row !== pos.row || entry.col !== pos.col)
-    state.coins += lock.buried.amount
-    revealAround(state, pos.row, pos.col)
-    return { ok: true, events: [{ type: 'toast', text: `铜钱 +${lock.buried.amount}` }] }
-  }
-  if (lock.buried.kind === 'gem') {
-    state.locks = state.locks.filter((entry) => entry.row !== pos.row || entry.col !== pos.col)
-    state.board[pos.row][pos.col] = makeGem(state, lock.buried.tier)
-    revealAround(state, pos.row, pos.col)
-    return { ok: true, events: [{ type: 'unlock', row: pos.row, col: pos.col, line: 'gem', level: lock.buried.tier }] }
-  }
-  return { ok: false, reason: 'not-cache', events: [] }
+  if (!lock || lock.cover === 'gift' || lock.veil !== 'full') return { ok: false, reason: 'half', events: [] }
+  return { ok: false, reason: 'covered', events: [{ type: 'toast', text: '这格还盖着' }] }
 }
 
 export function useGem(state: GameState, pos: Pos, cfg: GameConfig): ActionResult {
@@ -2013,6 +2914,11 @@ export function buildTask(
   state.coins -= price
   state.tasksDone.push(next.id)
   state.xp += cfg.economy.xpPerTask
+  state.storyForce = false
+  state.storyCard = null
+  const storyNo = Number(next.id.replace(/\D/g, ''))
+  if (storyNo === 11) state.bubbleDue = true
+  if (next.id.startsWith('s')) grantStoryReward(state, cfg, rng, storyNo)
   if (next.choices?.length) {
     const picked = next.choices.findIndex((entry) => entry.id === choice)
     state.decorate = { taskId: next.id, index: picked >= 0 ? picked : 0 }
@@ -2021,6 +2927,7 @@ export function buildTask(
   const events: GameEvent[] = [{ type: 'build', taskId: next.id, name: next.name }]
   events.push(...reconcileLevel(state, cfg, rng))
   events.push(...checkStepGrants(state, cfg, rng))
+  if (next.id.startsWith('s')) maybeOfferStory(state, cfg, storyNo)
   const firstId = cfg.buildings.steps[0]?.tasks[0]?.id
   if (state.phase === 'opening' && firstId && state.tasksDone.includes(firstId)) {
     state.phase = 'play'
@@ -2030,7 +2937,175 @@ export function buildTask(
   return { ok: true, events }
 }
 
+function placeReward(state: GameState, item: Item): void {
+  const spot = findEmpty(state)[0]
+  if (spot) state.board[spot.row][spot.col] = item
+  else queueReward(state, item)
+}
+
+function grantRewardEntry(state: GameState, cfg: GameConfig, rng: Rng, entry: LevelRewardEntry): GameEvent[] {
+  if (entry.id === 'gift') return (entry.bundle ?? []).flatMap((part) => grantRewardEntry(state, cfg, rng, part))
+  if (entry.id === 'pack') {
+    state.gems += entry.gems ?? 0
+    return [{ type: 'toast', text: `钻石 +${entry.gems ?? 0}` }]
+  }
+  if (entry.id === 'energy') {
+    state.energy += entry.energy ?? 0
+    return [{ type: 'toast', text: `体力 +${entry.energy ?? 0}` }]
+  }
+  if (entry.id === 'product' && entry.line) {
+    const item = makeProduct(state, entry.line, entry.pieceLevel ?? 1)
+    noteUnlock(state, entry.line, entry.pieceLevel ?? 1)
+    placeReward(state, item)
+    return [{ type: 'grant', kind: 'box', name: entry.name, row: -1, col: -1, pending: true }]
+  }
+  if (entry.id === 'welcome' || entry.id === 'red' || entry.id === 'green' || entry.id === 'smart' || entry.id === 'foodbox' || entry.id === 'meatbox' || entry.id === 'chest') {
+    const box = entry.id === 'foodbox' ? 'food' : entry.id === 'meatbox' ? 'meat' : entry.id === 'chest' ? 'energy' : entry.id
+    const chest: Item = { uid: nextUid(state, 'c'), kind: 'chest', box, readyAt: box === 'welcome' ? 0 : undefined }
+    if (box === 'energy' && state.chestLesson === 0) state.chestLesson = 1
+    placeReward(state, chest)
+    return [{ type: 'grant', kind: 'chest', name: entry.name, row: -1, col: -1, pending: true }]
+  }
+  if (cfg.producers.some((producer) => producer.id === entry.id)) {
+    const tray = entry.id === 'bev' && entry.producerLevel === 1
+    return grantProducer(state, cfg, rng, entry.id, entry.producerLevel ?? 1, tray).filter((event) => event.type !== 'toast')
+  }
+  return []
+}
+
+function releaseSmileLesson(state: GameState): void {
+  if (state.smileLesson === 'wait' && !state.giftModal) state.smileLesson = 'order'
+}
+
+export function claimGiftModal(state: GameState, cfg: GameConfig, rng: Rng): ActionResult {
+  const modal = state.giftModal
+  if (!modal) return { ok: false, reason: 'none', events: [] }
+  if (modal.mode === 'locked') {
+    state.giftModal = null
+    releaseSmileLesson(state)
+    return { ok: true, events: [] }
+  }
+  const events = modal.rewards.flatMap((entry) => grantRewardEntry(state, cfg, rng, entry))
+  if (modal.lockText) {
+    state.giftModal = { mode: 'locked', title: '下一档还锁着', rewards: [], lockText: modal.lockText }
+  } else state.giftModal = null
+  releaseSmileLesson(state)
+  return { ok: true, events }
+}
+
+function grantStoryReward(state: GameState, cfg: GameConfig, rng: Rng, no: number): void {
+  const reward = storyDef(no)?.reward
+  if (typeof reward !== 'string' || !reward || reward === '—') return
+  const entries = parseRewardText(reward)
+  const gift = entries.find((entry) => entry.id === 'gift')
+  const bundle = [...(gift?.bundle ?? [])]
+  for (const entry of entries) {
+    if (entry.id === 'gift') continue
+    if (gift && (entry.id === 'energy' || entry.id === 'pack')) {
+      bundle.push(entry.id === 'energy' ? { ...entry, name: `体力 ×${entry.energy ?? 0}` } : entry)
+      continue
+    }
+    grantRewardEntry(state, cfg, rng, entry)
+  }
+  if (!bundle.length) return
+  const lock = (storyNote(no).match(/达到[^。）]*/)?.[0] ?? storyNote(no).match(/到达[^。）]*/)?.[0] ?? '').replace(/^出现弹窗：?/, '')
+  state.giftModal = { mode: 'claim', title: '新手大礼包', rewards: bundle, lockText: lock }
+}
+
+export function openStoryCard(state: GameState, cfg: GameConfig): void {
+  if (state.lesson && state.lesson !== 'free') return
+  const next = nextTask(state, cfg)
+  if (!next) return
+  state.storyCard = { no: Number(next.id.replace(/\D/g, '')) || 1 }
+}
+
+export function closeStoryCard(state: GameState): void {
+  if (state.storyForce) return
+  state.storyCard = null
+}
+
+export function storyReady(state: GameState, cfg: GameConfig): boolean {
+  const task = nextTask(state, cfg)
+  if (!task?.id.startsWith('s')) return false
+  if (state.storyForce) return true
+  return state.coins >= taskPrice(task, cfg)
+}
+
+export function buyBubble(state: GameState, pos: Pos, cfg: GameConfig): ActionResult {
+  const item = state.board[pos.row]?.[pos.col]
+  if (!item || item.kind !== 'product' || item.tag !== 'bubble') return { ok: false, reason: 'none', events: [] }
+  const cost = cfg.economy.giftRushGems ?? 2
+  if (state.gems < cost) return { ok: false, reason: 'gems', events: [{ type: 'toast', text: '钻石不够' }] }
+  state.gems -= cost
+  item.tag = undefined
+  item.bubbleUntil = undefined
+  return { ok: true, events: [{ type: 'toast', text: `花了 ${cost} 钻石，气泡破了` }] }
+}
+
+function dropBubble(state: GameState, line: string, level: number): void {
+  if (!state.bubbleDue || state.bubbleDropped) return
+  state.bubbleDue = false
+  state.bubbleDropped = true
+  const bubble = makeProduct(state, line, level)
+  if (bubble.kind === 'product') {
+    bubble.tag = 'bubble'
+    bubble.bubbleUntil = 0
+  }
+  placeReward(state, bubble)
+}
+
+export function settleClocks(state: GameState, now: number): void {
+  const turn = (item: Item): Item => {
+    if (item.kind === 'chest' && item.box === 'welcome' && !item.readyAt) item.readyAt = now + 120_000
+    if (item.kind === 'product' && item.tag === 'bubble') {
+      if (!item.bubbleUntil) item.bubbleUntil = now + 120_000
+      else if (now >= item.bubbleUntil) return makeProduct(state, 'coin', 1)
+    }
+    return item
+  }
+  state.board.forEach((row) => {
+    row.forEach((item, c) => {
+      if (item) row[c] = turn(item)
+    })
+  })
+  state.rewards = state.rewards.map((item) => turn(item))
+  state.pending = state.pending.map((item) => turn(item))
+}
+
+export function maybeOfferStory(state: GameState, cfg: GameConfig, finishedNo: number): void {
+  const next = nextTask(state, cfg)
+  const prev = storyDef(finishedNo)
+  if (!next || !prev) {
+    state.storyCard = null
+    return
+  }
+  const price = taskPrice(next, cfg)
+  if (prev.type === 'dialogue' && !prev.hasReward && state.coins >= price) {
+    state.storyCard = { no: Number(next.id.replace(/\D/g, '')) || nextStoryNo(next.id) }
+  } else state.storyCard = null
+}
+
+function nextStoryNo(id: string): number {
+  return Number(id.replace(/\D/g, '')) || 1
+}
+
 export function refreshGuide(state: GameState, cfg: GameConfig, view: 'board' | 'house'): void {
+  if (state.lesson && state.lesson !== 'free') {
+    if (state.guide === 'buildTalk' || state.guide === 'backTalk' || state.guide === 'buildBtn' || state.guide === 'repairBtn' || state.guide === 'backBtn') {
+      state.guide = 'none'
+    }
+    return
+  }
+  const upcoming = nextTask(state, cfg)
+  if (upcoming?.id.startsWith('s')) {
+    if (state.guide === 'buildTalk' || state.guide === 'backTalk' || state.guide === 'buildBtn' || state.guide === 'repairBtn' || state.guide === 'backBtn') {
+      state.guide = 'none'
+    }
+    if (view === 'board' && state.guide === 'none' && state.level < (cfg.economy.guideUntilLevel ?? 5) && state.smiles >= cfg.economy.smileGoal) {
+      state.guide = 'smile'
+    }
+    return
+  }
   if (state.phase !== 'play' || state.decorate || state.buildStory) {
     if (state.decorate && (state.guide === 'repairBtn' || state.guide === 'backBtn')) state.guide = 'none'
     return
@@ -2136,6 +3211,7 @@ export function skipOpening(state: GameState, cfg: GameConfig, rng: Rng): void {
   state.storySeen = true
   state.phase = 'play'
   state.openingStep = cfg.copy.tutorial.length
+  state.lesson = 'free'
   state.showHelp = early
   if (producerLevelOwned(state, 'food') < cfg.economy.producerSpawnLevel) {
     state.hasProducer.food = true
@@ -2159,10 +3235,14 @@ export interface SaveFile {
   v: 2
   state: GameState
   economy: GameConfig['economy']
+  /** 有这个印记才沿用存档里的等级表。旧档没有，避免把旧的 4 级饮料母棋带回来。 */
+  curve?: string
 }
 
+const CURVE = '1120-reset'
+
 export function serialize(state: GameState, cfg: GameConfig): string {
-  const data: SaveFile = { v: 2, state, economy: cfg.economy }
+  const data: SaveFile = { v: 2, state, economy: cfg.economy, curve: CURVE }
   return JSON.stringify(data)
 }
 
@@ -2172,8 +3252,40 @@ export function hydrate(raw: string, cfg: GameConfig): GameState | null {
     if (!data || data.v !== 2 || !data.state || !Array.isArray(data.state.board)) return null
     if (data.state.board.length !== ROWS) return null
     if (!data.state.board.every((row) => Array.isArray(row) && row.length === COLS)) return null
+    const freshCurve = {
+      xpPerTask: cfg.economy.xpPerTask,
+      orderXp: cfg.economy.orderXp,
+      levelTaskThresholds: cfg.economy.levelTaskThresholds.slice(),
+      levelRewards: cfg.economy.levelRewards,
+    }
     if (data.economy) cfg.economy = { ...cfg.economy, ...data.economy }
     const state = data.state
+    if (data.curve !== CURVE) {
+      cfg.economy.xpPerTask = freshCurve.xpPerTask
+      cfg.economy.orderXp = freshCurve.orderXp
+      cfg.economy.levelTaskThresholds = freshCurve.levelTaskThresholds
+      cfg.economy.levelRewards = freshCurve.levelRewards
+      const stories = (state.tasksDone ?? []).filter((id) => String(id).startsWith('s')).length
+      const earned = stories * (cfg.economy.xpPerTask || 15)
+      let level = 1
+      let left = earned
+      while (level < 99) {
+        const need = levelCost(cfg, level)
+        if (left < need) break
+        left -= need
+        level += 1
+      }
+      if (state.level > level) {
+        state.level = level
+        state.xp = left
+        state.levelModal = null
+        state.levelQueue = []
+      } else {
+        let spent = 0
+        for (let at = 1; at < state.level; at++) spent += levelCost(cfg, at)
+        state.xp = Math.max(0, state.xp - spent)
+      }
+    }
     state.pending ||= []
     state.rewards ||= []
     state.styles ||= {}
@@ -2195,7 +3307,31 @@ export function hydrate(raw: string, cfg: GameConfig): GameState | null {
     state.chestCell ??= null
     state.producerLesson ??= null
     state.newestLine ??= null
+    state.orderSeq ??= 1
+    state.heldOrders ??= []
+    state.orderedLines ??= []
+    state.lateBlock ??= false
+    state.smileRound ??= 1
+    state.storyCard ??= null
+    state.storyForce ??= false
+    state.giftModal ??= null
+    state.smileTaught ??= false
+    state.smileLesson ??= 'off'
+    state.welcomeFreeUsed ??= false
+    state.bubbleDue ??= false
+    state.bubbleDropped ??= false
     state.storyStep ??= 0
+    state.lesson ??= state.phase === 'play' ? 'free' : state.phase === 'opening' ? (cfg.copy.tutorial[state.openingStep]?.id as GameState['lesson']) || 'merge' : 'home1'
+    if (state.lesson !== 'home1' && state.lesson !== 'talk1' && state.lesson !== 'merge' && state.lesson !== 'mergeC' && state.lesson !== 'mergeD' && state.lesson !== 'focus' && state.lesson !== 'deliver' && state.lesson !== 'book' && state.lesson !== 'home2' && state.lesson !== 'home3' && state.lesson !== 'free') {
+      state.lesson = 'free'
+    }
+    state.storyBookOn ??= state.phase === 'play' && ((state.stats?.ordersDone ?? 0) > 0 || state.level >= 5)
+    state.soundMuted ??= false
+    if (state.phase === 'story' && state.storyStep >= storyLength(cfg)) {
+      state.storySeen = true
+      state.phase = 'opening'
+      state.openingStep ??= 0
+    }
     state.storageOpen ??= (state.stats?.ordersDone ?? 0) > 0
     if (state.storySeen == null) state.storySeen = state.phase === 'play' || (state.openingStep ?? 0) > 0
     if (!state.storySeen && state.phase === 'opening' && state.openingStep === 0) state.phase = 'story'
@@ -2207,12 +3343,13 @@ export function hydrate(raw: string, cfg: GameConfig): GameState | null {
     state.storageLesson ??= state.level >= (cfg.economy.storageUnlockLevel ?? 5) ? 4 : 0
     state.storageOpen = state.level >= (cfg.economy.storageUnlockLevel ?? 5)
     state.sale ??= null
-    const fixProducer = (item: Item | null) => {
+    const fixItem = (item: Item | null, write: (next: Item | null) => void) => {
       if (item?.kind === 'producer' && (item.level == null || item.level < 1)) item.level = 1
+      if (item?.kind === 'rewardBox' && (item as { box?: string }).box === 'blue') write({ uid: item.uid, kind: 'chest' })
     }
-    for (const row of state.board) for (const item of row) fixProducer(item)
-    for (const item of state.pending) fixProducer(item)
-    for (const item of state.rewards) fixProducer(item)
+    state.board.forEach((row) => row.forEach((item, c) => fixItem(item, (next) => { row[c] = next })))
+    state.pending.forEach((item, i) => fixItem(item, (next) => { if (next) state.pending[i] = next }))
+    state.rewards.forEach((item, i) => fixItem(item, (next) => { if (next) state.rewards[i] = next }))
     for (const lock of state.locks) if (!lock.veil) lock.veil = 'half'
     state.hasProducer ||= {}
     state.locks ||= []
@@ -2220,6 +3357,18 @@ export function hydrate(raw: string, cfg: GameConfig): GameState | null {
     state.levelModal ??= null
     state.smileModal ??= null
     state.smiles ??= 0
+    state.spawnMult ??= 1
+    if (!allowedSpawnMults(state, cfg).includes(state.spawnMult as 1 | 2 | 4)) state.spawnMult = 1
+    state.mintStep ??= 'off'
+    resolveGuides(state, cfg)
+    if (state.phase === 'opening' && !openingStepPossible(state, cfg)) dismissStuckGuide(state, cfg)
+    state.shopOpen ??= false
+    state.shopClaimDate ??= null
+    state.shopPackClaimed ??= false
+    state.detailLine ??= null
+    state.meatGuided ??= false
+    state.bevGuided ??= false
+    state.mintGuided ??= false
     state.adUsedToday ??= 0
     state.adDay ||= dayKey(state.playStartedAt || Date.now())
     state.stats ||= { producerTaps: 0, ordersDone: 0, adClicks: 0, visits: [], log: [] }
@@ -2305,7 +3454,9 @@ export function describeAt(cfg: GameConfig, state: GameState, pos: Pos): { title
           ? potionName(cfg, buried.tier)
           : buried.kind === 'gem'
             ? gemName(cfg, buried.tier)
-            : `${buried.amount} 铜钱`
+            : buried.kind === 'producer'
+              ? (producerPieceName(buried.id, buried.level) ?? producerName(cfg, buried.id))
+              : `${buried.amount} 铜钱`
     return { title: `半开 · ${title}`, level: '锁格', text: cfg.copy.lock }
   }
   const item = state.board[pos.row]?.[pos.col]
@@ -2320,7 +3471,7 @@ export function describeAt(cfg: GameConfig, state: GameState, pos: Pos): { title
   if (item.kind === 'producer') {
     const lineName = cfg.items.lines.find((line) => line.id === item.line)?.name ?? '原料'
     const text = item.charges <= 0 && item.cooldownUntil > 0 ? cfg.copy.producerCool : cfg.copy.producer.replace('{line}', lineName)
-    return { title: producerName(cfg, item.producerId), level: '母棋', text }
+    return { title: producerPieceName(item.producerId, item.level) ?? producerName(cfg, item.producerId), level: cnLevel(item.level), text }
   }
   if (item.kind === 'potion') {
     return {
@@ -2330,8 +3481,8 @@ export function describeAt(cfg: GameConfig, state: GameState, pos: Pos): { title
     }
   }
   if (item.kind === 'rewardBox') {
-    const text = item.box === 'blue' ? cfg.copy.blue : item.box === 'purple' ? cfg.copy.purple : cfg.copy.bag
-    const title = item.box === 'blue' ? '蓝宝箱' : item.box === 'purple' ? '紫礼盒' : '购物袋'
+    const text = item.box === 'purple' ? cfg.copy.purple : cfg.copy.bag
+    const title = item.box === 'purple' ? '紫礼盒' : '购物袋'
     return { title, level: '奖励', text }
   }
   return { title: cfg.items.chestName, level: '宝箱', text: cfg.copy.chest }

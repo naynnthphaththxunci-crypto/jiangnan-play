@@ -27,7 +27,7 @@ export function gesturePose(
     const press = Math.sin(t * Math.PI * 2)
     return { x: ax, y: ay + (press < 0 ? press * 8 : 0), visible: true }
   }
-  if (t > 0.86) return { x: ax, y: ay, visible: false }
+  if (t > 0.86) return { x: ax, y: ay, visible: true }
   const u = t < 0.14 ? 0 : t > 0.72 ? 1 : (t - 0.14) / 0.58
   const e = ease(u)
   return { x: ax + (bx - ax) * e, y: ay + (by - ay) * e, visible: true }
@@ -108,15 +108,28 @@ export function tutorialHand(cfg: GameConfig, state: GameState, frame: Frame, no
     ay = a.y
     bx = b.x
     by = b.y
-  } else if (step.id === 'unlock') {
+  } else if (step.id === 'mergeC' || step.id === 'unlock') {
     let from = cellCenter(frame, cfg.board.roles.mergeB.row, cfg.board.roles.mergeB.col)
     for (let row = 0; row < state.board.length; row++) {
       for (let col = 0; col < (state.board[row]?.length ?? 0); col++) {
         const item = state.board[row]?.[col]
-        if (item?.kind === 'product' && item.line === 'food' && item.level === 2) from = cellCenter(frame, row, col)
+        if (item?.kind === 'producer' && item.producerId === 'food' && item.level === 2) from = cellCenter(frame, row, col)
       }
     }
     const to = cellCenter(frame, cfg.board.roles.unlock.row, cfg.board.roles.unlock.col)
+    ax = from.x
+    ay = from.y
+    bx = to.x
+    by = to.y
+  } else if (step.id === 'mergeD' && cfg.board.roles.mergeD) {
+    let from = cellCenter(frame, cfg.board.roles.unlock.row, cfg.board.roles.unlock.col)
+    for (let row = 0; row < state.board.length; row++) {
+      for (let col = 0; col < (state.board[row]?.length ?? 0); col++) {
+        const item = state.board[row]?.[col]
+        if (item?.kind === 'producer' && item.producerId === 'food' && item.level === 3) from = cellCenter(frame, row, col)
+      }
+    }
+    const to = cellCenter(frame, cfg.board.roles.mergeD.row, cfg.board.roles.mergeD.col)
     ax = from.x
     ay = from.y
     bx = to.x

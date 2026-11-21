@@ -76,6 +76,13 @@ export interface Fx {
   energyFlash: number
   drag: { row: number; col: number; x: number; y: number; pending?: boolean; index?: number } | null
   hover: Hover
+  shakeUntil: number
+  /** 撕纸特效开始蹦出的时刻。格子到位之后才震。 */
+  silaAt: number
+  comicFrom: number
+  comicFadeAt: number
+  /** 整页慢推镜头开始的时刻。换页时重设，同一页里点台词不重设。 */
+  pagePushAt: number
   ghostOrder: null | {
     customerId: string
     slots: OrderSlot[]
@@ -99,6 +106,11 @@ export function createFx(): Fx {
     energyFlash: 0,
     drag: null,
     hover: null,
+    shakeUntil: 0,
+    silaAt: 0,
+    comicFrom: -1,
+    comicFadeAt: 0,
+    pagePushAt: 0,
     ghostOrder: null,
   }
 }
