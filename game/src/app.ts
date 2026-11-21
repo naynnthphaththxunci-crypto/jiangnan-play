@@ -3,7 +3,7 @@ import { SIDE_ICON_LEVEL } from './hechengLayout'
 import { comicCursor, silaJustShown } from './comic'
 import { openingFilm, replayOpeningFilm } from './openingFilm'
 import { alignedHome, storyCardRects } from './homeLayout'
-import { clampHomeCam, defaultHomeCam, homeHostessRect } from './homeMap'
+import { clampHomeCam, defaultHomeCam, homeDaughterRect, homeHostessRect } from './homeMap'
 import { createComicAudio } from './comicAudio'
 import { createSfx, type Sfx } from './audio'
 import { defaultConfig, resetEconomy } from './config'
@@ -1357,7 +1357,10 @@ export function startGame(platform: Platform): void {
     if (!pointer.moved) {
       if (view === 'house' && state.lesson === 'free' && !activeOverlay(state)) {
         const hostess = homeHostessRect(frame.w, frame.h, cam)
-        if (contains(hostess, pointer.sx, pointer.sy) && contains(hostess, ux, uy)) {
+        const daughter = homeDaughterRect(frame.w, frame.h, cam)
+        const onMother = contains(hostess, pointer.sx, pointer.sy) && contains(hostess, ux, uy)
+        const onDaughter = contains(daughter, pointer.sx, pointer.sy) || contains(daughter, ux, uy)
+        if (onMother && !onDaughter) {
           openStoryCard(state, cfg)
           mark()
           return

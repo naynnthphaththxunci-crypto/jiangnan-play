@@ -12,8 +12,14 @@ export const HOME_VIEW_H = 1592
 /** 默认镜头中心。房子落在屏幕中部偏上。 */
 export const HOME_FOCUS = { x: 1168, y: 988 }
 
-/** 温如月双脚所在的地图坐标，门前空地。身高是地图像素。 */
-export const HOME_HOSTESS = { x: 1204, y: 1108, h: 176 }
+/** 交接单坐标在地图原图 4000×2999 上。贴图是按这个比例缩到 2400×1800。 */
+export const HOME_SRC_W = 4000
+export const HOME_SRC_H = 2999
+
+/** 左上角和显示宽高，单位是原图像素。 */
+export const HOME_WENRUYUE = { x: 2051, y: 1540, w: 197, h: 272 }
+export const HOME_DAUGHTER = { x: 2168, y: 1622, w: 160, h: 217 }
+export const HOME_FG_TREE = { x: 2096, y: 1807, w: 318, h: 264 }
 
 export interface HomeBuilding {
   id: string
@@ -64,12 +70,34 @@ export function mapToScreen(viewW: number, viewH: number, cam: HomeCam, x: numbe
   }
 }
 
-/** 温如月身子在屏幕上的热区，跟着地图走。 */
+export interface HomeSrcBox {
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
+/** 原图坐标换成当前地图贴图上的矩形，再投到屏幕。 */
+export function homeSrcRect(viewW: number, viewH: number, cam: HomeCam, box: HomeSrcBox): { x: number; y: number; w: number; h: number } {
+  const x = box.x * (HOME_MAP_W / HOME_SRC_W)
+  const y = box.y * (HOME_MAP_H / HOME_SRC_H)
+  const w = box.w * (HOME_MAP_W / HOME_SRC_W)
+  const h = box.h * (HOME_MAP_H / HOME_SRC_H)
+  const origin = mapToScreen(viewW, viewH, cam, x, y)
+  return { x: origin.x, y: origin.y, w: w * cam.scale, h: h * cam.scale }
+}
+
+/** 温如月的点击范围。女儿和树枝不在这里。 */
 export function homeHostessRect(viewW: number, viewH: number, cam: HomeCam): { x: number; y: number; w: number; h: number } {
-  const foot = mapToScreen(viewW, viewH, cam, HOME_HOSTESS.x, HOME_HOSTESS.y)
-  const h = HOME_HOSTESS.h * cam.scale
-  const w = h * 0.62
-  return { x: foot.x - w / 2, y: foot.y - h, w, h }
+  return homeSrcRect(viewW, viewH, cam, HOME_WENRUYUE)
+}
+
+export function homeDaughterRect(viewW: number, viewH: number, cam: HomeCam): { x: number; y: number; w: number; h: number } {
+  return homeSrcRect(viewW, viewH, cam, HOME_DAUGHTER)
+}
+
+export function homeTreeRect(viewW: number, viewH: number, cam: HomeCam): { x: number; y: number; w: number; h: number } {
+  return homeSrcRect(viewW, viewH, cam, HOME_FG_TREE)
 }
 
 export interface PlacedBuilding extends HomeBuilding {

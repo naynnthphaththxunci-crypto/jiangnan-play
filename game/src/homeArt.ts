@@ -1,5 +1,8 @@
 import { assignArtSrc } from './artGate'
 import mapUrl from './assets/home/map.webp'
+import wenUrl from './assets/home/char_wenruyue.png'
+import daughterUrl from './assets/home/char_daughter.png'
+import treeUrl from './assets/home/fg_tree_crop.png'
 import settingsUrl from './assets/home/btn_settings.webp'
 import shopUrl from './assets/home/btn_shop.webp'
 import storageUrl from './assets/home/btn_storage.webp'
@@ -27,6 +30,9 @@ function load(src: string): HTMLImageElement | null {
 
 export const homeArt = {
   map: load(mapUrl),
+  wenruyue: load(wenUrl),
+  daughter: load(daughterUrl),
+  tree: load(treeUrl),
   settings: load(settingsUrl),
   shop: load(shopUrl),
   storage: load(storageUrl),

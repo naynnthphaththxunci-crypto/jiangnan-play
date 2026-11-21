@@ -52,7 +52,7 @@ import { curtainBambooPlace, curtainBitmaps, curtainDrop, curtainPlace } from '.
 import { alignedHome, arrowPoke, storyCardRects, type HomeBox } from './homeLayout'
 import { assignArtSrc } from './artGate'
 import { homeArt, type HomeArtId } from './homeArt'
-import { HOME_HOSTESS, HOME_MAP_H, HOME_MAP_W, homeHostessRect, mapToScreen, placeHomeBuildings, type HomeCam } from './homeMap'
+import { HOME_MAP_H, HOME_MAP_W, homeDaughterRect, homeHostessRect, homeTreeRect, placeHomeBuildings, type HomeCam } from './homeMap'
 import { cellWoodRect, designToScreen } from './hechengLayout'
 import { orderTickPlace } from './orderTick'
 import { COMIC_FONT, comicCursor, comicFontReady, comicPanelImage, comicPrompt, comicSilaImage, wrapComicText } from './comic'
@@ -1996,17 +1996,9 @@ function drawHomeMap(ctx: CanvasRenderingContext2D, viewW: number, viewH: number
   ctx.drawImage(img, left - 1, top - 1, HOME_MAP_W * cam.scale + 2, HOME_MAP_H * cam.scale + 2)
 }
 
-function drawHomeHostess(ctx: CanvasRenderingContext2D, viewW: number, viewH: number, cam: HomeCam, now: number): void {
-  const foot = mapToScreen(viewW, viewH, cam, HOME_HOSTESS.x, HOME_HOSTESS.y)
-  const h = HOME_HOSTESS.h * cam.scale
-  const dest = { x: foot.x - h / 2, y: foot.y - h, w: h, h }
-  ctx.save()
-  ctx.fillStyle = 'rgba(42, 28, 16, 0.3)'
-  ctx.beginPath()
-  ctx.ellipse(foot.x, foot.y - h * 0.02, h * 0.16, h * 0.035, 0, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.restore()
-  drawCharacter(ctx, 'ruyue', guestPortrait('ruyue'), dest, now, 'contain-bottom')
+function drawMapSprite(ctx: CanvasRenderingContext2D, img: HTMLImageElement | null, rect: { x: number; y: number; w: number; h: number }): void {
+  if (!img || (img.naturalWidth || 0) <= 0 || rect.w <= 0 || rect.h <= 0) return
+  ctx.drawImage(img, rect.x, rect.y, rect.w, rect.h)
 }
 
 function drawHouse(model: RenderModel): void {
@@ -2015,7 +2007,9 @@ function drawHouse(model: RenderModel): void {
   ctx.fillStyle = '#1c140e'
   ctx.fillRect(0, 0, frame.w, frame.h)
   drawHomeMap(ctx, frame.w, frame.h, model.cam)
-  drawHomeHostess(ctx, frame.w, frame.h, model.cam, realNow)
+  drawMapSprite(ctx, homeArt.wenruyue, homeHostessRect(frame.w, frame.h, model.cam))
+  drawMapSprite(ctx, homeArt.daughter, homeDaughterRect(frame.w, frame.h, model.cam))
+  drawMapSprite(ctx, homeArt.tree, homeTreeRect(frame.w, frame.h, model.cam))
   // 建筑图还没到。placeHomeBuildings 已经把地图坐标换成屏幕位置，下一轮直接贴在这里。
   void placeHomeBuildings(frame.w, frame.h, model.cam)
   paintHomeImg(ctx, 'build', home.build)
