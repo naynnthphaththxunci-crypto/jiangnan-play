@@ -1684,6 +1684,21 @@ function rememberLines(state: GameState, slots: { line: string }[]): void {
   }
 }
 
+/** 这条线的母棋要已经在棋盘、暂存或奖励栏里，订单才出。 */
+function lineProducerPresent(state: GameState, cfg: GameConfig, line: string): boolean {
+  const owned = (id: string) => producerLevelOwned(state, id) > 0 || !!state.hasProducer[id]
+  if (line === 'meat') return owned('food')
+  if (line === 'mint') return owned('bev')
+  if (line === 'wand') return owned('toy')
+  if (line === 'fish') return owned('net')
+  if (line === 'catch') return owned('net') || owned('boat')
+  const direct = cfg.producers.find((entry) => entry.line === line && entry.kind !== 'consumable')
+  if (direct) return owned(direct.id)
+  const parent = cfg.producers.find((entry) => entry.side === line)
+  if (parent) return owned(parent.id)
+  return false
+}
+
 function pushEarly(state: GameState, cfg: GameConfig, spec: NonNullable<ReturnType<typeof earlyOrder>>): void {
   state.orderCounter += 1
   let paySmile = 0
@@ -1702,7 +1717,7 @@ function pushEarly(state: GameState, cfg: GameConfig, spec: NonNullable<ReturnTy
   }
   state.orders.push({
     id: `e${spec.no}`,
-    customerId: pickOrderCast((spec.no * 0.17) % 1),
+    customerId: spec.no === 1 ? 'xiaotao' : pickOrderCast((spec.no * 0.17) % 1),
     slots: spec.items.map((item) => ({ line: item.line, level: item.level, filled: false })),
     big: false,
     scripted: spec.no === 1,
@@ -1724,6 +1739,7 @@ export function syncEarlyOrders(state: GameState, cfg: GameConfig): void {
   while (guard < 12 && state.orderSeq <= 131) {
     const spec = earlyOrder(state.orderSeq)
     if (!spec) break
+    if (!spec.items.every((item) => lineProducerPresent(state, cfg, item.line))) break
     const shownCaps = state.orders.map((order) => earlyOrder(order.earlyNo ?? 0)?.maxOnScreen ?? spec.maxOnScreen)
     const cap = Math.min(spec.maxOnScreen, ...shownCaps)
     if (state.orders.length >= cap) break

@@ -41,7 +41,7 @@ import {
   smilesVisible,
   taskPrice,
 } from './logic/sim'
-import { itemSprite, PIECE_FILL, potionSprite, producerBoltPlace, producerPieceName, producerPlace, producerSprite, PRODUCER_CELL_W, spriteContent, type ArtBox } from './itemArt'
+import { itemSprite, PIECE_FILL, pieceNorm, potionSprite, producerBoltPlace, producerNorm, producerPieceName, producerPlace, producerSprite, PRODUCER_CELL_W, spriteContent, type ArtBox } from './itemArt'
 import tutorialHandUrl from './assets/ui/tutorial_hand.png'
 import iconBoltUrl from './assets/ui/stamina_bolt.webp'
 import { drawAvatar } from './cast'
@@ -53,8 +53,8 @@ import { assignArtSrc } from './artGate'
 import { homeArt, type HomeArtId } from './homeArt'
 import { HOME_MAP_H, HOME_MAP_W, homeDaughterRect, homeHostessRect, homeTreeRect, placeHomeBuildings, type HomeCam } from './homeMap'
 import { cellWoodRect, designToScreen } from './hechengLayout'
-import { BUBBLE_BOX, CHEST_BADGE_BOX, HALF_PIECE_BOX, badgeImage, bubbleImage, chestBubble, moundImage, soilImage } from './boardCover'
-import { drawOrderGuest } from './orderCast'
+import { BUBBLE_BOX, CHEST_BADGE_BOX, badgeImage, bubbleImage, chestBubble, moundImage, soilImage } from './boardCover'
+import { drawOrderGuest, orderGuestReady } from './orderCast'
 import { orderTickPlace } from './orderTick'
 import { COMIC_FONT, comicCursor, comicFontReady, comicPanelImage, comicPrompt, comicSilaImage, wrapComicText } from './comic'
 import { openingFilm } from './openingFilm'
@@ -780,9 +780,11 @@ function drawHecheng(model: RenderModel): void {
   state.orders.forEach((order, index) => {
     const guest = frame.orderGuests[index]
     if (!guest) return
-    if (!guestSeen.has(order.id)) guestSeen.set(order.id, realNow)
     const table = frame.tableSlots[index]
-    if (table) drawOrderGuest(ctx, order.customerId, table, realNow, guestSeen.get(order.id) ?? realNow)
+    if (table && orderGuestReady(order.customerId)) {
+      if (!guestSeen.has(order.id)) guestSeen.set(order.id, realNow)
+      drawOrderGuest(ctx, order.customerId, table, realNow, guestSeen.get(order.id) ?? realNow)
+    }
     void guest
   })
   ctx.restore()
@@ -1162,9 +1164,31 @@ function buriedAsItem(lock: { buried: GameState['locks'][number]['buried'] }): I
   return null
 }
 
-function drawBuriedPiece(ctx: CanvasRenderingContext2D, cfg: GameConfig, lock: { buried: GameState['locks'][number]['buried'] }, box: Rect, now: number): void {
+function drawExactPiece(
+  ctx: CanvasRenderingContext2D,
+  sprite: CanvasImageSource & { naturalWidth?: number },
+  cell: Rect,
+  norm: { x: number; y: number; w: number; h: number },
+): boolean {
+  if ((sprite.naturalWidth || 0) <= 0) return false
+  ctx.drawImage(sprite, cell.x + cell.w * norm.x, cell.y + cell.h * norm.y, cell.w * norm.w, cell.h * norm.h)
+  return true
+}
+
+function drawBuriedPiece(ctx: CanvasRenderingContext2D, cfg: GameConfig, lock: { buried: GameState['locks'][number]['buried'] }, cell: Rect, now: number): void {
+  const buried = lock.buried
+  if (buried.kind === 'product') {
+    const norm = pieceNorm(buried.line, buried.level)
+    const sprite = itemSprite(buried.line, buried.level)
+    if (norm && sprite && drawExactPiece(ctx, sprite, cell, norm)) return
+  }
+  if (buried.kind === 'producer') {
+    const norm = producerNorm(buried.id, buried.level)
+    const sprite = producerSprite(buried.id, buried.level)
+    if (norm && sprite && drawExactPiece(ctx, sprite, cell, norm)) return
+  }
   const item = buriedAsItem(lock)
-  if (item) drawItem(ctx, cfg, item, box, 1, 1, now)
+  if (item) drawItem(ctx, cfg, item, cell, 1, 1, now)
 }
 
 function drawBoard(model: RenderModel): void {
@@ -1219,39 +1243,33 @@ function drawBoard(model: RenderModel): void {
           const lockLabel = lock.giftUntil == null ? '礼物' : giftLeft > 0 ? formatMs(giftLeft) : '可开'
           text(ctx, lockLabel, box.x + box.w / 2, box.y + box.h * 0.72, Math.max(9, box.w * 0.16), PAL.ink)
         } else {
-          const wood = cellWoodRect(frame.board, frame.w / 1080, row, col)
-          const dx = cellShake(lock.shakeAt, realNow, wood.w)
+          const cellWood = cellWoodRect(frame.board, frame.w / 1080, row, col)
+          const dx = cellShake(lock.shakeAt, realNow, cellWood.w)
           ctx.save()
           ctx.translate(dx, 0)
           if (lock.veil !== 'half') {
             const soil = soilImage(row, col)
-            if (soil && (soil.naturalWidth || 0) > 0) ctx.drawImage(soil, wood.x, wood.y, wood.w, wood.h)
+            if (soil && (soil.naturalWidth || 0) > 0) ctx.drawImage(soil, cellWood.x, cellWood.y, cellWood.w, cellWood.h)
             const bubble = bubbleImage(row, col)
             if (bubble && (bubble.naturalWidth || 0) > 0) {
-              const bw = wood.w * BUBBLE_BOX.w
-              const bh = wood.h * BUBBLE_BOX.h
-              ctx.drawImage(bubble, wood.x + (wood.w - bw) / 2, wood.y + (wood.h - bh) / 2, bw, bh)
+              const bw = cellWood.w * BUBBLE_BOX.w
+              const bh = cellWood.h * BUBBLE_BOX.h
+              ctx.drawImage(bubble, cellWood.x + (cellWood.w - bw) / 2, cellWood.y + (cellWood.h - bh) / 2, bw, bh)
             }
             const mark = badgeImage()
             if (chestBubble(row, col) && mark && (mark.naturalWidth || 0) > 0) {
               ctx.drawImage(
                 mark,
-                wood.x + wood.w * CHEST_BADGE_BOX.x,
-                wood.y + wood.h * CHEST_BADGE_BOX.y,
-                wood.w * CHEST_BADGE_BOX.w,
-                wood.h * CHEST_BADGE_BOX.h,
+                cellWood.x + cellWood.w * CHEST_BADGE_BOX.x,
+                cellWood.y + cellWood.h * CHEST_BADGE_BOX.y,
+                cellWood.w * CHEST_BADGE_BOX.w,
+                cellWood.h * CHEST_BADGE_BOX.h,
               )
             }
           } else {
-            const piece = {
-              x: wood.x + wood.w * HALF_PIECE_BOX.x,
-              y: wood.y + wood.h * HALF_PIECE_BOX.y,
-              w: wood.w * HALF_PIECE_BOX.w,
-              h: wood.h * HALF_PIECE_BOX.h,
-            }
-            drawBuriedPiece(ctx, cfg, lock, piece, realNow)
+            drawBuriedPiece(ctx, cfg, lock, cellWood, realNow)
             const mound = moundImage()
-            if (mound && (mound.naturalWidth || 0) > 0) ctx.drawImage(mound, wood.x, wood.y, wood.w, wood.h)
+            if (mound && (mound.naturalWidth || 0) > 0) ctx.drawImage(mound, cellWood.x, cellWood.y, cellWood.w, cellWood.h)
           }
           ctx.restore()
         }
@@ -1287,7 +1305,17 @@ function drawBoard(model: RenderModel): void {
             cfg.economy.selectBreathTimes ?? 2,
           )
         : 1
-      drawItem(ctx, cfg, item, box, scale * breath, 1, realNow, unlimited && item.kind === 'producer')
+      const cellWood = cellWoodRect(frame.board, frame.w / 1080, row, col)
+      const norm = item.kind === 'product' ? pieceNorm(item.line, item.level) : item.kind === 'producer' ? producerNorm(item.producerId, item.level) : null
+      const exactSprite = norm
+        ? item.kind === 'product'
+          ? itemSprite(item.line, item.level)
+          : item.kind === 'producer'
+            ? producerSprite(item.producerId, item.level)
+            : null
+        : null
+      const drewExact = !!(norm && exactSprite && drawExactPiece(ctx, exactSprite, cellWood, norm))
+      if (!drewExact) drawItem(ctx, cfg, item, box, scale * breath, 1, realNow, unlimited && item.kind === 'producer')
       if (item.kind === 'product' && item.tag === 'bubble') {
         ctx.beginPath()
         ctx.strokeStyle = 'rgba(120,190,230,0.95)'
@@ -2284,7 +2312,10 @@ function paintLiftedOrder(model: RenderModel, index: number): void {
   const guest = frame.orderGuests[index]
   if (!order || !guest) return
   const table = frame.tableSlots[index]
-  if (table) drawOrderGuest(ctx, order.customerId, table, realNow, guestSeen.get(order.id) ?? realNow)
+  if (table && orderGuestReady(order.customerId)) {
+    if (!guestSeen.has(order.id)) guestSeen.set(order.id, realNow)
+    drawOrderGuest(ctx, order.customerId, table, realNow, guestSeen.get(order.id) ?? realNow)
+  }
   void guest
   const plate = frame.tableSlots[index]
   if (plate) blit(ctx, 'plate', plate)

@@ -1,9 +1,10 @@
 import { assignArtSrc } from './artGate'
 import producerArt from './data/producerArt.json'
+import piecePlace from './data/piecePlace.json'
 
 const raw = import.meta.glob('./assets/items/*.png', { eager: true, import: 'default' }) as Record<string, string>
 const potionRaw = import.meta.glob('./assets/items/energy_*.webp', { eager: true, import: 'default' }) as Record<string, string>
-const producerRaw = import.meta.glob('./assets/producers/*.webp', { eager: true, import: 'default' }) as Record<string, string>
+const producerRaw = import.meta.glob('./assets/producers/*.{webp,png}', { eager: true, import: 'default' }) as Record<string, string>
 
 const sprites = new Map<string, CanvasImageSource & { complete?: boolean; naturalWidth?: number }>()
 const potionSprites = new Map<number, CanvasImageSource & { complete?: boolean; naturalWidth?: number }>()
@@ -29,7 +30,7 @@ export function potionSprite(tier: number): (CanvasImageSource & { complete?: bo
 const producerSprites = new Map<string, CanvasImageSource & { complete?: boolean; naturalWidth?: number }>()
 
 for (const [path, url] of Object.entries(producerRaw)) {
-  const match = path.match(/([^/]+)_(\d+)\.webp$/)
+  const match = path.match(/([^/]+)_(\d+)\.(?:webp|png)$/)
   if (!match || typeof url !== 'string') continue
   const host = globalThis as { Image?: new () => HTMLImageElement; document?: Document }
   if (!host.document || typeof host.Image !== 'function') continue
@@ -60,14 +61,16 @@ const ART_LINE: Record<string, string> = {
   bev: 'bev',
   mint: 'mint',
   toy: 'toy',
-  wand: 'toy',
+  wand: 'wand',
   bed: 'bed',
-  fish: 'boat',
+  fish: 'fish',
   plant: 'plant',
   coin: 'food',
   gemline: 'bev',
   net: 'boat',
   boat: 'boat',
+  dog: 'dog',
+  catch: 'catch',
 }
 
 type SpriteImage = CanvasImageSource & { complete?: boolean; naturalWidth?: number; naturalHeight?: number; src?: string }
@@ -145,8 +148,19 @@ const artTable = producerArt as {
 /** 设计稿格子宽。母棋偏移按这个边长等比缩到当前格子。 */
 export const PRODUCER_CELL_W = artTable.cellW
 
+type PieceNorm = { name?: string; x: number; y: number; w: number; h: number }
+const placed = piecePlace as { products: Record<string, Record<string, PieceNorm>>; producers: Record<string, Record<string, PieceNorm>> }
+
+export function pieceNorm(line: string, level: number): PieceNorm | null {
+  return placed.products[line]?.[String(level)] ?? null
+}
+
+export function producerNorm(id: string, level: number): PieceNorm | null {
+  return placed.producers[id]?.[String(level)] ?? null
+}
+
 export function producerPieceName(id: string, level: number): string | null {
-  return artTable.names[id]?.[level - 1] ?? null
+  return placed.producers[id]?.[String(level)]?.name ?? artTable.names[id]?.[level - 1] ?? null
 }
 
 export function producerPlace(id: string, level: number): ArtBox | null {

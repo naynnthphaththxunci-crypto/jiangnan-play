@@ -95,6 +95,27 @@ describe('1120 数值表', () => {
     expect(state.orders[0]?.payCoins).toBe(14)
   })
 
+  it('没有茶壶就停在饮料单，不跳号；第一单固定是小桃', () => {
+    const cfg = defaultConfig()
+    const state = createGame(1, cfg)
+    state.lesson = 'free'
+    state.phase = 'play'
+    syncEarlyOrders(state, cfg)
+    expect(state.orders[0]?.earlyNo).toBe(1)
+    expect(state.orders[0]?.customerId).toBe('xiaotao')
+    expect(state.orders.every((order) => order.slots.every((slot) => slot.line !== 'bev'))).toBe(true)
+    state.orders = []
+    state.orderSeq = 11
+    syncEarlyOrders(state, cfg)
+    expect(state.orders).toEqual([])
+    expect(state.orderSeq).toBe(11)
+    state.board[2][2] = makeProducer(state, 'bev', cfg, 1)
+    syncEarlyOrders(state, cfg)
+    expect(state.orders.map((order) => order.earlyNo)).toContain(11)
+    expect(state.orders.find((order) => order.earlyNo === 11)?.slots.every((slot) => slot.line === 'bev')).toBe(true)
+    expect(state.orderSeq).toBeGreaterThan(11)
+  })
+
   it('纯对话、没奖励、钱够才自动弹下一张任务', () => {
     const cfg = defaultConfig()
     const state = createGame(1, cfg)

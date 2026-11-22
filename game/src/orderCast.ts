@@ -115,6 +115,12 @@ export function orderGuestRect(id: string, plate: { x: number; y: number; w: num
   }
 }
 
+export function orderGuestReady(id: string): boolean {
+  const name = NAMES[id as (typeof ORDER_CAST_IDS)[number]]
+  const enter = name ? anims.get(`${name}:出场`) : undefined
+  return !!enter?.image && (enter.image.naturalWidth || 0) > 0
+}
+
 export function drawOrderGuest(
   ctx: CanvasRenderingContext2D,
   id: string,
