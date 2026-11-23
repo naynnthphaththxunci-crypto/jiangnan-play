@@ -2,8 +2,17 @@ import { KEEP_TOP } from './viewport'
 
 export const DESIGN_W = 1080
 export const DESIGN_H = 2340
-/** Allen 1123 棋盘在 1080×2340 稿上的外框：x 15–1069，y 687–2034。 */
-export const MERGE_BOARD = { x: 15, y: 687, w: 1069 - 15, h: 2034 - 687 }
+/** 柜台整图。底边停在棋盘上沿之上，桌面和深色压边都不能盖住格子。 */
+export const COUNTER_TABLE = { x: 0, y: 508, w: 1080, h: 324 }
+export const COUNTER_BAND = { x: 24, y: 613, w: 1045, h: 141 }
+
+const BOARD_TOP = 846
+const BOARD_BOTTOM = 2102
+const BOARD_H = BOARD_BOTTOM - BOARD_TOP
+const BOARD_PITCH = BOARD_H / 9
+const BOARD_W = BOARD_PITCH * 7
+/** 7×9 方格，整盘在柜台底边和底栏之间，水平居中。 */
+export const MERGE_BOARD = { x: (DESIGN_W - BOARD_W) / 2, y: BOARD_TOP, w: BOARD_W, h: BOARD_H }
 export const BOARD_X = MERGE_BOARD.x
 export const BOARD_Y = MERGE_BOARD.y
 const CELL_PITCH = MERGE_BOARD.h / 9
@@ -27,14 +36,14 @@ export const GUEST_SCALE = 0.29
 
 /** 画布左上角。顶部对齐在 y≈305，水平落在各自托盘中间。 */
 const GUEST_ANCHOR: { x: number; y: number }[] = [
-  { x: 338, y: 307 },
-  { x: 632, y: 303 },
-  { x: 975, y: 303 },
+  { x: 338, y: 320 },
+  { x: 632, y: 316 },
+  { x: 975, y: 316 },
 ]
 const PLATES: Box[] = [
-  { x: 354, y: 568, w: 294, h: 112 },
-  { x: 667, y: 568, w: 294, h: 112 },
-  { x: 980, y: 568, w: 294, h: 112 },
+  { x: 354, y: 518, w: 294, h: 112 },
+  { x: 667, y: 518, w: 294, h: 112 },
+  { x: 980, y: 518, w: 294, h: 112 },
 ]
 const REWARDS: Box[] = [
   { x: 568, y: 359, w: 107, h: 101 },
@@ -42,9 +51,9 @@ const REWARDS: Box[] = [
   { x: 1210, y: 359, w: 107, h: 101 },
 ]
 const COMPLETES: Box[] = [
-  { x: 403, y: 624, w: 182, h: 94 },
-  { x: 716, y: 624, w: 182, h: 94 },
-  { x: 1029, y: 624, w: 182, h: 94 },
+  { x: 403, y: 574, w: 182, h: 94 },
+  { x: 716, y: 574, w: 182, h: 94 },
+  { x: 1029, y: 574, w: 182, h: 94 },
 ]
 
 /** 绿书和任务板从这一级起才出现。 */
@@ -171,16 +180,23 @@ export function designCell(row: number, col: number): Box | null {
 
 /** 棋盘图左上角在屏幕上的位置。格子跟着这张图走。 */
 /** 用棋盘图左上角和底栏上沿反推设计坐标。底栏锚在屏幕底部，棋盘锚在顶部。 */
+/** 棋盘格子相对设计稿的缩放。内容可以比屏幕窄，背景仍然铺满。 */
+export function contentScale(board: { cell: number }): number {
+  const pitch = MERGE_BOARD.h / 9
+  return pitch > 0 && board.cell > 0 ? board.cell / pitch : 1
+}
+
 export function designToScreen(
-  frame: { w: number; board: { x: number; y: number }; dock: { y: number } },
+  frame: { w: number; board: { x: number; y: number; cell: number }; dock: { y: number } },
   box: Box,
   anchor: 'top' | 'bottom' = 'top',
 ): Box {
-  const scale = frame.w / DESIGN_W
+  const scale = contentScale(frame.board)
+  const originX = frame.board.x - BOARD_X * scale
   const top = frame.board.y - BOARD_Y * scale
-  const extra = frame.dock.y - top - 2112 * scale
+  const extra = frame.dock.y - (top + 2112 * scale)
   return {
-    x: box.x * scale,
+    x: originX + box.x * scale,
     y: top + box.y * scale + (anchor === 'bottom' ? extra : 0),
     w: box.w * scale,
     h: box.h * scale,
@@ -207,13 +223,15 @@ export function cellWoodRect(board: { x: number; y: number }, scale: number, row
 }
 
 export function hechengParts(input: HechengInput): HechengScene {
-  const scale = input.w / DESIGN_W
   const availTop = Math.max(0, input.insetTop)
   const availBottom = input.h - Math.max(0, input.insetBottom)
-  // 底对齐设计稿。再保证资源条不被裁出屏幕，只裁它上方的场景。
-  const sceneTop = Math.max(availTop - KEEP_TOP * scale, availBottom - DESIGN_H * scale)
+  const availH = Math.max(1, availBottom - availTop)
+  // 内容按宽和高里更紧的一边缩放并居中。背景另铺满整屏，不留黑边。
+  const scale = Math.min(input.w / DESIGN_W, availH / (DESIGN_H - KEEP_TOP))
+  const offsetX = (input.w - DESIGN_W * scale) / 2
+  const sceneTop = availBottom - DESIGN_H * scale
   const place = (box: Box, scroll = 0): Box => ({
-    x: box.x * scale - scroll,
+    x: offsetX + box.x * scale - scroll,
     y: sceneTop + box.y * scale,
     w: box.w * scale,
     h: box.h * scale,
@@ -240,7 +258,7 @@ export function hechengParts(input: HechengInput): HechengScene {
       right = Math.max(right, (box.x + box.w) * scale)
     }
   }
-  const orderMaxScroll = Math.max(0, right - input.w)
+  const orderMaxScroll = Math.max(0, right - DESIGN_W * scale)
   const scroll = input.orderScroll
   const tableSlots: Box[] = []
   for (let i = 0; i < n; i++) tableSlots.push(place(slotAt(PLATES, i, orderPad), scroll))
@@ -348,7 +366,7 @@ export function hechengParts(input: HechengInput): HechengScene {
     storyBtn,
     taskBtn,
     hud: place({ x: 0, y: 140, w: DESIGN_W, h: 220 }),
-    counter: place({ x: 0, y: 598, w: DESIGN_W, h: 324 }),
+    counter: place(COUNTER_TABLE),
     boardArt,
     taskIcon,
     bookIcon,

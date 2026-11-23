@@ -16,22 +16,11 @@ export interface CanvasBox {
 }
 
 /**
- * 够高：按宽度铺满。
- * 太矮或宽屏：按高度把必显区域装进屏幕，左右留黑边。
+ * 画布始终铺满屏幕。场景和木墙盖满这块画布。
+ * 合成页的棋盘等内容在布局里单独缩小并居中，不在这里留黑边。
  */
-export function canvasFit(vw: number, vh: number, insetTop = 0, insetBottom = 0): CanvasBox {
-  const width = Math.max(1, vw)
-  const height = Math.max(1, vh)
-  const availH = Math.max(1, height - Math.max(0, insetTop) - Math.max(0, insetBottom))
-  const scaleW = width / PAGE_W
-  const keepH = (KEEP_BOTTOM - KEEP_TOP) * scaleW
-  const wideScreen = width / height > PAGE_W / PAGE_H + 0.2
-  if (!wideScreen && keepH <= availH + 0.5) {
-    return { x: 0, y: 0, w: width, h: height, wide: false }
-  }
-  const scale = Math.min(scaleW, availH / (KEEP_BOTTOM - KEEP_TOP))
-  const w = PAGE_W * scale
-  return { x: (width - w) / 2, y: 0, w, h: height, wide: true }
+export function canvasFit(vw: number, vh: number, _insetTop = 0, _insetBottom = 0): CanvasBox {
+  return { x: 0, y: 0, w: Math.max(1, vw), h: Math.max(1, vh), wide: false }
 }
 
 export interface CoverBox {

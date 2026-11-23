@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { curtainBambooPlace, curtainDrop, curtainPlace, CURTAIN_BOUNCE_MAX, CURTAIN_H, CURTAIN_W } from '../src/curtain'
-import { canvasFit } from '../src/viewport'
 import economy from '../src/data/economy.json'
 
 describe('竹帘切换', () => {
@@ -39,8 +38,8 @@ describe('竹帘切换', () => {
   it('竹帘顶部余量大于最大回弹，前景不跟着放大', () => {
     const views = [
       [390, 844],
-      [canvasFit(390, 664).w, canvasFit(390, 664).h],
-      [canvasFit(768, 1024).w, canvasFit(768, 1024).h],
+      [326, 664],
+      [502, 1024],
     ] as const
     for (const [w, h] of views) {
       const front = curtainPlace(w, h)

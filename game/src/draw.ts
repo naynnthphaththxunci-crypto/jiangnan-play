@@ -52,7 +52,7 @@ import { alignedHome, arrowPoke, storyCardRects, type HomeBox } from './homeLayo
 import { assignArtSrc } from './artGate'
 import { homeArt, type HomeArtId } from './homeArt'
 import { HOME_MAP_H, HOME_MAP_W, homeDaughterRect, homeHostessRect, homeTreeRect, placeHomeBuildings, type HomeCam } from './homeMap'
-import { MERGE_BOARD, cellWoodRect, designToScreen } from './hechengLayout'
+import { COUNTER_BAND, COUNTER_TABLE, MERGE_BOARD, cellWoodRect, contentScale, designToScreen } from './hechengLayout'
 import { BUBBLE_BOX, CHEST_BADGE_BOX, badgeImage, bubbleImage, chestBubble, moundImage, soilImage } from './boardCover'
 import { drawOrderGuest, orderGuestReady } from './orderCast'
 import { orderTickPlace } from './orderTick'
@@ -800,7 +800,7 @@ function coverImage(
 
 function drawHecheng(model: RenderModel): void {
   const { ctx, frame, state, cfg, realNow } = model
-  const scale = frame.w / 1080
+  const scale = contentScale(frame.board)
   const wood = hechengImage('wood')
   if (wood && (wood.naturalWidth || 0) > 0) {
     coverImage(ctx, wood, { x: 0, y: 0, w: frame.w, h: frame.h }, 0.5, 0.51)
@@ -809,7 +809,7 @@ function drawHecheng(model: RenderModel): void {
     ctx.fillRect(0, 0, frame.w, frame.h)
   }
   const at = (box: Rect, anchor: 'top' | 'bottom' = 'top') => designToScreen(frame, box, anchor)
-  const tableBox = at({ x: 0, y: 558, w: 1080, h: 324 })
+  const tableBox = at(COUNTER_TABLE)
   const scene = hechengImage('scene')
   if (scene && (scene.naturalWidth || 0) > 0 && tableBox.y > 1) {
     coverImage(ctx, scene, { x: 0, y: 0, w: frame.w, h: tableBox.y }, 0.5, 0.52)
@@ -819,7 +819,7 @@ function drawHecheng(model: RenderModel): void {
     ctx.rect(frame.orderClip.x, frame.orderClip.y, frame.orderClip.w, frame.orderClip.h)
     ctx.clip()
   }
-  const guestDrop = 72 * scale
+  const guestDrop = 88 * scale
   ctx.save()
   clipOrders()
   state.orders.forEach((order, index) => {
@@ -1190,12 +1190,12 @@ function drawCounterFront(model: RenderModel): void {
   const at = (box: Rect) => designToScreen(frame, box, 'top')
   const table = hechengImage('table')
   if (table && (table.naturalWidth || 0) > 0) {
-    const box = at({ x: 0, y: 558, w: 1080, h: 324 })
+    const box = at(COUNTER_TABLE)
     ctx.drawImage(table as CanvasImageSource, box.x, box.y, box.w, box.h)
   }
   const under = hechengImage('under')
   if (under && (under.naturalWidth || 0) > 0) {
-    const box = at({ x: 24, y: 663, w: 1045, h: 141 })
+    const box = at(COUNTER_BAND)
     ctx.drawImage(under as CanvasImageSource, box.x, box.y, box.w, box.h)
   }
   ctx.save()
@@ -1321,7 +1321,7 @@ function drawBoard(model: RenderModel): void {
           const lockLabel = lock.giftUntil == null ? '礼物' : giftLeft > 0 ? formatMs(giftLeft) : '可开'
           text(ctx, lockLabel, box.x + box.w / 2, box.y + box.h * 0.72, Math.max(9, box.w * 0.16), PAL.ink)
         } else {
-          const cellWood = cellWoodRect(frame.board, frame.w / 1080, row, col)
+          const cellWood = cellWoodRect(frame.board, contentScale(frame.board), row, col)
           const dx = cellShake(lock.shakeAt, realNow, cellWood.w)
           ctx.save()
           ctx.translate(dx, 0)
@@ -1383,7 +1383,7 @@ function drawBoard(model: RenderModel): void {
             cfg.economy.selectBreathTimes ?? 2,
           )
         : 1
-      const cellWood = cellWoodRect(frame.board, frame.w / 1080, row, col)
+      const cellWood = cellWoodRect(frame.board, contentScale(frame.board), row, col)
       const norm = item.kind === 'product' ? pieceNorm(item.line, item.level) : item.kind === 'producer' ? producerNorm(item.producerId, item.level) : null
       const exactSprite = norm
         ? item.kind === 'product'
@@ -2249,8 +2249,7 @@ function drawHouse(model: RenderModel): void {
 
 function lessonDialogBox(model: RenderModel): Rect | null {
   const { frame, state, cfg } = model
-  const scale = frame.w / 1080
-  const box = { x: 47 * scale, y: 80, w: 986 * scale, h: 702 * scale }
+  const box = designToScreen(frame, { x: 47, y: 80, w: 986, h: 702 })
   const lesson = state.lesson
   const above = (rects: Rect[]) => {
     const top = Math.min(...rects.map((rect) => rect.y))
@@ -2294,7 +2293,7 @@ function focusCells(model: RenderModel): { row: number; col: number }[] {
 }
 
 function focusHoles(model: RenderModel): Rect[] {
-  const scale = model.frame.w / 1080
+  const scale = contentScale(model.frame.board)
   return focusCells(model).map((cell) => cellWoodRect(model.frame.board, scale, cell.row, cell.col))
 }
 

@@ -5,7 +5,7 @@ import { SLIDERS } from './tuner'
 import { clamp } from './format'
 import { guideSpot } from './logic/sim'
 import orderLayoutJson from './data/orderLayout.json'
-import { cellOnBoard, hechengParts } from './hechengLayout'
+import { cellOnBoard, contentScale, hechengParts } from './hechengLayout'
 
 type PctBox = { x: number; y: number; w: number; h: number }
 type DesignBox = { x: number; y: number; w: number; h: number }
@@ -225,7 +225,7 @@ export function guestFaceBox(guest: Rect, face: NormBox): Rect {
 
 export function cellRect(frame: Frame, row: number, col: number): Rect {
   if (frame.mode === 'board' && frame.board.cell > 0) {
-    return cellOnBoard(frame.board, frame.w / 1080, row, col)
+    return cellOnBoard(frame.board, contentScale(frame.board), row, col)
   }
   const { x, y, cell } = frame.board
   return { x: x + col * cell, y: y + row * cell, w: cell, h: cell }

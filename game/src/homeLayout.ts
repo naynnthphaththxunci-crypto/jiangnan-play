@@ -1,4 +1,4 @@
-import { BOARD_Y } from './hechengLayout'
+import { BOARD_X, BOARD_Y, contentScale } from './hechengLayout'
 
 /** 主场景设计稿 1080×2340。宽屏左右留黑，矮手机按宽铺满并从顶部裁。 */
 export const HOME_W = 1080
@@ -72,7 +72,7 @@ export function buildHit(viewW: number, viewH: number): HomeBox {
 /** 主场景上和合成页共用的按钮，直接用合成页算好的屏幕矩形。 */
 export function alignedHome(frame: {
   w: number
-  board: { y: number }
+  board: { x: number; y: number; cell: number }
   shopBtn: HomeBox
   houseBtn: HomeBox
   pendingBtn: HomeBox
@@ -81,9 +81,9 @@ export function alignedHome(frame: {
   coinSlot: HomeBox
   gemSlot: HomeBox
 }) {
-  const scale = frame.w / HOME_W
+  const scale = frame.board.cell > 0 ? contentScale(frame.board) : frame.w / HOME_W
   const sceneTop = frame.board.y - BOARD_Y * scale
-  const fit = { x: 0, y: sceneTop, scale }
+  const fit = { x: frame.board.x - BOARD_X * scale, y: sceneTop, scale }
   const settings = {
     x: frame.shopBtn.x - (918 - 793) * scale,
     y: frame.shopBtn.y + (248 - 247) * scale,
