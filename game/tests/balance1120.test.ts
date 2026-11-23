@@ -111,6 +111,12 @@ describe('1120 数值表', () => {
     expect(state.orders[0]?.customerId).toBe('xiaotao')
     state.orders = []
     state.orderSeq = 11
+    state.board.forEach((row) =>
+      row.forEach((item, col) => {
+        if (item?.kind === 'producer' && item.producerId === 'bev') row[col] = null
+      }),
+    )
+    state.pending = state.pending.filter((item) => !(item.kind === 'producer' && item.producerId === 'bev'))
     state.board[2][2] = makeProducer(state, 'bev', cfg, 3)
     syncEarlyOrders(state, cfg)
     expect(state.orders).toEqual([])
@@ -155,15 +161,16 @@ describe('1120 数值表', () => {
     fillOrders(state, cfg, mulberry32(2))
     expect(state.orders.length).toBeGreaterThan(0)
     expect(state.orders.length).toBeLessThanOrEqual(6)
-    expect(state.orders.every((order) => order.slots.every((slot) => slot.line === 'food'))).toBe(true)
+    expect(state.orders.every((order) => order.slots.every((slot) => slot.line === 'food' || slot.line === 'bev'))).toBe(true)
     expect(state.orders.some((order) => order.blocker)).toBe(false)
     expect(state.orders.every((order) => order.slots.every((slot) => slot.level >= 3))).toBe(true)
   })
 
-  it('剧情 15 经验按级清零，奖励只在升到那一级时发，开局没有饮料母棋', () => {
+  it('剧情 15 经验按级清零，奖励只在升到那一级时发，开局场上有能产出的茶壶', () => {
     const cfg = defaultConfig()
     const state = createGame(1, cfg)
-    expect(state.board.flat().some((item) => item?.kind === 'producer' && item.producerId === 'bev')).toBe(false)
+    const tea = state.board.flat().find((item) => item?.kind === 'producer' && item.producerId === 'bev')
+    expect(tea?.kind === 'producer' && tea.level).toBe(cfg.producers.find((entry) => entry.id === 'bev')?.produceFrom ?? 4)
     expect(state.locks.some((lock) => lock.buried.kind === 'producer' && lock.buried.id === 'bev')).toBe(false)
     state.lesson = 'free'
     state.phase = 'play'
@@ -197,8 +204,7 @@ describe('1120 数值表', () => {
     expect(owned.some((item) => item?.kind === 'product' && item.line === 'toy' && item.level === 1)).toBe(true)
     expect(owned.some((item) => item?.kind === 'producer' && item.producerId === 'piggy')).toBe(true)
     expect(owned.some((item) => item?.kind === 'chest' && item.box === 'red')).toBe(true)
-    const bev = owned.find((item) => item?.kind === 'producer' && item.producerId === 'bev')
-    expect(bev?.kind === 'producer' && bev.level).toBe(1)
+    expect(state.rewards.some((item) => item.kind === 'producer' && item.producerId === 'bev' && item.level === 1)).toBe(true)
     const before = state.xp
     state.locks = state.locks.filter((lock) => lock.row !== 0 || lock.col !== 0)
     state.board[0][0] = makeProduct(state, 'food', 3)
@@ -324,5 +330,29 @@ describe('1120 数值表', () => {
     expect(loaded?.xp).toBe(0)
     expect(next.economy.levelTaskThresholds[0]).toBe(30)
     expect(next.economy.levelRewards.find((entry) => entry.level === 4)?.rewards.some((reward) => reward.id === 'bev')).toBe(false)
+  })
+
+  it('旧档没有茶壶时补一只能产出的，并立刻补出停住的茶单', () => {
+    const cfg = defaultConfig()
+    const state = createGame(3, cfg)
+    state.phase = 'play'
+    state.lesson = 'free'
+    state.storySeen = true
+    state.orders = []
+    state.orderSeq = 11
+    state.coins = 0
+    state.board.forEach((row) =>
+      row.forEach((item, col) => {
+        if (item?.kind === 'producer' && item.producerId === 'bev') row[col] = null
+      }),
+    )
+    state.pending = state.pending.filter((item) => !(item.kind === 'producer' && item.producerId === 'bev'))
+    state.rewards = state.rewards.filter((item) => !(item.kind === 'producer' && item.producerId === 'bev'))
+    state.hasProducer.bev = false
+    const loaded = hydrate(serialize(state, cfg), defaultConfig())
+    const tea = loaded?.board.flat().find((item) => item?.kind === 'producer' && item.producerId === 'bev')
+      ?? loaded?.pending.find((item) => item.kind === 'producer' && item.producerId === 'bev')
+    expect(tea?.kind === 'producer' && tea.level).toBe(cfg.producers.find((entry) => entry.id === 'bev')?.produceFrom ?? 4)
+    expect(loaded?.orders.some((order) => order.earlyNo === 11)).toBe(true)
   })
 })

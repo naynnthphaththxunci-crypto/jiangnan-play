@@ -42,10 +42,11 @@ describe('第六轮', () => {
   it('开局只开母棋周围 7 格，旁边合成会把全遮揭成半开', () => {
     const cfg = defaultConfig()
     const state = createGame(1, cfg)
-    expect(openCellCount(state)).toBe(2)
+    expect(openCellCount(state)).toBe(3)
     const food = findProducer(state, 'food')
     expect(food?.item.kind === 'producer' && food.item.level).toBe(1)
-    expect(findProducer(state, 'bev')).toBeNull()
+    const tea = findProducer(state, 'bev')
+    expect(tea?.item.kind === 'producer' && tea.item.level).toBe(4)
     const full = state.locks.filter((lock) => lock.veil === 'full').length
     const half = state.locks.filter((lock) => lock.veil === 'half' && lock.cover !== 'gift').length
     expect(full).toBeGreaterThan(half)
@@ -63,6 +64,13 @@ describe('第六轮', () => {
     state.phase = 'play'
     const food = state.board.flat().find((item) => item?.kind === 'producer' && item.producerId === 'food')
     if (food?.kind === 'producer') food.level = 4
+    state.board.forEach((row) =>
+      row.forEach((item, col) => {
+        if (item?.kind === 'producer' && item.producerId === 'bev') row[col] = null
+      }),
+    )
+    state.hasProducer.bev = false
+    state.pending = state.pending.filter((item) => !(item.kind === 'producer' && item.producerId === 'bev'))
     for (let i = 0; i < 12; i++) {
       const order = generateOrder(state, cfg, mulberry32(i + 9))
       expect(order).toBeTruthy()
@@ -142,7 +150,7 @@ describe('第六轮', () => {
   it('从剧情玩到 8 级，前 10 分钟能开出十几格，订单都做得了', () => {
     const report = playThrough()
     expect(report.level).toBeGreaterThanOrEqual(4)
-    expect(report.opensAt0).toBe(2)
+    expect(report.opensAt0).toBe(3)
     expect(report.opensAt10).toBeGreaterThan(report.opensAt0)
     expect(report.level).toBeGreaterThanOrEqual(4)
     expect(report.levels.some((entry) => entry.level === 3)).toBe(true)

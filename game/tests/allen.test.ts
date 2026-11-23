@@ -29,7 +29,7 @@ describe('Allen 11-06 母棋、剧情和暂存', () => {
     const { state, cfg } = boot()
     const starter = state.board.flat().find((item) => item?.kind === 'producer' && item.producerId === 'food')
     expect(starter && starter.kind === 'producer' && starter.level).toBe(1)
-    expect(state.board.flat().some((item) => item?.kind === 'producer' && item.producerId !== 'food')).toBe(false)
+    expect(state.board.flat().some((item) => item?.kind === 'producer' && item.producerId === 'bev' && item.level >= 4)).toBe(true)
     for (const id of ['food', 'toy', 'bev'] as const) {
       state.board[0][0] = makeProducer(state, id, cfg, 1)
       state.board[0][1] = makeProducer(state, id, cfg, 1)

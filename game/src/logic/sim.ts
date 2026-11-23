@@ -689,8 +689,16 @@ function applyOpening(state: GameState, cfg: GameConfig): void {
     prize?: CellLock['prize']
   }[]
   const open: { row: number; col: number }[] = []
+  let placedTea = false
+  const teaFrom = cfg.producers.find((entry) => entry.id === 'bev')?.produceFrom ?? 4
   for (const cell of cells) {
     if (cell.item.kind === 'producer' && cell.item.id === 'bev') {
+      if (!placedTea) {
+        placedTea = true
+        open.push({ row: cell.row, col: cell.col })
+        state.board[cell.row][cell.col] = makeProducer(state, 'bev', cfg, teaFrom)
+        continue
+      }
       state.locks.push({
         row: cell.row,
         col: cell.col,
@@ -719,6 +727,7 @@ function applyOpening(state: GameState, cfg: GameConfig): void {
     })
   }
   state.hasProducer.food = true
+  state.hasProducer.bev = true
   cfg.board.roles = {
     mergeA: { row: 3, col: 1 },
     mergeB: { row: 4, col: 1 },
@@ -728,6 +737,7 @@ function applyOpening(state: GameState, cfg: GameConfig): void {
     gift: { row: 7, col: 6 },
     bagSpot: { row: 4, col: 4 },
   }
+  ensureTeaOnField(state, cfg)
   cfg.board.open = open
   cfg.board.locks = state.locks.map((lock) => ({ ...lock, buried: { ...lock.buried } }))
 }
@@ -1660,6 +1670,33 @@ function fieldProducerLevel(state: GameState, id: string): number {
   eachCell(state.board, (item) => look(item))
   for (const item of state.pending) look(item)
   return level
+}
+
+const TUTORIAL_CELLS = new Set(['3,1', '4,1', '4,2', '4,3', '4,4', '7,6'])
+
+/** 场上没有达到起产等级的茶壶时，补一只。新开局和旧档都走这里。 */
+function ensureTeaOnField(state: GameState, cfg: GameConfig): void {
+  const from = cfg.producers.find((entry) => entry.id === 'bev')?.produceFrom ?? 4
+  if (fieldProducerLevel(state, 'bev') >= from) {
+    state.hasProducer.bev = true
+    return
+  }
+  const item = makeProducer(state, 'bev', cfg, from)
+  const spot = findEmpty(state)[0]
+  if (spot) {
+    state.board[spot.row][spot.col] = item
+  } else {
+    const spare = state.locks.find(
+      (lock) => lock.cover !== 'gift' && lock.veil === 'full' && !TUTORIAL_CELLS.has(`${lock.row},${lock.col}`),
+    )
+    if (spare) {
+      state.locks = state.locks.filter((lock) => lock !== spare)
+      state.board[spare.row][spare.col] = item
+    } else {
+      state.pending.push(item)
+    }
+  }
+  state.hasProducer.bev = true
 }
 
 /** 这条线要哪只母棋、到几级才产得出。难出线用 sideFrom，其余用起产等级。 */
@@ -3367,6 +3404,8 @@ export function hydrate(raw: string, cfg: GameConfig): GameState | null {
     state.spawnMult ??= 1
     if (!allowedSpawnMults(state, cfg).includes(state.spawnMult as 1 | 2 | 4)) state.spawnMult = 1
     state.mintStep ??= 'off'
+    ensureTeaOnField(state, cfg)
+    if (state.phase === 'play' || state.lesson === 'focus' || state.lesson === 'deliver') syncEarlyOrders(state, cfg)
     resolveGuides(state, cfg)
     if (state.phase === 'opening' && !openingStepPossible(state, cfg)) dismissStuckGuide(state, cfg)
     state.shopOpen ??= false

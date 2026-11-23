@@ -27,8 +27,8 @@ describe('锁格与笑脸', () => {
     expect(COLS).toBe(7)
     expect(state.board).toHaveLength(9)
     expect(state.board[0]).toHaveLength(7)
-    expect(cfg.board.open).toHaveLength(2)
-    expect(state.locks.length).toBe(63 - 2)
+    expect(cfg.board.open).toHaveLength(3)
+    expect(state.locks.length).toBe(63 - 3)
     expect(state.locks.filter((lock) => lock.veil === 'half')).toHaveLength(1)
   })
 

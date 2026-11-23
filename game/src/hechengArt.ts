@@ -1,6 +1,8 @@
 import { assignArtSrc } from './artGate'
-import bgUrl from './assets/hecheng/bg.webp'
-import counterUrl from './assets/hecheng/counter.webp'
+import woodUrl from './assets/hecheng/wood.webp'
+import sceneUrl from './assets/hecheng/scene.webp'
+import tableUrl from './assets/hecheng/table.webp'
+import underUrl from './assets/hecheng/under.webp'
 import plateUrl from './assets/hecheng/plate.webp'
 import completeUrl from './assets/hecheng/complete.webp'
 import bubbleUrl from './assets/hecheng/bubble.webp'
@@ -33,8 +35,10 @@ import readyCellUrl from './assets/hecheng/ready_cell.webp'
 import orderTickUrl from './assets/hecheng/order_tick.webp'
 
 export const HECHENG_ART = {
-  bg: bgUrl,
-  counter: counterUrl,
+  wood: woodUrl,
+  scene: sceneUrl,
+  table: tableUrl,
+  under: underUrl,
   plate: plateUrl,
   complete: completeUrl,
   bubble: bubbleUrl,

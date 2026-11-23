@@ -128,7 +128,9 @@ describe('修缮', () => {
     const owned = [...state.board.flat(), ...state.rewards, ...state.pending]
     expect(owned.some((item) => item?.kind === 'producer' && item.producerId === 'food' && item.level === 4)).toBe(true)
     expect(owned.some((item) => item?.kind === 'chest')).toBe(true)
-    expect(findProducer(state, 'bev')).toBeNull()
+    expect(state.rewards.some((item) => item.kind === 'producer' && item.producerId === 'bev')).toBe(false)
+    const openingTea = findProducer(state, 'bev')
+    expect(openingTea?.item.kind === 'producer' && openingTea.item.level).toBe(4)
 
     finish(state, cfg, 3)
     expect(state.tasksDone).toHaveLength(5)

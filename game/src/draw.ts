@@ -52,7 +52,7 @@ import { alignedHome, arrowPoke, storyCardRects, type HomeBox } from './homeLayo
 import { assignArtSrc } from './artGate'
 import { homeArt, type HomeArtId } from './homeArt'
 import { HOME_MAP_H, HOME_MAP_W, homeDaughterRect, homeHostessRect, homeTreeRect, placeHomeBuildings, type HomeCam } from './homeMap'
-import { BOARD_Y, MERGE_BOARD, cellWoodRect, designToScreen } from './hechengLayout'
+import { MERGE_BOARD, cellWoodRect, designToScreen } from './hechengLayout'
 import { BUBBLE_BOX, CHEST_BADGE_BOX, badgeImage, bubbleImage, chestBubble, moundImage, soilImage } from './boardCover'
 import { drawOrderGuest, orderGuestReady } from './orderCast'
 import { orderTickPlace } from './orderTick'
@@ -770,46 +770,56 @@ function blit(ctx: CanvasRenderingContext2D, id: Parameters<typeof hechengImage>
   ctx.drawImage(img as CanvasImageSource, rect.x, rect.y, rect.w, rect.h)
 }
 
+/** 铺满一块区域：按比例放大后裁切，不拉伸。焦点落在区域正中。 */
+function coverImage(
+  ctx: CanvasRenderingContext2D,
+  img: CanvasImageSource & { naturalWidth?: number; naturalHeight?: number },
+  dest: Rect,
+  focusX: number,
+  focusY: number,
+): void {
+  const iw = img.naturalWidth || 0
+  const ih = img.naturalHeight || 0
+  if (iw <= 0 || ih <= 0 || dest.w <= 0 || dest.h <= 0) return
+  const scale = Math.max(dest.w / iw, dest.h / ih)
+  const dw = iw * scale
+  const dh = ih * scale
+  let dx = dest.x + dest.w * 0.5 - dw * focusX
+  let dy = dest.y + dest.h * 0.5 - dh * focusY
+  if (dx > dest.x) dx = dest.x
+  if (dy > dest.y) dy = dest.y
+  if (dx + dw < dest.x + dest.w) dx = dest.x + dest.w - dw
+  if (dy + dh < dest.y + dest.h) dy = dest.y + dest.h - dh
+  ctx.save()
+  ctx.beginPath()
+  ctx.rect(dest.x, dest.y, dest.w, dest.h)
+  ctx.clip()
+  ctx.drawImage(img, dx, dy, dw, dh)
+  ctx.restore()
+}
+
 function drawHecheng(model: RenderModel): void {
   const { ctx, frame, state, cfg, realNow } = model
   const scale = frame.w / 1080
-  const top = frame.board.y - BOARD_Y * scale
-  const bg = hechengImage('bg')
-  if (bg && (bg.naturalWidth || 0) > 0) {
-    let x = -324 * scale
-    let y = top - 178 * scale
-    let w = 1725 * scale
-    let h = 2627 * scale
-    if (y > -1) {
-      const grow = y + 2
-      const s = (h + grow) / h
-      x -= (w * s - w) / 2
-      y -= grow
-      w *= s
-      h *= s
-    }
-    ctx.drawImage(bg as CanvasImageSource, x, y, w, h)
-    if (y + h < frame.h) {
-      ctx.fillStyle = '#8a5a32'
-      ctx.fillRect(0, y + h - 1, frame.w, frame.h - (y + h) + 1)
-    }
+  const wood = hechengImage('wood')
+  if (wood && (wood.naturalWidth || 0) > 0) {
+    coverImage(ctx, wood, { x: 0, y: 0, w: frame.w, h: frame.h }, 0.5, 0.51)
   } else {
-    ctx.fillStyle = '#1a1410'
+    ctx.fillStyle = '#8a5a32'
     ctx.fillRect(0, 0, frame.w, frame.h)
   }
   const at = (box: Rect, anchor: 'top' | 'bottom' = 'top') => designToScreen(frame, box, anchor)
+  const tableBox = at({ x: 0, y: 558, w: 1080, h: 324 })
+  const scene = hechengImage('scene')
+  if (scene && (scene.naturalWidth || 0) > 0 && tableBox.y > 1) {
+    coverImage(ctx, scene, { x: 0, y: 0, w: frame.w, h: tableBox.y }, 0.5, 0.52)
+  }
   const clipOrders = () => {
     ctx.beginPath()
     ctx.rect(frame.orderClip.x, frame.orderClip.y, frame.orderClip.w, frame.orderClip.h)
     ctx.clip()
   }
-  const counterImg = hechengImage('counter')
-  if (counterImg && (counterImg.naturalWidth || 0) > 0) {
-    const counterY = top + 598 * scale
-    const counterH = 324 * scale
-    ctx.drawImage(counterImg as CanvasImageSource, 0, counterY, frame.w, counterH)
-  }
-  drawMergeBoard(ctx, at(MERGE_BOARD))
+  const guestDrop = 72 * scale
   ctx.save()
   clipOrders()
   state.orders.forEach((order, index) => {
@@ -818,78 +828,23 @@ function drawHecheng(model: RenderModel): void {
     const table = frame.tableSlots[index]
     if (table && orderGuestReady(order.customerId)) {
       if (!guestSeen.has(order.id)) guestSeen.set(order.id, realNow)
-      drawOrderGuest(ctx, order.customerId, table, realNow, guestSeen.get(order.id) ?? realNow)
+      drawOrderGuest(
+        ctx,
+        order.customerId,
+        { ...table, y: table.y + guestDrop },
+        realNow,
+        guestSeen.get(order.id) ?? realNow,
+      )
     }
     void guest
   })
   ctx.restore()
-  ctx.save()
-  clipOrders()
-  frame.tableSlots.forEach((plate) => blit(ctx, 'plate', plate))
-  state.orders.forEach((order, index) => {
-    order.slots.forEach((slot, slotIndex) => {
-      const icon = frame.orderIcons.find((entry) => entry.order === index && entry.slot === slotIndex)
-      if (!icon) return
-      const sprite = itemSprite(slot.line, slot.level)
-      if (sprite) drawFittedSprite(ctx, sprite, icon.rect, 1)
-      else {
-        roundRect(ctx, icon.rect.x, icon.rect.y, icon.rect.w, icon.rect.h, 6)
-        ctx.fillStyle = lineColor(cfg, slot.line)
-        ctx.fill()
-      }
-      if (slotChecked(state, order, slotIndex)) {
-        const r = Math.max(4, Math.min(7, icon.rect.h * 0.22))
-        ctx.beginPath()
-        ctx.fillStyle = '#fffaf3'
-        ctx.arc(icon.rect.x + icon.rect.w - r - 1, icon.rect.y + icon.rect.h - r - 1, r, 0, Math.PI * 2)
-        ctx.fill()
-        text(ctx, '✓', icon.rect.x + icon.rect.w - r - 1, icon.rect.y + icon.rect.h - r - 1, r * 1.15, '#2c7a58')
-      }
-    })
-    const payRect = frame.orderRewards[index]
-    if (payRect) drawPayBubble(ctx, payRect, orderPayout(order, cfg).coins)
-    if (orderSatisfied(state, order)) {
-      const btn = frame.completes[index]
-      if (btn) blit(ctx, 'complete', btn)
-    }
-  })
-  ctx.restore()
+  drawMergeBoard(ctx, at(MERGE_BOARD))
   blit(ctx, 'stash', frame.pendingBtn)
   blit(ctx, 'info', frame.infoBar)
   blit(ctx, 'build', frame.houseBtn)
   const task = nextTask(state, cfg)
   const buildHot = state.phase === 'play' && state.guide === 'none' && task && state.coins >= taskPrice(task, cfg)
-  if (frame.taskBtn.w > 0) {
-    blit(ctx, 'taskFrame', frame.taskBtn)
-    blit(ctx, 'taskIcon', frame.taskIcon)
-    if (buildHot) blit(ctx, 'badgeTask', frame.badgeTask)
-  }
-  if (frame.chestBtn.w > 0) {
-    blit(ctx, 'chestFrame', frame.chestBtn)
-    blit(ctx, 'chestIcon', frame.chestIcon)
-    blit(ctx, 'badgeSmall', frame.badgeChest)
-    if (state.rewards.length > 1) {
-      text(
-        ctx,
-        String(state.rewards.length),
-        frame.badgeChest.x + frame.badgeChest.w / 2,
-        frame.badgeChest.y + frame.badgeChest.h / 2,
-        Math.max(9, frame.badgeChest.h * 0.46),
-        '#fffaf3',
-      )
-    }
-  }
-  if (frame.storyBtn.w > 0) {
-    const pulse = state.level >= 2 && storyReady(state, cfg) ? 1 + 0.08 * Math.sin(realNow / 180) : 1
-    ctx.save()
-    ctx.translate(frame.storyBtn.x + frame.storyBtn.w / 2, frame.storyBtn.y + frame.storyBtn.h / 2)
-    ctx.scale(pulse, pulse)
-    ctx.translate(-(frame.storyBtn.x + frame.storyBtn.w / 2), -(frame.storyBtn.y + frame.storyBtn.h / 2))
-    blit(ctx, 'chestFrame', frame.storyBtn)
-    blit(ctx, 'book', frame.bookIcon)
-    if (storyReady(state, cfg)) blit(ctx, 'badgeSmall', frame.badgeStory)
-    ctx.restore()
-  }
   blit(ctx, 'energy', frame.energySlot)
   blit(ctx, 'coin', frame.coinSlot)
   blit(ctx, 'gem', frame.gemSlot)
@@ -1228,6 +1183,89 @@ function drawBuriedPiece(ctx: CanvasRenderingContext2D, cfg: GameConfig, lock: {
   if (item) drawItem(ctx, cfg, item, cell, 1, 1, now)
 }
 
+/** 柜台压在棋盘上沿和客人下半身前面，订单盘子和侧栏按钮再画在柜台上面。 */
+function drawCounterFront(model: RenderModel): void {
+  const { ctx, frame, state, cfg, realNow } = model
+  if (frame.mode !== 'board') return
+  const at = (box: Rect) => designToScreen(frame, box, 'top')
+  const table = hechengImage('table')
+  if (table && (table.naturalWidth || 0) > 0) {
+    const box = at({ x: 0, y: 558, w: 1080, h: 324 })
+    ctx.drawImage(table as CanvasImageSource, box.x, box.y, box.w, box.h)
+  }
+  const under = hechengImage('under')
+  if (under && (under.naturalWidth || 0) > 0) {
+    const box = at({ x: 24, y: 663, w: 1045, h: 141 })
+    ctx.drawImage(under as CanvasImageSource, box.x, box.y, box.w, box.h)
+  }
+  ctx.save()
+  ctx.beginPath()
+  ctx.rect(frame.orderClip.x, frame.orderClip.y, frame.orderClip.w, frame.orderClip.h)
+  ctx.clip()
+  frame.tableSlots.forEach((plate) => blit(ctx, 'plate', plate))
+  state.orders.forEach((order, index) => {
+    order.slots.forEach((slot, slotIndex) => {
+      const icon = frame.orderIcons.find((entry) => entry.order === index && entry.slot === slotIndex)
+      if (!icon) return
+      const sprite = itemSprite(slot.line, slot.level)
+      if (sprite) drawFittedSprite(ctx, sprite, icon.rect, 1)
+      else {
+        roundRect(ctx, icon.rect.x, icon.rect.y, icon.rect.w, icon.rect.h, 6)
+        ctx.fillStyle = lineColor(cfg, slot.line)
+        ctx.fill()
+      }
+      if (slotChecked(state, order, slotIndex)) {
+        const r = Math.max(4, Math.min(7, icon.rect.h * 0.22))
+        ctx.beginPath()
+        ctx.fillStyle = '#fffaf3'
+        ctx.arc(icon.rect.x + icon.rect.w - r - 1, icon.rect.y + icon.rect.h - r - 1, r, 0, Math.PI * 2)
+        ctx.fill()
+        text(ctx, '✓', icon.rect.x + icon.rect.w - r - 1, icon.rect.y + icon.rect.h - r - 1, r * 1.15, '#2c7a58')
+      }
+    })
+    const payRect = frame.orderRewards[index]
+    if (payRect) drawPayBubble(ctx, payRect, orderPayout(order, cfg).coins)
+    if (orderSatisfied(state, order)) {
+      const btn = frame.completes[index]
+      if (btn) blit(ctx, 'complete', btn)
+    }
+  })
+  ctx.restore()
+  const task = nextTask(state, cfg)
+  const buildHot = state.phase === 'play' && state.guide === 'none' && task && state.coins >= taskPrice(task, cfg)
+  if (frame.taskBtn.w > 0) {
+    blit(ctx, 'taskFrame', frame.taskBtn)
+    blit(ctx, 'taskIcon', frame.taskIcon)
+    if (buildHot) blit(ctx, 'badgeTask', frame.badgeTask)
+  }
+  if (frame.chestBtn.w > 0) {
+    blit(ctx, 'chestFrame', frame.chestBtn)
+    blit(ctx, 'chestIcon', frame.chestIcon)
+    blit(ctx, 'badgeSmall', frame.badgeChest)
+    if (state.rewards.length > 1) {
+      text(
+        ctx,
+        String(state.rewards.length),
+        frame.badgeChest.x + frame.badgeChest.w / 2,
+        frame.badgeChest.y + frame.badgeChest.h / 2,
+        Math.max(9, frame.badgeChest.h * 0.46),
+        '#fffaf3',
+      )
+    }
+  }
+  if (frame.storyBtn.w > 0) {
+    const pulse = state.level >= 2 && storyReady(state, cfg) ? 1 + 0.08 * Math.sin(realNow / 180) : 1
+    ctx.save()
+    ctx.translate(frame.storyBtn.x + frame.storyBtn.w / 2, frame.storyBtn.y + frame.storyBtn.h / 2)
+    ctx.scale(pulse, pulse)
+    ctx.translate(-(frame.storyBtn.x + frame.storyBtn.w / 2), -(frame.storyBtn.y + frame.storyBtn.h / 2))
+    blit(ctx, 'chestFrame', frame.storyBtn)
+    blit(ctx, 'book', frame.bookIcon)
+    if (storyReady(state, cfg)) blit(ctx, 'badgeSmall', frame.badgeStory)
+    ctx.restore()
+  }
+}
+
 function drawBoard(model: RenderModel): void {
   const { ctx, frame, state, cfg, realNow, animNow, fx } = model
   if (frame.board.cell <= 0) return
@@ -1381,6 +1419,7 @@ function drawBoard(model: RenderModel): void {
       drawSelectFrame(ctx, cellBox(frame, picked.row, picked.col), cfg.economy.selectFrameScale ?? 1.16)
     }
   }
+  drawCounterFront(model)
   if (fx.drag) {
     const item = fx.drag.pending ? state.pending[fx.drag.index ?? 0] : state.board[fx.drag.row]?.[fx.drag.col]
     const origin = fx.drag.pending ? frame.pendingBtn : cellBox(frame, fx.drag.row, fx.drag.col)

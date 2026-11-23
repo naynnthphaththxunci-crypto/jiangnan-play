@@ -39,6 +39,13 @@ describe('第五轮', () => {
     const food = state.board.flat().find((item) => item?.kind === 'producer' && item.producerId === 'food')
     if (food?.kind === 'producer') food.level = 4
     expect(orderCraftable(state, cfg, 'food', 3)).toBe(true)
+    state.board.forEach((row) =>
+      row.forEach((item, col) => {
+        if (item?.kind === 'producer' && item.producerId === 'bev') row[col] = null
+      }),
+    )
+    state.pending = state.pending.filter((item) => !(item.kind === 'producer' && item.producerId === 'bev'))
+    state.rewards = state.rewards.filter((item) => !(item.kind === 'producer' && item.producerId === 'bev'))
     expect(orderCraftable(state, cfg, 'bev', 6)).toBe(false)
     expect(orderCraftable(state, cfg, 'toy', 8)).toBe(false)
     queueReward(state, makeProducer(state, 'bev', cfg, 1))

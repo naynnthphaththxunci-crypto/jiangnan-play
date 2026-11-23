@@ -117,6 +117,7 @@ describe('订单', () => {
     state.board = state.board.map((row) =>
       row.map((item) => (item?.kind === 'producer' && item.producerId !== 'food' ? null : item)),
     )
+    state.hasProducer.bev = false
     state.rewards = []
     state.pending = state.pending.filter((item) => !(item.kind === 'producer' && item.producerId !== 'food'))
     state.unlocked.food = 0
