@@ -176,6 +176,14 @@ describe('订单', () => {
     skipOpening(state, cfg, rng)
     expect(state.phase).toBe('play')
     expect(state.lesson).toBe('free')
+    expect(state.orders).toHaveLength(0)
+    const granted = state.rewards.find((item) => item.kind === 'producer' && item.producerId === 'food')
+    expect(granted?.kind === 'producer' && granted.level).toBeGreaterThanOrEqual(4)
+    if (granted) {
+      state.board[0][0] = granted
+      state.rewards = state.rewards.filter((item) => item !== granted)
+    }
+    syncEarlyOrders(state, cfg)
     expect(state.orders).toHaveLength(1)
     expect(state.orders[0]?.earlyNo).toBe(1)
     expect(state.showHelp).toBe(true)

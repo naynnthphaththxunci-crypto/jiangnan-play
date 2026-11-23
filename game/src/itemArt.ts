@@ -160,7 +160,10 @@ export function producerNorm(id: string, level: number): PieceNorm | null {
 }
 
 export function producerPieceName(id: string, level: number): string | null {
-  return placed.producers[id]?.[String(level)]?.name ?? artTable.names[id]?.[level - 1] ?? null
+  const raw = placed.producers[id]?.[String(level)]?.name ?? artTable.names[id]?.[level - 1]
+  if (!raw) return null
+  const cleaned = raw.replace(/^[\s_　]+/, '')
+  return cleaned || null
 }
 
 export function producerPlace(id: string, level: number): ArtBox | null {

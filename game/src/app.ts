@@ -793,7 +793,7 @@ export function startGame(platform: Platform): void {
       return
     }
     if (hit.kind === 'reward') {
-      present(takeReward(state))
+      present(takeReward(state, cfg))
       resolveGuides(state, cfg)
       return
     }

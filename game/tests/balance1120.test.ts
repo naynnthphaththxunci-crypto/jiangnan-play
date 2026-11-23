@@ -91,25 +91,31 @@ describe('1120 数值表', () => {
     state.orderSeq = 5
     syncEarlyOrders(state, cfg)
     expect(state.heldOrders).toEqual([])
+    expect(state.orders).toEqual([])
+    expect(state.orderSeq).toBe(5)
+    state.board[3][1] = makeProducer(state, 'food', cfg, 5)
+    syncEarlyOrders(state, cfg)
     expect(state.orders.map((order) => order.earlyNo)).toEqual([5, 6])
     expect(state.orders[0]?.payCoins).toBe(14)
   })
 
-  it('没有茶壶就停在饮料单，不跳号；第一单固定是小桃', () => {
+  it('茶壶没到起产等级就停在茶单，合到起产等级才出，第一单仍是小桃', () => {
     const cfg = defaultConfig()
     const state = createGame(1, cfg)
     state.lesson = 'free'
     state.phase = 'play'
+    const stove = state.board.flat().find((item) => item?.kind === 'producer' && item.producerId === 'food')
+    if (stove?.kind === 'producer') stove.level = 4
     syncEarlyOrders(state, cfg)
     expect(state.orders[0]?.earlyNo).toBe(1)
     expect(state.orders[0]?.customerId).toBe('xiaotao')
-    expect(state.orders.every((order) => order.slots.every((slot) => slot.line !== 'bev'))).toBe(true)
     state.orders = []
     state.orderSeq = 11
+    state.board[2][2] = makeProducer(state, 'bev', cfg, 3)
     syncEarlyOrders(state, cfg)
     expect(state.orders).toEqual([])
     expect(state.orderSeq).toBe(11)
-    state.board[2][2] = makeProducer(state, 'bev', cfg, 1)
+    state.board[2][2] = makeProducer(state, 'bev', cfg, 4)
     syncEarlyOrders(state, cfg)
     expect(state.orders.map((order) => order.earlyNo)).toContain(11)
     expect(state.orders.find((order) => order.earlyNo === 11)?.slots.every((slot) => slot.line === 'bev')).toBe(true)

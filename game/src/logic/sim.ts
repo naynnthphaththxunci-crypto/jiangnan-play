@@ -339,7 +339,7 @@ export function rewardName(cfg: GameConfig, item: Item): string {
   return cfg.items.chestName
 }
 
-export function takeReward(state: GameState): ActionResult {
+export function takeReward(state: GameState, cfg?: GameConfig): ActionResult {
   const chestAt = state.rewards.findIndex((item) => item.kind === 'chest')
   const index = chestAt >= 0 ? chestAt : 0
   const item = state.rewards[index]
@@ -359,7 +359,10 @@ export function takeReward(state: GameState): ActionResult {
   state.energy = before
   state.board[spot.row][spot.col] = item
   if (item.kind === 'product') noteUnlock(state, item.line, item.level)
-  if (item.kind === 'producer') state.hasProducer[item.producerId] = true
+  if (item.kind === 'producer') {
+    state.hasProducer[item.producerId] = true
+    if (cfg) syncEarlyOrders(state, cfg)
+  }
   if ((item.kind === 'rewardBox' || item.kind === 'chest') && state.chestLesson === 1) {
     state.chestLesson = 2
     state.chestCell = { row: spot.row, col: spot.col }
@@ -1313,6 +1316,7 @@ export function dropItem(state: GameState, from: Pos, to: Pos, cfg?: GameConfig)
       noteProducerLevel(state, cfg, item.producerId, level)
       if (atStep(state, cfg, 'unlock') || atStep(state, cfg, 'mergeC') || atStep(state, cfg, 'mergeD')) advanceTutorial(state, cfg)
       revealAround(state, to.row, to.col, cfg)
+      syncEarlyOrders(state, cfg)
       return {
         ok: true,
         events: [
@@ -1428,6 +1432,7 @@ export function dropItem(state: GameState, from: Pos, to: Pos, cfg?: GameConfig)
       if (other.producerId === 'food' && atStep(state, cfg, 'producerL2') && level === 2) advanceTutorial(state, cfg)
       if (other.producerId === 'food' && atStep(state, cfg, 'producerL3') && level >= 3) advanceTutorial(state, cfg)
       revealAround(state, to.row, to.col, cfg)
+      syncEarlyOrders(state, cfg)
       return {
         ok: true,
         events: [{ type: 'merge', row: to.row, col: to.col, line: other.line, level, kind: 'product' }],
@@ -1646,35 +1651,29 @@ export function generateOrder(state: GameState, cfg: GameConfig, rng: Rng): Orde
   return order
 }
 
-function producerLevel(state: GameState, id: string): number {
+/** 棋盘和暂存里这只母棋的最高级。奖励栏还没放到场上，不算。 */
+function fieldProducerLevel(state: GameState, id: string): number {
   let level = 0
-  eachCell(state.board, (item) => {
+  const look = (item: Item | null | undefined) => {
     if (item?.kind === 'producer' && item.producerId === id) level = Math.max(level, item.level)
-  })
-  for (const item of [...state.pending, ...state.rewards]) {
-    if (item.kind === 'producer' && item.producerId === id) level = Math.max(level, item.level)
   }
+  eachCell(state.board, (item) => look(item))
+  for (const item of state.pending) look(item)
   return level
 }
 
-const LINE_PRODUCER: Record<string, string> = {
-  food: 'food',
-  meat: 'food',
-  bev: 'bev',
-  mint: 'bev',
-  toy: 'toy',
-  wand: 'toy',
-  bed: 'bed',
-  fish: 'boat',
-  plant: 'plant',
+/** 这条线要哪只母棋、到几级才产得出。难出线用 sideFrom，其余用起产等级。 */
+function lineSource(cfg: GameConfig, line: string): { id: string; from: number } | null {
+  const side = cfg.producers.find((entry) => entry.side === line)
+  if (side && (side.sideFrom ?? side.produceFrom) != null) return { id: side.id, from: side.sideFrom ?? side.produceFrom ?? 99 }
+  const makers = cfg.producers.filter((entry) => entry.line === line && entry.produceFrom != null)
+  const direct = makers.find((entry) => entry.kind !== 'consumable') ?? makers[0]
+  if (!direct || direct.produceFrom == null) return null
+  return { id: direct.id, from: direct.produceFrom }
 }
 
 function lineUnlocked(state: GameState, cfg: GameConfig, line: string): boolean {
-  const id = LINE_PRODUCER[line]
-  if (!id) return false
-  const def = cfg.producers.find((entry) => entry.id === id)
-  const from = line === def?.side ? (def?.sideFrom ?? 99) : (def?.produceFrom ?? 99)
-  return producerLevel(state, id) >= from
+  return lineCanOrder(state, cfg, line)
 }
 
 function rememberLines(state: GameState, slots: { line: string }[]): void {
@@ -1684,19 +1683,11 @@ function rememberLines(state: GameState, slots: { line: string }[]): void {
   }
 }
 
-/** 这条线的母棋要已经在棋盘、暂存或奖励栏里，订单才出。 */
-function lineProducerPresent(state: GameState, cfg: GameConfig, line: string): boolean {
-  const owned = (id: string) => producerLevelOwned(state, id) > 0 || !!state.hasProducer[id]
-  if (line === 'meat') return owned('food')
-  if (line === 'mint') return owned('bev')
-  if (line === 'wand') return owned('toy')
-  if (line === 'fish') return owned('net')
-  if (line === 'catch') return owned('net') || owned('boat')
-  const direct = cfg.producers.find((entry) => entry.line === line && entry.kind !== 'consumable')
-  if (direct) return owned(direct.id)
-  const parent = cfg.producers.find((entry) => entry.side === line)
-  if (parent) return owned(parent.id)
-  return false
+/** 场上母棋要达到这条线的起产等级，订单才出。 */
+function lineCanOrder(state: GameState, cfg: GameConfig, line: string): boolean {
+  const source = lineSource(cfg, line)
+  if (!source) return false
+  return fieldProducerLevel(state, source.id) >= source.from
 }
 
 function pushEarly(state: GameState, cfg: GameConfig, spec: NonNullable<ReturnType<typeof earlyOrder>>): void {
@@ -1739,7 +1730,7 @@ export function syncEarlyOrders(state: GameState, cfg: GameConfig): void {
   while (guard < 12 && state.orderSeq <= 131) {
     const spec = earlyOrder(state.orderSeq)
     if (!spec) break
-    if (!spec.items.every((item) => lineProducerPresent(state, cfg, item.line))) break
+    if (!spec.items.every((item) => lineCanOrder(state, cfg, item.line))) break
     const shownCaps = state.orders.map((order) => earlyOrder(order.earlyNo ?? 0)?.maxOnScreen ?? spec.maxOnScreen)
     const cap = Math.min(spec.maxOnScreen, ...shownCaps)
     if (state.orders.length >= cap) break
@@ -2187,12 +2178,11 @@ export function infoCaption(cfg: GameConfig, item: Item, now = 0): { title: stri
     return { title: name, usage: `${cnLevel(item.level)} · ${chain} · ${collect}` }
   }
   if (item.kind === 'producer') {
-    const lineName = cfg.items.lines.find((line) => line.id === item.line)?.name ?? producerName(cfg, item.producerId)
     const cooling = producerCooldown(cfg, item, now)
     const status = cooling ? `冷却中，还剩 ${formatMs(cooling.left)}` : `剩余体力 ${item.charges}`
     return {
       title: producerPieceName(item.producerId, item.level) ?? producerName(cfg, item.producerId),
-      usage: `${cnLevel(item.level)} · ${lineName} · ${status}`,
+      usage: `${cnLevel(item.level)} · 母棋 · ${status}`,
     }
   }
   if (item.kind === 'potion') {
