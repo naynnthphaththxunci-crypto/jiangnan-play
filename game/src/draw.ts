@@ -52,7 +52,7 @@ import { alignedHome, arrowPoke, storyCardRects, type HomeBox } from './homeLayo
 import { assignArtSrc } from './artGate'
 import { homeArt, type HomeArtId } from './homeArt'
 import { HOME_MAP_H, HOME_MAP_W, homeDaughterRect, homeHostessRect, homeTreeRect, placeHomeBuildings, type HomeCam } from './homeMap'
-import { cellWoodRect, designToScreen } from './hechengLayout'
+import { BOARD_Y, MERGE_BOARD, cellWoodRect, designToScreen } from './hechengLayout'
 import { BUBBLE_BOX, CHEST_BADGE_BOX, badgeImage, bubbleImage, chestBubble, moundImage, soilImage } from './boardCover'
 import { drawOrderGuest, orderGuestReady } from './orderCast'
 import { orderTickPlace } from './orderTick'
@@ -728,6 +728,41 @@ function resourcePill(ctx: CanvasRenderingContext2D, rect: Rect, mark: string, m
 
 const guestSeen = new Map<string, number>()
 
+/** 浅色棋盘。底是深格色，浅格是内缩圆角方块，左上格为深色。 */
+function drawMergeBoard(ctx: CanvasRenderingContext2D, board: Rect): void {
+  if (board.w <= 0 || board.h <= 0) return
+  const scale = board.w / MERGE_BOARD.w
+  const radius = 12 * scale
+  const border = Math.max(1, 1.5 * scale)
+  const pitch = board.h / 9
+  const gridW = pitch * 7
+  const originX = board.x + (board.w - gridW) / 2
+  const originY = board.y
+  const light = pitch * (143 / 150)
+  const inset = (pitch - light) / 2
+  const lightRadius = 8 * scale
+  ctx.save()
+  roundRect(ctx, board.x, board.y, board.w, board.h, radius)
+  ctx.fillStyle = '#c7b8b8'
+  ctx.fill()
+  ctx.clip()
+  ctx.fillStyle = '#d3c6c6'
+  for (let row = 0; row < 9; row++) {
+    for (let col = 0; col < 7; col++) {
+      if ((row + col) % 2 === 0) continue
+      roundRect(ctx, originX + col * pitch + inset, originY + row * pitch + inset, light, light, lightRadius)
+      ctx.fill()
+    }
+  }
+  ctx.restore()
+  ctx.save()
+  roundRect(ctx, board.x + border / 2, board.y + border / 2, board.w - border, board.h - border, Math.max(1, radius - border / 2))
+  ctx.lineWidth = border
+  ctx.strokeStyle = '#55454a'
+  ctx.stroke()
+  ctx.restore()
+}
+
 function blit(ctx: CanvasRenderingContext2D, id: Parameters<typeof hechengImage>[0], rect: Rect): void {
   if (rect.w <= 0 || rect.h <= 0) return
   const img = hechengImage(id)
@@ -738,7 +773,7 @@ function blit(ctx: CanvasRenderingContext2D, id: Parameters<typeof hechengImage>
 function drawHecheng(model: RenderModel): void {
   const { ctx, frame, state, cfg, realNow } = model
   const scale = frame.w / 1080
-  const top = frame.board.y - 714 * scale
+  const top = frame.board.y - BOARD_Y * scale
   const bg = hechengImage('bg')
   if (bg && (bg.naturalWidth || 0) > 0) {
     let x = -324 * scale
@@ -774,7 +809,7 @@ function drawHecheng(model: RenderModel): void {
     const counterH = 324 * scale
     ctx.drawImage(counterImg as CanvasImageSource, 0, counterY, frame.w, counterH)
   }
-  blit(ctx, 'board', at({ x: 7, y: 714, w: 1071, h: 1370 }))
+  drawMergeBoard(ctx, at(MERGE_BOARD))
   ctx.save()
   clipOrders()
   state.orders.forEach((order, index) => {
@@ -1171,7 +1206,9 @@ function drawExactPiece(
   norm: { x: number; y: number; w: number; h: number },
 ): boolean {
   if ((sprite.naturalWidth || 0) <= 0) return false
-  ctx.drawImage(sprite, cell.x + cell.w * norm.x, cell.y + cell.h * norm.y, cell.w * norm.w, cell.h * norm.h)
+  const w = cell.w * norm.w
+  const h = cell.h * norm.h
+  ctx.drawImage(sprite, cell.x + (cell.w - w) / 2, cell.y + (cell.h - h) / 2, w, h)
   return true
 }
 
@@ -1225,9 +1262,12 @@ function drawBoard(model: RenderModel): void {
       if (readyCells.has(key) && !hidden.has(key)) drawReadyCell(ctx, box)
       const hover = fx.hover?.kind === 'cell' && fx.hover.row === row && fx.hover.col === col
       if (highlights.has(key) || hover) {
+        ctx.save()
+        roundRect(ctx, box.x + 1.5, box.y + 1.5, box.w - 3, box.h - 3, Math.max(4, box.w * 0.08))
         ctx.lineWidth = 2.5
         ctx.strokeStyle = hover && fx.hover?.kind === 'cell' && fx.hover.merge ? PAL.energy : PAL.gold
         ctx.stroke()
+        ctx.restore()
       }
       const lock = lockAt(state, row, col)
       const item = state.board[row][col]

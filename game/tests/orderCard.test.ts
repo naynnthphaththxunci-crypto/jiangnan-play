@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { defaultConfig } from '../src/config'
 import { cellRect, hitTest, layout, type LayoutInput, type Rect } from '../src/layout'
-import { designCell } from '../src/hechengLayout'
+import { MERGE_BOARD, designCell } from '../src/hechengLayout'
 import { scrollOrders } from '../src/logic/sim'
 import type { NormBox } from '../src/types'
 import { PORTRAITS, portraitConfig } from '../src/portraits'
@@ -152,8 +152,8 @@ describe('订单卡', () => {
     const box = cellRect(view, 3, 4)
     expect(box.w).toBeCloseTo(spec.w * scale, 3)
     expect(box.h).toBeCloseTo(box.w, 3)
-    expect(box.x + box.w / 2).toBeCloseTo(view.board.x + (spec.x + spec.w / 2 - 7) * scale, 3)
-    expect(box.y + box.h / 2).toBeCloseTo(view.board.y + (spec.y + spec.h / 2 - 714) * scale, 3)
+    expect(box.x + box.w / 2).toBeCloseTo(view.board.x + (spec.x + spec.w / 2 - MERGE_BOARD.x) * scale, 3)
+    expect(box.y + box.h / 2).toBeCloseTo(view.board.y + (spec.y + spec.h / 2 - MERGE_BOARD.y) * scale, 3)
     expect(hitTest(view, box.x + box.w / 2, box.y + box.h / 2)).toMatchObject({ kind: 'cell', row: 3, col: 4 })
   })
 

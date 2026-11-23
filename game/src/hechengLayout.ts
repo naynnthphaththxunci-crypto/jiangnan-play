@@ -1,10 +1,12 @@
-import cells from './data/boardCells.json'
 import { KEEP_TOP } from './viewport'
 
 export const DESIGN_W = 1080
 export const DESIGN_H = 2340
-export const BOARD_X = 7
-export const BOARD_Y = 714
+/** Allen 1123 棋盘在 1080×2340 稿上的外框：x 15–1069，y 687–2034。 */
+export const MERGE_BOARD = { x: 15, y: 687, w: 1069 - 15, h: 2034 - 687 }
+export const BOARD_X = MERGE_BOARD.x
+export const BOARD_Y = MERGE_BOARD.y
+const CELL_PITCH = MERGE_BOARD.h / 9
 
 export interface Box {
   x: number
@@ -12,8 +14,6 @@ export interface Box {
   w: number
   h: number
 }
-
-const CELL_TABLE = cells as number[][]
 
 const PITCH = 313
 
@@ -156,10 +156,17 @@ export function guestCanvasBox(index: number, guestScale = GUEST_SCALE, dx = 0):
   return { x: anchor.x + nominal / 2 - size / 2, y: anchor.y, w: size, h: size }
 }
 
+/** 7×9 等边格子，在棋盘外框里水平居中。 */
 export function designCell(row: number, col: number): Box | null {
-  const entry = CELL_TABLE[row * 7 + col]
-  if (!entry) return null
-  return { x: entry[0]!, y: entry[1]!, w: entry[2]!, h: entry[3]! }
+  if (row < 0 || col < 0 || row >= 9 || col >= 7) return null
+  const gridW = CELL_PITCH * 7
+  const originX = MERGE_BOARD.x + (MERGE_BOARD.w - gridW) / 2
+  return {
+    x: originX + col * CELL_PITCH,
+    y: MERGE_BOARD.y + row * CELL_PITCH,
+    w: CELL_PITCH,
+    h: CELL_PITCH,
+  }
 }
 
 /** 棋盘图左上角在屏幕上的位置。格子跟着这张图走。 */
@@ -185,14 +192,7 @@ function cellSpec(row: number, col: number): Box {
 }
 
 export function cellOnBoard(board: { x: number; y: number }, scale: number, row: number, col: number): Box {
-  const spec = cellSpec(row, col)
-  const side = spec.w * scale
-  return {
-    x: board.x + (spec.x - BOARD_X) * scale,
-    y: board.y + (spec.y - BOARD_Y) * scale + (spec.h * scale - side) / 2,
-    w: side,
-    h: side,
-  }
+  return cellWoodRect(board, scale, row, col)
 }
 
 /** 木格的整格，给遮罩挖孔。棋子仍放在格子里居中的正方形上。 */
@@ -274,7 +274,7 @@ export function hechengParts(input: HechengInput): HechengScene {
       })
     }
   }
-  const boardArt = place({ x: BOARD_X, y: BOARD_Y, w: 1071, h: 1370 })
+  const boardArt = place(MERGE_BOARD)
   const first = designCell(0, 0)
   const info = place({ x: 178, y: 2126, w: 723, h: 148 })
   const unit = Math.max(0.72, input.w / 390)

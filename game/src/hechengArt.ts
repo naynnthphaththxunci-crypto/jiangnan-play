@@ -4,7 +4,6 @@ import counterUrl from './assets/hecheng/counter.webp'
 import plateUrl from './assets/hecheng/plate.webp'
 import completeUrl from './assets/hecheng/complete.webp'
 import bubbleUrl from './assets/hecheng/bubble.webp'
-import boardUrl from './assets/hecheng/board.webp'
 import energyUrl from './assets/hecheng/energy.webp'
 import coinUrl from './assets/hecheng/coin.webp'
 import gemUrl from './assets/hecheng/gem.webp'
@@ -39,7 +38,6 @@ export const HECHENG_ART = {
   plate: plateUrl,
   complete: completeUrl,
   bubble: bubbleUrl,
-  board: boardUrl,
   energy: energyUrl,
   coin: coinUrl,
   gem: gemUrl,

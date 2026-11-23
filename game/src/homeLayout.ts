@@ -1,3 +1,5 @@
+import { BOARD_Y } from './hechengLayout'
+
 /** 主场景设计稿 1080×2340。宽屏左右留黑，矮手机按宽铺满并从顶部裁。 */
 export const HOME_W = 1080
 export const HOME_H = 2340
@@ -80,7 +82,7 @@ export function alignedHome(frame: {
   gemSlot: HomeBox
 }) {
   const scale = frame.w / HOME_W
-  const sceneTop = frame.board.y - 714 * scale
+  const sceneTop = frame.board.y - BOARD_Y * scale
   const fit = { x: 0, y: sceneTop, scale }
   const settings = {
     x: frame.shopBtn.x - (918 - 793) * scale,
