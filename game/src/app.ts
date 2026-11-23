@@ -6,6 +6,7 @@ import { alignedHome, storyCardRects } from './homeLayout'
 import { clampHomeCam, defaultHomeCam, homeDaughterRect, homeHostessRect } from './homeMap'
 import { createComicAudio } from './comicAudio'
 import { createSfx, type Sfx } from './audio'
+import { stampEnergyChest } from './balance1120'
 import { defaultConfig, resetEconomy } from './config'
 import { render } from './draw'
 import { curtainReady as curtainImagesReady } from './curtain'
@@ -718,6 +719,7 @@ export function startGame(platform: Platform): void {
     }
     if (hit.kind === 'tunerWipe') {
       platform.storageSet(SAVE_KEY, '')
+      stampEnergyChest(cfg)
       state = createGame(platform.now(), cfg)
       view = 'board'
       modal = null

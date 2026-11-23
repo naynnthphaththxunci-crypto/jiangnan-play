@@ -8,10 +8,12 @@ import {
   createGame,
   drinkPotion,
   findProducer,
+  hydrate,
   makeChest,
   makePotion,
   openChest,
   rollEnergy,
+  serialize,
   syncEnergy,
   tapProducer,
   eachCell,
@@ -221,6 +223,37 @@ describe('体力', () => {
     drain(() => 0)
     expect(potionEnergySum(state, cfg)).toBe(275)
     expect(state.chestsOpened).toBe(3)
+  })
+
+  it('旧存档里的两只 15/6 宝箱表盖不掉第一只固定出货', () => {
+    const cfg = defaultConfig()
+    const state = createGame(1, cfg)
+    state.phase = 'play'
+    state.lesson = 'free'
+    state.chestsOpened = 0
+    const saved = JSON.parse(serialize(state, cfg)) as { economy: typeof cfg.economy }
+    saved.economy.newbieChest = [15, 15, 6, 6, 6]
+    saved.economy.newbieChestCount = 2
+    saved.economy.newbieChestFixed = true
+    const next = defaultConfig()
+    const loaded = hydrate(JSON.stringify(saved), next)
+    expect(loaded).toBeTruthy()
+    expect(next.economy.newbieChest).toEqual([40, 15, 6, 2, 2])
+    expect(next.economy.newbieChestCount).toBe(1)
+    loaded!.locks = []
+    loaded!.board[0][0] = makeChest(loaded!)
+    let guard = 0
+    while (loaded!.board[0][0]?.kind === 'chest' && guard < 8) {
+      openChest(loaded!, { row: 0, col: 0 }, next, () => 0)
+      guard += 1
+    }
+    const tiers = loaded!.board
+      .flat()
+      .filter((item) => item?.kind === 'potion')
+      .map((item) => (item?.kind === 'potion' ? item.tier : 0))
+      .sort((a, b) => b - a)
+    expect(tiers).toEqual([4, 3, 2, 1, 1])
+    expect(loaded!.chestsOpened).toBe(1)
   })
 
   it('每日体力宝箱从第二天起，一天一次，算一次广告按钮', () => {

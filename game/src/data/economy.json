@@ -149,13 +149,13 @@
     }
   ],
   "newbieChestFixed": true,
-  "newbieChestCount": 2,
+  "newbieChestCount": 1,
   "newbieChest": [
-    15,
+    40,
     15,
     6,
-    6,
-    6
+    2,
+    2
   ],
   "guideTimeoutMs": 3000,
   "producerCharges": 1,

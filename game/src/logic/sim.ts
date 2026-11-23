@@ -17,7 +17,7 @@ import { COLS, ROWS } from '../types'
 import { formatMs } from '../format'
 import { producerPieceName } from '../itemArt'
 import openingBoard from '../data/openingBoard.json'
-import { BALANCE, earlyOrder, levelGiftText, parseLevelGift, parseRewardText, smileRoundReward, smileRoundTarget, storyDef, storyNote, unitPrice } from '../balance1120'
+import { BALANCE, earlyOrder, levelGiftText, parseLevelGift, parseRewardText, smileRoundReward, smileRoundTarget, stampEnergyChest, storyDef, storyNote, unitPrice } from '../balance1120'
 import { bubbleReward } from '../boardCover'
 import { pickOrderCast } from '../orderCast'
 
@@ -3265,6 +3265,7 @@ export function hydrate(raw: string, cfg: GameConfig): GameState | null {
       levelRewards: cfg.economy.levelRewards,
     }
     if (data.economy) cfg.economy = { ...cfg.economy, ...data.economy }
+    stampEnergyChest(cfg)
     const state = data.state
     if (data.curve !== CURVE) {
       cfg.economy.xpPerTask = freshCurve.xpPerTask

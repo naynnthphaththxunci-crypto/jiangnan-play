@@ -160,21 +160,7 @@ export function applyBalance(cfg: GameConfig): void {
   cfg.economy.smileGoal = BALANCE.smileRounds[0]?.target ?? 6
   cfg.economy.giftCooldownMs = 120_000
   cfg.orders.maxActive = BALANCE.ordersLate.maxOnScreen
-  const energyChest = BALANCE.chests.find((chest) => chest.id === 'energy_chest')
-  cfg.economy.newbieChest = (energyChest?.firstOpenFixed ?? ['体力4', '体力3', '体力2', '体力1', '体力1']).map((label) =>
-    energyOfPieceLevel(label),
-  )
-  cfg.economy.newbieChestFixed = true
-  cfg.economy.newbieChestCount = 1
-  const energyTable = energyChest && typeof energyChest.table === 'object' ? energyChest.table : null
-  cfg.economy.chestWeights = energyTable
-    ? Object.entries(energyTable).map(([label, weight]) => ({ energy: energyOfPieceLevel(label), weight }))
-    : [
-        { energy: 2, weight: 40 },
-        { energy: 6, weight: 20 },
-        { energy: 15, weight: 20 },
-        { energy: 40, weight: 20 },
-      ]
+  stampEnergyChest(cfg)
   cfg.economy.levelRewards = BALANCE.levels.map((level) => ({
     level: level.level,
     rewards: parseRewardText(level.reward ?? ''),
@@ -257,6 +243,25 @@ export function producerCode(jsonId: string): string {
 
 export function asProducer(def: ProducerDef): ProducerDef {
   return def
+}
+
+/** 第一只体力宝箱的固定出货，以及之后的 40/20/20/20 权重。存档里的旧表不能盖过这里。 */
+export function stampEnergyChest(cfg: GameConfig): void {
+  const energyChest = BALANCE.chests.find((chest) => chest.id === 'energy_chest')
+  cfg.economy.newbieChest = (energyChest?.firstOpenFixed ?? ['体力4', '体力3', '体力2', '体力1', '体力1']).map((label) =>
+    energyOfPieceLevel(label),
+  )
+  cfg.economy.newbieChestFixed = true
+  cfg.economy.newbieChestCount = 1
+  const energyTable = energyChest && typeof energyChest.table === 'object' ? energyChest.table : null
+  cfg.economy.chestWeights = energyTable
+    ? Object.entries(energyTable).map(([label, weight]) => ({ energy: energyOfPieceLevel(label), weight }))
+    : [
+        { energy: 2, weight: 40 },
+        { energy: 6, weight: 20 },
+        { energy: 15, weight: 20 },
+        { energy: 40, weight: 20 },
+      ]
 }
 
 /** 「体力4」是 4 级体力棋，体力值取该级，不是下一级。 */
