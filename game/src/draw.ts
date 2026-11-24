@@ -52,7 +52,6 @@ import {
   BOARD_FRAME,
   COUNTER_TABLE,
   DESK_BOX,
-  DESIGN_W,
   cellWoodRect,
   contentScale,
   designToScreen,
@@ -805,14 +804,15 @@ function drawHecheng(model: RenderModel): void {
     if (box.y + box.h < frame.h) box.y = frame.h - box.h
     ctx.drawImage(bg as CanvasImageSource, box.x, box.y, box.w, box.h)
   }
-  const column = at({ x: 0, y: 0, w: DESIGN_W, h: 10 })
+  const counter = at(COUNTER_TABLE)
   const desk = at(DESK_BOX)
   const deskH = Math.max(desk.h, frame.h - desk.y + 2)
+  // 柜台以下整片是桌面渐变，横向拉满窗口。柜台以上仍是客栈背景。
   ctx.save()
   ctx.beginPath()
-  ctx.rect(column.x - 1, desk.y, column.w + 2, deskH)
+  ctx.rect(0, counter.y + counter.h, frame.w, Math.max(0, frame.h - (counter.y + counter.h)) + 2)
   ctx.clip()
-  blit(ctx, 'desk', { x: desk.x, y: desk.y, w: desk.w, h: deskH })
+  blit(ctx, 'desk', { x: 0, y: desk.y, w: frame.w, h: deskH })
   ctx.restore()
   ctx.save()
   ctx.beginPath()
@@ -834,7 +834,6 @@ function drawHecheng(model: RenderModel): void {
     )
   })
   ctx.restore()
-  const counter = at(COUNTER_TABLE)
   blitEndsOff(ctx, 'counter', counter.y, counter.h, frame.w, 0.08)
   blit(ctx, 'board', at(BOARD_FRAME))
   blit(ctx, 'stash', frame.pendingBtn)
