@@ -772,8 +772,10 @@ export function hitTest(frame: Frame, x: number, y: number): Hit | null {
   if (frame.mode === 'story') return { kind: 'hotspot' }
   if (frame.mode === 'house') {
     const home = alignedHome(frame)
-    if (contains(home.settings, x, y)) return { kind: 'settings' }
-    if (contains(home.shop, x, y)) return { kind: 'shop' }
+    if (contains(frame.energyPlus, x, y)) return { kind: 'refill' }
+    if (contains(frame.gemPlus, x, y)) return { kind: 'shop' }
+    if (contains(frame.multBtn, x, y)) return { kind: 'mult' }
+    if (contains(frame.shopBtn, x, y)) return { kind: 'shop' }
     if (contains(home.hit, x, y)) return { kind: 'back' }
     return { kind: 'map' }
   }

@@ -39,7 +39,6 @@ import {
 import { itemSprite, PIECE_FILL, pieceNorm, potionSprite, producerBoltPlace, producerNorm, producerPlace, producerSprite, PRODUCER_CELL_W, spriteContent, type ArtBox } from './itemArt'
 import tutorialHandUrl from './assets/ui/tutorial_hand.png'
 import iconBoltUrl from './assets/ui/stamina_bolt.webp'
-import { drawAvatar } from './cast'
 import { hechengImage, speedArtId, type HechengArtId } from './hechengArt'
 import { layoutChainPopup, type ChainFocus, type ChainPiece, type ChainPopup, type ChainSlot } from './chainPopup'
 import { selectBreathScale, selectFrameRect } from './selectFrame'
@@ -860,6 +859,12 @@ function drawHecheng(model: RenderModel): void {
     ctx.arc(frame.houseBtn.x + frame.houseBtn.w * 0.82, frame.houseBtn.y + frame.houseBtn.h * 0.18, Math.max(5, frame.houseBtn.w * 0.08), 0, Math.PI * 2)
     ctx.fill()
   }
+  drawTopBar(model)
+}
+
+/** 合成页和主页面共用的顶栏。位置来自同一套 placeHud。 */
+function drawTopBar(model: RenderModel): void {
+  const { ctx, frame, state, realNow } = model
   const rel = (bar: Rect, dx: number, dy: number, w: number, h: number, designW: number): Rect => {
     const k = bar.w / designW
     return { x: bar.x + dx * k, y: bar.y + dy * k, w: w * k, h: h * k }
@@ -882,6 +887,15 @@ function drawHecheng(model: RenderModel): void {
   num(frame.gemSlot, String(state.gems))
   blit(ctx, speedArtId(state.spawnMult ?? 1), frame.multBtn)
   blit(ctx, 'shop', frame.shopBtn)
+  if (frame.mode === 'house' && frame.shopBtn.w > 0) {
+    const s = frame.shopBtn.w / 73
+    paintHomeImg(ctx, 'badge', {
+      x: frame.shopBtn.x + frame.shopBtn.w - 22 * s,
+      y: frame.shopBtn.y - 6 * s,
+      w: 38 * s,
+      h: 38 * s,
+    })
+  }
 }
 
 export function drawHud(model: RenderModel): void {
@@ -963,19 +977,7 @@ export function drawHud(model: RenderModel): void {
 
 
 function drawHudTools(model: RenderModel): void {
-  const { ctx, frame, state } = model
-  if (frame.mode !== 'board' && frame.multBtn.w > 0) {
-    roundRect(ctx, frame.multBtn.x, frame.multBtn.y, frame.multBtn.w, frame.multBtn.h, 6)
-    ctx.fillStyle = '#3a342e'
-    ctx.fill()
-    text(ctx, `×${state.spawnMult ?? 1}`, frame.multBtn.x + frame.multBtn.w / 2, frame.multBtn.y + frame.multBtn.h / 2, 12, '#fff6e4')
-  }
-  if (frame.mode !== 'board' && frame.shopBtn.w > 0) {
-    roundRect(ctx, frame.shopBtn.x, frame.shopBtn.y, frame.shopBtn.w, frame.shopBtn.h, 6)
-    ctx.fillStyle = '#8a6a4a'
-    ctx.fill()
-    text(ctx, '店', frame.shopBtn.x + frame.shopBtn.w / 2, frame.shopBtn.y + frame.shopBtn.h / 2, 13, '#fff6e4')
-  }
+  const { ctx, frame } = model
   if (frame.tuneBtn.w > 0 && frame.mode === 'board') {
     roundRect(ctx, frame.tuneBtn.x, frame.tuneBtn.y, frame.tuneBtn.w, frame.tuneBtn.h, 6)
     ctx.fillStyle = 'rgba(255,250,243,0.72)'
@@ -2114,47 +2116,7 @@ function drawHouse(model: RenderModel): void {
   // 建筑图还没到。placeHomeBuildings 已经把地图坐标换成屏幕位置，下一轮直接贴在这里。
   void placeHomeBuildings(frame.w, frame.h, model.cam)
   paintHomeImg(ctx, 'build', home.build)
-  const avatar = home.avatar
-  const avatarArt = {
-    x: avatar.x + (12 / 149) * avatar.w,
-    y: avatar.y + (15 / 149) * avatar.h,
-    w: (125 / 149) * avatar.w,
-    h: (126 / 149) * avatar.h,
-  }
-  const badge = {
-    x: avatar.x + (102 / 149) * avatar.w,
-    y: avatar.y + (100 / 149) * avatar.h,
-    w: (47 / 149) * avatar.w,
-    h: (47 / 149) * avatar.h,
-  }
-  const portrait = hechengImage('avatar')
-  if (portrait) drawAvatar(ctx, portrait, avatarArt, realNow)
-  blit(ctx, 'avatarFrame', avatar)
-  blit(ctx, 'levelBadge', badge)
-  const levelText = String(state.level)
-  const levelSize = badge.w * (levelText.length >= 3 ? 0.34 : 0.46)
-  ctx.lineWidth = Math.max(2, levelSize * 0.16)
-  ctx.strokeStyle = '#6a3a22'
-  ctx.font = `700 ${Math.round(levelSize)}px ${FONT}`
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.strokeText(levelText, badge.x + badge.w / 2, badge.y + badge.h / 2)
-  ctx.fillStyle = '#fffaf2'
-  ctx.fillText(levelText, badge.x + badge.w / 2, badge.y + badge.h / 2)
-  blit(ctx, 'energy', home.energy)
-  blit(ctx, 'coin', home.coin)
-  blit(ctx, 'gem', home.gem)
-  const num = (rect: Rect, value: string) => {
-    text(ctx, value, rect.x + rect.w * 0.58 + 1, rect.y + rect.h / 2 + 1, rect.h * 0.42, 'rgba(40,24,12,0.45)', 'center', 'middle', 700)
-    text(ctx, value, rect.x + rect.w * 0.58, rect.y + rect.h / 2, rect.h * 0.42, '#fffaf2', 'center', 'middle', 700)
-  }
-  num(home.energy, String(state.energy))
-  num(home.coin, String(Math.max(0, state.coins - model.fx.incoming)))
-  num(home.gem, String(state.gems))
-  paintHomeImg(ctx, 'settings', home.settings)
-  paintHomeImg(ctx, 'shop', home.shop)
-  paintHomeImg(ctx, 'badge', home.badgeSettings)
-  paintHomeImg(ctx, 'badge', home.badgeShop)
+  drawTopBar(model)
   const lesson = state.lesson
   if (lesson === 'free') {
     const hostess = homeHostessRect(frame.w, frame.h, model.cam)
