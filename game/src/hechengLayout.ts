@@ -6,8 +6,15 @@ export const BG_BOX = { x: -234, y: -935, w: 1608, h: 2889 }
 export const DESK_BOX = { x: -287, y: 653, w: 1661, h: 1687 }
 export const COUNTER_TABLE = { x: -153, y: 609, w: 1430, h: 115 }
 
-/** 稿里棋盘 13,690–1068,2038。 */
-export const MERGE_BOARD = { x: 13, y: 690, w: 1055, h: 1348 }
+/** 稿里棋盘外框 13,690–1068,2038。格子缩在圆角框里面。 */
+export const BOARD_FRAME = { x: 13, y: 690, w: 1055, h: 1348 }
+const FRAME_INSET = 16
+export const MERGE_BOARD = {
+  x: BOARD_FRAME.x + FRAME_INSET,
+  y: BOARD_FRAME.y + FRAME_INSET,
+  w: BOARD_FRAME.w - FRAME_INSET * 2,
+  h: BOARD_FRAME.h - FRAME_INSET * 2,
+}
 export const BOARD_X = MERGE_BOARD.x
 export const BOARD_Y = MERGE_BOARD.y
 const CELL_W = MERGE_BOARD.w / 7
@@ -271,7 +278,6 @@ export function hechengParts(input: HechengInput): HechengScene {
     }
   }
   const boardArt = place(MERGE_BOARD)
-  const first = designCell(0, 0)
   const info = place({ x: 188, y: 2089, w: 705, h: 166 })
   const unit = Math.max(0.72, input.w / 390)
   const sellW = Math.round(54 * unit)
@@ -319,7 +325,7 @@ export function hechengParts(input: HechengInput): HechengScene {
     orderGuests,
     orderIcons,
     orderMaxScroll,
-    board: { x: boardArt.x, y: boardArt.y, cell: (first?.w ?? 139) * scale },
+    board: { x: boardArt.x, y: boardArt.y, cell: (MERGE_BOARD.h / 9) * scale },
     rewardTray: chestBtn,
     dock: { x: 0, y: dockTop, w: input.w, h: Math.max(0, availBottom - dockTop) },
     pendingBtn: stash,

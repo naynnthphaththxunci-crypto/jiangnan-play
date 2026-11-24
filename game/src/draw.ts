@@ -54,9 +54,9 @@ import { homeArt, type HomeArtId } from './homeArt'
 import { HOME_MAP_H, HOME_MAP_W, homeDaughterRect, homeHostessRect, homeTreeRect, placeHomeBuildings, type HomeCam } from './homeMap'
 import {
   BG_BOX,
+  BOARD_FRAME,
   COUNTER_TABLE,
   DESK_BOX,
-  MERGE_BOARD,
   cellWoodRect,
   contentScale,
   designToScreen,
@@ -793,7 +793,8 @@ function drawHecheng(model: RenderModel): void {
     )
   })
   ctx.restore()
-  blit(ctx, 'board', at(MERGE_BOARD))
+  blit(ctx, 'counter', at(COUNTER_TABLE))
+  blit(ctx, 'board', at(BOARD_FRAME))
   blit(ctx, 'stash', frame.pendingBtn)
   blit(ctx, 'info', frame.infoBar)
   blit(ctx, 'build', frame.houseBtn)
@@ -1102,7 +1103,6 @@ function drawBuriedPiece(ctx: CanvasRenderingContext2D, cfg: GameConfig, lock: {
 function drawCounterFront(model: RenderModel): void {
   const { ctx, frame, state, cfg } = model
   if (frame.mode !== 'board') return
-  blit(ctx, 'counter', designToScreen(frame, COUNTER_TABLE, 'top'))
   ctx.save()
   ctx.beginPath()
   ctx.rect(0, frame.orderClip.y, frame.w, frame.orderClip.h)
