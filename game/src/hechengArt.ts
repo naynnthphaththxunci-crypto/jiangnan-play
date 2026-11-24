@@ -47,6 +47,19 @@ import levelBadgeUrl from './assets/hecheng/level_badge.webp'
 import selectFrameUrl from './assets/hecheng/select_frame.webp'
 import readyCellUrl from './assets/hecheng/ready_cell.webp'
 import orderTickUrl from './assets/hecheng/order_tick.webp'
+import chainCardShortUrl from './assets/hecheng/chain_card_short.webp'
+import chainCardLongUrl from './assets/hecheng/chain_card_long.webp'
+import chainCardMakerUrl from './assets/hecheng/chain_card_maker.webp'
+import chainTitleUrl from './assets/hecheng/chain_title.webp'
+import chainCloseUrl from './assets/hecheng/chain_close.webp'
+import chainCellUrl from './assets/hecheng/chain_cell.webp'
+import chainUnknownUrl from './assets/hecheng/chain_unknown.webp'
+import chainSelectUrl from './assets/hecheng/chain_select.webp'
+import chainTrayUrl from './assets/hecheng/chain_tray.webp'
+import chainSlotUrl from './assets/hecheng/chain_slot.webp'
+import chainInfoUrl from './assets/hecheng/chain_info.webp'
+import chainBadgeUrl from './assets/hecheng/chain_badge.webp'
+import chainRuleUrl from './assets/hecheng/chain_rule.webp'
 
 export const HECHENG_ART = {
   bg: bgUrl,
@@ -97,6 +110,19 @@ export const HECHENG_ART = {
   selectFrame: selectFrameUrl,
   readyCell: readyCellUrl,
   orderTick: orderTickUrl,
+  chainCardShort: chainCardShortUrl,
+  chainCardLong: chainCardLongUrl,
+  chainCardMaker: chainCardMakerUrl,
+  chainTitle: chainTitleUrl,
+  chainClose: chainCloseUrl,
+  chainCell: chainCellUrl,
+  chainUnknown: chainUnknownUrl,
+  chainSelect: chainSelectUrl,
+  chainTray: chainTrayUrl,
+  chainSlot: chainSlotUrl,
+  chainInfo: chainInfoUrl,
+  chainBadge: chainBadgeUrl,
+  chainRule: chainRuleUrl,
 } as const
 
 export type HechengArtId = keyof typeof HECHENG_ART

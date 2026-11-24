@@ -311,23 +311,24 @@ export function hechengParts(input: HechengInput): HechengScene {
   const info = placeBody({ x: 188, y: 2089, w: 705, h: 166 })
   const unit = Math.max(0.72, input.w / 390)
   const sellW = Math.round(54 * unit)
+  const kInfo = info.w / 705
+  const chainBtn: Box = {
+    x: info.x + info.w - 58 * kInfo,
+    y: info.y + 8 * kInfo,
+    w: 47 * kInfo,
+    h: 48 * kInfo,
+  }
   const rushW = input.showRush ? Math.round(58 * unit) : 0
   const adW = input.showRush ? Math.round(44 * unit) : 0
   const rushBtn: Box = rushW > 0
-    ? { x: info.x + info.w - rushW - adW - 10, y: info.y + info.h * 0.18, w: rushW, h: info.h * 0.64 }
+    ? { x: chainBtn.x - rushW - adW - 12, y: info.y + info.h * 0.18, w: rushW, h: info.h * 0.64 }
     : { x: 0, y: 0, w: 0, h: 0 }
   const adBtn: Box = rushBtn.w > 0
     ? { x: rushBtn.x + rushBtn.w + 4, y: rushBtn.y, w: adW, h: rushBtn.h }
     : { x: 0, y: 0, w: 0, h: 0 }
   const sellBtn: Box = rushW === 0
-    ? { x: info.x + info.w - sellW - 8, y: info.y + info.h * 0.16, w: sellW, h: info.h * 0.68 }
+    ? { x: chainBtn.x - sellW - 8, y: info.y + info.h * 0.18, w: sellW, h: info.h * 0.64 }
     : { x: 0, y: 0, w: 0, h: 0 }
-  const chainBtn: Box = {
-    x: (sellBtn.w > 0 ? sellBtn.x : rushBtn.w > 0 ? rushBtn.x : info.x + info.w) - Math.round(28 * unit),
-    y: info.y + info.h * 0.22,
-    w: Math.round(24 * unit),
-    h: Math.round(24 * unit),
-  }
   const build = placeBody({ x: 914, y: 2092, w: 154, h: 159 })
   const stash = placeBody({ x: 13, y: 2099, w: 157, h: 145 })
   const dockTop = Math.min(build.y, stash.y, info.y)

@@ -2,7 +2,7 @@ import { hostessCostume } from './config'
 import { formatDuration, formatMs } from './format'
 import { easeInOut, easeOutBack, easeOutCubic, popScale, type Flyer, type Fx } from './fx'
 import { hintHand, storageLessonHand, tutorialHand } from './coach'
-import { cellRect, chainCardRect, chainCloseRect, chainPopRect, decorPopupRects, detailCard, guideHole, levelClaimRect, shopRects, smileDismissRect, talkRect, trackRatio, type Frame, type Rect } from './layout'
+import { cellRect, chainPopRect, decorPopupRects, detailCard, guideHole, levelClaimRect, shopRects, smileDismissRect, talkRect, trackRatio, type Frame, type Rect } from './layout'
 import {
   allTasks,
   atStep,
@@ -17,7 +17,6 @@ import {
   activeOverlay,
   inProducerGrace,
   infoCaption,
-  lineChain,
   lineColor,
   lockAt,
   potionEnergy,
@@ -32,20 +31,17 @@ import {
   producerCanSpawn,
   producerCooldown,
   producerTapCostsEnergy,
-  producerName,
-  producerChain,
-  producerOfLine,
-  producerOutputs,
   productName,
   sellPriceOf,
   smilesVisible,
   taskPrice,
 } from './logic/sim'
-import { itemSprite, PIECE_FILL, pieceNorm, potionSprite, producerBoltPlace, producerNorm, producerPieceName, producerPlace, producerSprite, PRODUCER_CELL_W, spriteContent, type ArtBox } from './itemArt'
+import { itemSprite, PIECE_FILL, pieceNorm, potionSprite, producerBoltPlace, producerNorm, producerPlace, producerSprite, PRODUCER_CELL_W, spriteContent, type ArtBox } from './itemArt'
 import tutorialHandUrl from './assets/ui/tutorial_hand.png'
 import iconBoltUrl from './assets/ui/stamina_bolt.webp'
 import { drawAvatar } from './cast'
-import { hechengImage, speedArtId } from './hechengArt'
+import { hechengImage, speedArtId, type HechengArtId } from './hechengArt'
+import { layoutChainPopup, type ChainFocus, type ChainPiece, type ChainPopup, type ChainSlot } from './chainPopup'
 import { selectBreathScale, selectFrameRect } from './selectFrame'
 import { curtainBambooPlace, curtainBitmaps, curtainDrop, curtainPlace } from './curtain'
 import { alignedHome, arrowPoke, storyCardRects, type HomeBox } from './homeLayout'
@@ -105,7 +101,7 @@ export interface RenderModel {
   selectedAt: number
   orderFocus: { line: string; level: number } | null
   showHand: boolean
-  chain: { line: string; level: number; source: 'order' | 'producer' } | null
+  chain: ChainFocus | null
   comicHand: 'first' | 'idle' | 'off'
   /** 合成页和建造页之间的竹帘。progress 0 在屏幕外，1 盖满并停住。 */
   curtain: { progress: number } | null
@@ -1551,11 +1547,8 @@ function drawInfo(model: RenderModel): void {
     ctx.fill()
     text(ctx, '广告', frame.adBtn.x + frame.adBtn.w / 2, frame.adBtn.y + frame.adBtn.h / 2, 11, PAL.white)
   }
-  if (item && state.phase === 'play' && item.kind === 'producer') {
-    roundRect(ctx, frame.chainBtn.x, frame.chainBtn.y, frame.chainBtn.w, frame.chainBtn.h, 9)
-    ctx.fillStyle = '#3d6ea8'
-    ctx.fill()
-    text(ctx, 'i', frame.chainBtn.x + frame.chainBtn.w / 2, frame.chainBtn.y + frame.chainBtn.h / 2, 13, PAL.white)
+  if (item && state.phase === 'play' && (item.kind === 'producer' || item.kind === 'product')) {
+    blit(ctx, 'chainInfo', frame.chainBtn)
   }
   if (item?.kind === 'product' && canSell(state, item)) {
     roundRect(ctx, frame.sellBtn.x, frame.sellBtn.y, frame.sellBtn.w, frame.sellBtn.h, 8)
@@ -1832,99 +1825,121 @@ function drawSmileModal(model: RenderModel): void {
 }
 
 
+function chainArt(id: HechengArtId): (CanvasImageSource & { naturalWidth?: number; naturalHeight?: number }) | null {
+  const img = hechengImage(id)
+  return img && (img.naturalWidth || 0) > 0 ? img : null
+}
+
+function blitChain(ctx: CanvasRenderingContext2D, id: HechengArtId, rect: Rect): void {
+  const img = chainArt(id)
+  if (!img || rect.w <= 0 || rect.h <= 0) return
+  ctx.drawImage(img, rect.x, rect.y, rect.w, rect.h)
+}
+
+function blitChainCard(ctx: CanvasRenderingContext2D, id: HechengArtId, rect: Rect): void {
+  const img = chainArt(id)
+  if (!img || rect.w <= 0 || rect.h <= 0) return
+  const iw = img.naturalWidth || 1
+  const ih = img.naturalHeight || 1
+  const naturalH = rect.w * (ih / iw)
+  if (rect.h <= naturalH + 1) {
+    ctx.drawImage(img, rect.x, rect.y, rect.w, rect.h)
+    return
+  }
+  const topCut = Math.round(ih * 0.38)
+  const botCut = Math.round(ih * 0.24)
+  const midCut = Math.max(1, ih - topCut - botCut)
+  const scale = rect.w / iw
+  const topH = topCut * scale
+  const botH = botCut * scale
+  const midH = Math.max(1, rect.h - topH - botH)
+  ctx.drawImage(img, 0, 0, iw, topCut, rect.x, rect.y, rect.w, topH)
+  ctx.drawImage(img, 0, topCut, iw, midCut, rect.x, rect.y + topH, rect.w, midH)
+  ctx.drawImage(img, 0, topCut + midCut, iw, botCut, rect.x, rect.y + topH + midH, rect.w, botH)
+}
+
+function drawChainPiece(ctx: CanvasRenderingContext2D, piece: ChainPiece, rect: Rect): void {
+  const art = piece.kind === 'producer' && piece.producerId ? producerSprite(piece.producerId, piece.level) : itemSprite(piece.line, piece.level)
+  if (!art) return
+  drawFittedSprite(ctx, art, rect, PIECE_FILL * 0.92)
+}
+
+function drawChainBadge(ctx: CanvasRenderingContext2D, rect: Rect, count: number): void {
+  if (count <= 0) return
+  blitChain(ctx, 'chainBadge', rect)
+  text(ctx, String(count), rect.x + rect.w * 0.52, rect.y + rect.h * 0.48, rect.h * 0.48, '#fffaf3', 'center', 'middle', 700)
+}
+
+function drawChainRule(ctx: CanvasRenderingContext2D, line: Rect, label: string): void {
+  blitChain(ctx, 'chainRule', line)
+  const size = Math.max(16, line.h * 2.4)
+  ctx.font = `700 ${Math.round(size)}px ${FONT}`
+  const width = ctx.measureText(label).width + size * 0.9
+  const cx = line.x + line.w / 2
+  const cy = line.y + line.h / 2
+  roundRect(ctx, cx - width / 2, cy - size * 0.72, width, size * 1.44, size * 0.3)
+  ctx.fillStyle = '#fbf3e4'
+  ctx.fill()
+  text(ctx, label, cx, cy, size, '#7a4a28', 'center', 'middle', 700)
+}
+
 function drawChain(model: RenderModel): void {
   const chain = model.chain
   if (!chain) return
   const { ctx, frame, cfg, state } = model
+  const popup = layoutChainPopup(frame, cfg, state, chain)
+  const cardId: HechengArtId = chain.source === 'producer' ? 'chainCardMaker' : popup.cells.length > 8 ? 'chainCardLong' : 'chainCardShort'
   ctx.fillStyle = 'rgba(12,10,8,0.55)'
   ctx.fillRect(0, 0, frame.w, frame.h)
-  const card = chainCardRect(frame)
-  roundRect(ctx, card.x, card.y, card.w, card.h, 16)
-  ctx.fillStyle = '#fff6e8'
-  ctx.fill()
-  const close = chainCloseRect(frame)
-  button(ctx, close, '×', 'ghost')
-  if (chain.source === 'producer') {
-    const producer = producerOfLine(cfg, chain.line)
-    const name = producer ? (producerPieceName(producer.id, chain.level) ?? producerName(cfg, producer.id)) : '母棋'
-    text(ctx, name, card.x + card.w / 2, card.y + 36, 20, PAL.ink)
-    text(ctx, `等级 ${chain.level}`, card.x + card.w / 2, card.y + 62, 14, PAL.soft)
-    const slots = producerChain(state, producer?.id ?? chain.line, chain.level, cfg.economy.producerMaxLevel)
-    slots.forEach((slot, index) => {
-      const col = index % 4
-      const row = Math.floor(index / 4)
-      const x = card.x + 28 + col * 74
-      const y = card.y + 84 + row * 70
-      roundRect(ctx, x, y, 62, 58, 8)
-      ctx.fillStyle = slot.seen ? '#fffaf3' : '#c8b89a'
-      ctx.fill()
-      const art = producer ? producerSprite(producer.id, slot.level) : null
-      const place = producer ? producerPlace(producer.id, slot.level) : null
-      if (art && place && slot.seen) {
-        const rect = placedRect({ x, y, w: 62, h: 58 }, place)
-        ctx.save()
-        ctx.beginPath()
-        ctx.rect(x, y, 62, 58)
-        ctx.clip()
-        ctx.drawImage(art as CanvasImageSource, rect.x, rect.y, rect.w, rect.h)
-        ctx.restore()
-      } else text(ctx, slot.label, x + 31, y + 29, 16, PAL.white)
-      if (slot.current) {
-        ctx.lineWidth = 3
-        ctx.strokeStyle = '#3d6ea8'
-        ctx.stroke()
-      }
-    })
-    let cursor = card.y + 240
-    if (chain.level >= cfg.economy.producerSpawnLevel) {
-      text(ctx, '可生成：', card.x + 24, cursor, 15, PAL.ink, 'left')
-      producerOutputs(cfg, state, chain.line, chain.level).forEach((slot, index) => {
-        const x = card.x + 24 + index * 72
-        const y = cursor + 16
-        roundRect(ctx, x, y, 60, 52, 8)
-        ctx.fillStyle = slot.seen ? lineColor(cfg, chain.line) : '#c8b89a'
-        ctx.fill()
-        text(ctx, slot.label, x + 30, y + 26, 13, PAL.white)
-      })
-      cursor += 84
-    }
-    text(ctx, '升级后额外生成：', card.x + 24, cursor, 15, PAL.ink, 'left')
-    roundRect(ctx, card.x + 24, cursor + 16, 88, 52, 8)
-    ctx.fillStyle = '#c8b89a'
-    ctx.fill()
-    text(ctx, cfg.copy.producerExtra, card.x + 68, cursor + 42, 12, PAL.white)
-    return
+  blitChainCard(ctx, cardId, popup.card)
+  blitChain(ctx, 'chainTitle', popup.title)
+  text(
+    ctx,
+    popup.titleText,
+    popup.title.x + popup.title.w / 2,
+    popup.title.y + popup.title.h * 0.56,
+    popup.title.h * 0.34,
+    '#7a4a28',
+    'center',
+    'middle',
+    700,
+  )
+  for (const cell of popup.cells) drawChainCell(ctx, cell)
+  drawChainRule(ctx, popup.rule, popup.ruleLabel)
+  blitChain(ctx, 'chainTray', popup.tray)
+  if (popup.source) {
+    blitChain(ctx, 'chainSlot', popup.source.rect)
+    drawChainPiece(ctx, popup.source.piece, inset(popup.source.rect, 0.16))
+    blitChain(ctx, 'chainInfo', popup.source.info)
+    drawChainBadge(ctx, popup.source.badge, popup.source.count)
   }
-  const slots = lineChain(cfg, state, chain.line, chain.level)
-  const current = slots.find((slot) => slot.current)
-  text(ctx, current?.label ?? '?', card.x + card.w / 2, card.y + 36, 20, PAL.ink)
-  text(ctx, `等级 ${chain.level}`, card.x + card.w / 2, card.y + 64, 14, PAL.soft)
-  slots.forEach((slot, index) => {
-    const col = index % 4
-    const row = Math.floor(index / 4)
-    const x = card.x + 24 + col * 76
-    const y = card.y + 92 + row * 76
-    roundRect(ctx, x, y, 64, 64, 8)
-    ctx.fillStyle = slot.seen ? lineColor(cfg, chain.line) : '#c8b89a'
-    ctx.fill()
-    if (slot.current) {
-      ctx.lineWidth = 3
-      ctx.strokeStyle = '#3d6ea8'
-      ctx.stroke()
-    }
-    text(ctx, slot.label, x + 32, y + 32, 13, PAL.white)
-  })
-  const producer = producerOfLine(cfg, chain.line)
-  text(ctx, '产自：', card.x + card.w / 2, card.y + card.h - 92, 15, PAL.ink)
-  if (producer) {
-    const x = card.x + card.w / 2 - 28
-    const y = card.y + card.h - 76
-    roundRect(ctx, x, y, 56, 56, 8)
-    ctx.fillStyle = lineColor(cfg, chain.line)
-    ctx.fill()
-    text(ctx, producer.name.slice(0, 2), x + 28, y + 22, 13, PAL.white)
-    text(ctx, producer.name, card.x + card.w / 2, y + 68, 12, PAL.ink)
+  for (const slot of popup.now) drawOutputSlot(ctx, slot)
+  if (popup.later.length > 0) {
+    drawChainRule(ctx, popup.laterRule, popup.laterLabel)
+    for (const slot of popup.later) drawOutputSlot(ctx, slot)
   }
+  blitChain(ctx, 'chainClose', popup.close)
+}
+
+function drawChainCell(ctx: CanvasRenderingContext2D, cell: ChainPopup['cells'][number]): void {
+  if (cell.current) blitChain(ctx, 'chainSelect', cell.select)
+  else if (cell.seen) blitChain(ctx, 'chainCell', cell.rect)
+  else blitChain(ctx, 'chainUnknown', cell.rect)
+  if (cell.seen) drawChainPiece(ctx, cell.piece, inset(cell.rect, 0.12))
+  else if (cell.current) text(ctx, '?', cell.rect.x + cell.rect.w / 2, cell.rect.y + cell.rect.h / 2, cell.rect.h * 0.46, '#d7c7a4')
+  drawChainBadge(ctx, cell.badge, cell.count)
+}
+
+function drawOutputSlot(ctx: CanvasRenderingContext2D, slot: ChainSlot): void {
+  blitChain(ctx, 'chainSlot', slot.rect)
+  drawChainPiece(ctx, slot.piece, inset(slot.rect, 0.16))
+  drawChainBadge(ctx, slot.badge, slot.count)
+}
+
+function inset(rect: Rect, pad: number): Rect {
+  const x = rect.w * pad
+  const y = rect.h * pad
+  return { x: rect.x + x, y: rect.y + y, w: rect.w - x * 2, h: rect.h - y * 2 }
 }
 
 function drawSheet(model: RenderModel): void {

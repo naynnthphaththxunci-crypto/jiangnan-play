@@ -9,6 +9,7 @@ import { createSfx, type Sfx } from './audio'
 import { stampEnergyChest } from './balance1120'
 import { defaultConfig, resetEconomy } from './config'
 import { render } from './draw'
+import { hitChainPopup, layoutChainPopup, type ChainFocus } from './chainPopup'
 import { curtainReady as curtainImagesReady } from './curtain'
 import { createFx, easeOutCubic, type Fx } from './fx'
 import { clamp } from './format'
@@ -17,8 +18,6 @@ import {
   cellCenter,
   guideHole,
   chestTarget,
-  chainCardRect,
-  chainCloseRect,
   chainPopRect,
   decorPopupRects,
   talkRect,
@@ -179,7 +178,7 @@ export function startGame(platform: Platform): void {
   let selectedAt = 0
   let orderScroll = 0
   let orderAnim: { from: number; to: number; start: number; dur: number } | null = null
-  let chain: { line: string; level: number; source: 'order' | 'producer' } | null = null
+  let chain: ChainFocus | null = null
   let orderFocus: { line: string; level: number } | null = null
   let lastInput = platform.now()
   let guideKey = ''
@@ -558,8 +557,9 @@ export function startGame(platform: Platform): void {
     if (hit.kind === 'chain') {
       if (state.phase !== 'play' || !selected) return
       const item = state.board[selected.row]?.[selected.col]
-      if (item?.kind !== 'producer') return
-      chain = { line: item.line, level: item.level, source: 'producer' }
+      if (item?.kind === 'producer') chain = { line: item.line, level: item.level, source: 'producer', producerId: item.producerId }
+      else if (item?.kind === 'product') chain = { line: item.line, level: item.level, source: 'order' }
+      else return
       sfx.ui()
       return
     }
@@ -1166,7 +1166,12 @@ export function startGame(platform: Platform): void {
       return
     }
     if (chain) {
-      if (!contains(chainCardRect(frame), x, y) || contains(chainCloseRect(frame), x, y)) chain = null
+      const popup = layoutChainPopup(frame, cfg, state, chain)
+      const where = hitChainPopup(popup, x, y)
+      if (where === 'source' && popup.source) {
+        chain = { line: popup.source.piece.line, level: popup.source.level, source: 'producer', producerId: popup.source.producerId }
+        sfx.ui()
+      } else if (where === 'close' || where === 'outside') chain = null
       return
     }
     const step = currentTutorial(cfg, state)
@@ -1356,6 +1361,8 @@ export function startGame(platform: Platform): void {
         if (slot) {
           selected = null
           orderFocus = { line: slot.line, level: slot.level }
+          chain = { line: slot.line, level: slot.level, source: 'order' }
+          sfx.ui()
         }
       }
       return
@@ -1645,6 +1652,13 @@ export function startGame(platform: Platform): void {
     },
     pump() {
       fillOrders(state, cfg, rng)
+    },
+    openChain(next: ChainFocus | null) {
+      chain = next
+      mark()
+    },
+    chainPopup() {
+      return chain ? layoutChainPopup(frame, cfg, state, chain) : null
     },
     startCurtain(to: 'board' | 'house') {
       beginCurtain(to)
