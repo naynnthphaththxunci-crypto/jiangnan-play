@@ -1119,12 +1119,22 @@ function drawExactPiece(
   sprite: CanvasImageSource & { naturalWidth?: number },
   cell: Rect,
   norm: { x: number; y: number; w: number; h: number },
+  pin: 'center' | 'offset' = 'center',
 ): boolean {
   if ((sprite.naturalWidth || 0) <= 0) return false
   const w = cell.w * norm.w
   const h = cell.h * norm.h
-  ctx.drawImage(sprite, cell.x + (cell.w - w) / 2, cell.y + (cell.h - h) / 2, w, h)
+  const x = pin === 'offset' ? cell.x + cell.w * norm.x : cell.x + (cell.w - w) / 2
+  const y = pin === 'offset' ? cell.y + cell.h * norm.y : cell.y + (cell.h - h) / 2
+  ctx.drawImage(sprite, x, y, w, h)
   return true
+}
+
+/** 猫粮按 PSD 相对格子的偏移画。其他线仍在格子里居中，避免挪动已经对过的图。 */
+function drawFoodPiece(ctx: CanvasRenderingContext2D, level: number, cell: Rect): boolean {
+  const norm = pieceNorm('food', level)
+  const sprite = itemSprite('food', level)
+  return !!(norm && sprite && drawExactPiece(ctx, sprite, cell, norm, 'offset'))
 }
 
 function drawBuriedPiece(ctx: CanvasRenderingContext2D, cfg: GameConfig, lock: { buried: GameState['locks'][number]['buried'] }, cell: Rect, now: number): void {
@@ -1132,7 +1142,7 @@ function drawBuriedPiece(ctx: CanvasRenderingContext2D, cfg: GameConfig, lock: {
   if (buried.kind === 'product') {
     const norm = pieceNorm(buried.line, buried.level)
     const sprite = itemSprite(buried.line, buried.level)
-    if (norm && sprite && drawExactPiece(ctx, sprite, cell, norm)) return
+    if (norm && sprite && drawExactPiece(ctx, sprite, cell, norm, buried.line === 'food' ? 'offset' : 'center')) return
   }
   if (buried.kind === 'producer') {
     const norm = producerNorm(buried.id, buried.level)
@@ -1183,7 +1193,9 @@ function drawCounterFront(model: RenderModel): void {
       )
       blit(ctx, 'shadow', shadow)
       const sprite = itemSprite(slot.line, slot.level)
-      if (sprite) drawFittedSprite(ctx, sprite, icon, 1)
+      if (slot.line === 'food' && drawFoodPiece(ctx, slot.level, icon)) {
+        /* 猫粮按格子偏移 */
+      } else if (sprite) drawFittedSprite(ctx, sprite, icon, 1)
       if (slotChecked(state, order, slotIndex)) blit(ctx, 'check', { x: icon.x + icon.w * 0.08, y: icon.y + icon.h * 0.2, w: icon.w * 0.9, h: icon.h * 0.72 })
     })
   })
@@ -1331,7 +1343,7 @@ function drawBoard(model: RenderModel): void {
             ? producerSprite(item.producerId, item.level)
             : null
         : null
-      const drewExact = !!(norm && exactSprite && drawExactPiece(ctx, exactSprite, cellWood, norm))
+      const drewExact = !!(norm && exactSprite && drawExactPiece(ctx, exactSprite, cellWood, norm, item.kind === 'product' && item.line === 'food' ? 'offset' : 'center'))
       if (!drewExact) drawItem(ctx, cfg, item, box, scale * breath, 1, realNow, unlimited && item.kind === 'producer')
       if (item.kind === 'product' && item.tag === 'bubble') {
         ctx.beginPath()
@@ -1860,6 +1872,7 @@ function blitChainCard(ctx: CanvasRenderingContext2D, id: HechengArtId, rect: Re
 }
 
 function drawChainPiece(ctx: CanvasRenderingContext2D, piece: ChainPiece, rect: Rect): void {
+  if (piece.kind === 'product' && piece.line === 'food' && drawFoodPiece(ctx, piece.level, rect)) return
   const art = piece.kind === 'producer' && piece.producerId ? producerSprite(piece.producerId, piece.level) : itemSprite(piece.line, piece.level)
   if (!art) return
   drawFittedSprite(ctx, art, rect, PIECE_FILL * 0.92)
@@ -2326,7 +2339,9 @@ function paintLiftedOrder(model: RenderModel, index: number): void {
     const icon = frame.orderIcons.find((entry) => entry.order === index && entry.slot === slotIndex)
     if (!icon) return
     const sprite = itemSprite(slot.line, slot.level)
-    if (sprite) drawFittedSprite(ctx, sprite, icon.rect, 1)
+    if (slot.line === 'food' && drawFoodPiece(ctx, slot.level, icon.rect)) {
+      /* 猫粮按格子偏移 */
+    } else if (sprite) drawFittedSprite(ctx, sprite, icon.rect, 1)
   })
   const payRect = frame.orderRewards[index]
   if (payRect) drawPayBubble(ctx, payRect, orderPayout(order, cfg).coins)

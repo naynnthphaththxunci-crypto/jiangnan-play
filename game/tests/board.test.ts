@@ -85,7 +85,7 @@ describe('锁格与笑脸', () => {
     expect(opened.ok).toBe(true)
     expect(state.smiles).toBe(0)
     const names = state.smileModal?.names ?? []
-    expect(names).toEqual(['白白胖胖的饭团', '白白胖胖的饭团', '鲑鱼小饭团', '鲑鱼小饭团', '一杯清香绿茶', '一杯清香绿茶', '木托上的茶杯'])
+    expect(names).toEqual(['一纸托小鱼饼', '一纸托小鱼饼', '粉纸袋猫粮', '粉纸袋猫粮', '一杯清香绿茶', '一杯清香绿茶', '木托上的茶杯'])
     const placed = [...state.board.flat(), ...state.pending, ...state.rewards].filter((item) => item?.kind === 'product')
     expect(placed.length).toBe(names.length)
   })

@@ -320,13 +320,13 @@ describe('第三轮教学、订单和布局', () => {
     const { state, cfg } = boot()
     state.seen.food = [1]
     const chain = lineChain(cfg, state, 'food', 3)
-    expect(chain.find((slot) => slot.level === 1)?.label).toBe('金黄稻谷')
+    expect(chain.find((slot) => slot.level === 1)?.label).toBe('一颗小鱼饼')
     expect(chain.find((slot) => slot.level === 2)?.label).toBe('?')
     expect(chain.find((slot) => slot.level === 3)?.current).toBe(true)
     expect(chain.find((slot) => slot.level === 3)?.label).toBe('?')
     state.seen.food = [1, 3]
     const seen = lineChain(cfg, state, 'food', 3)
-    expect(seen.find((slot) => slot.level === 3)?.label).toBe('喷香荷叶饭')
+    expect(seen.find((slot) => slot.level === 3)?.label).toBe('草莓酱小鱼饼')
     expect(seen.find((slot) => slot.level === 4)?.label).toBe('?')
   })
 })
