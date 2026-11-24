@@ -261,37 +261,59 @@ export function layoutChainPopup(frame: DesignFrame, cfg: GameConfig, state: Gam
   const trayY = (long ? 1414 : 1247) + (long ? extra : 0)
   const slotY = (long ? 1452 : 1285) + (long ? extra : 0)
   const infoY = (long ? 1448 : 1281) + (long ? extra : 0)
-  const usedRuleY = maker ? 1350 : ruleY
   const outputs = maker && focus.producerId ? producerOutputs(cfg, focus.producerId, focus.level) : { now: [], later: [] }
-  const nowRects = slotRow(Math.max(1, outputs.now.length), 1406)
-  const laterRects = slotRow(Math.max(1, outputs.later.length), 1701)
+  const makerLayout = maker ? layoutMakerOutputs(outputs) : null
   const makerOf = !maker ? chainMaker(cfg, focus.line) : null
   const sourcePiece: ChainPiece | null = makerOf
     ? { kind: 'producer', producerId: makerOf.id, line: focus.line, level: makerOf.from }
     : null
   const sourceRect = box(460, slotY, SLOT.w, SLOT.h)
+  const card = makerLayout ? { ...CARD_MAKER, h: makerLayout.cardH } : cardDesign
   return {
-    card: screen(frame, cardDesign),
+    card: screen(frame, card),
     title: screen(frame, TITLE),
     titleText: chainTitle(cfg, focus),
     close: screen(frame, CLOSE),
     cells,
-    rule: screen(frame, box(RULE.x, maker ? 1350 : usedRuleY, RULE.w, RULE.h)),
+    rule: screen(frame, box(RULE.x, maker ? 1350 : ruleY, RULE.w, RULE.h)),
     ruleLabel: maker ? '可产出' : '产自',
-    tray: screen(frame, box(TRAY.x, maker ? 1414 : trayY, TRAY.w, TRAY.h)),
+    tray: maker ? box(0, 0, 0, 0) : screen(frame, box(TRAY.x, trayY, TRAY.w, TRAY.h)),
     source:
       sourcePiece && makerOf
         ? {
             ...asSlot(frame, state, sourcePiece, sourceRect),
+            count: 0,
             info: screen(frame, box(580, infoY, INFO.w, INFO.h)),
             producerId: makerOf.id,
             level: makerOf.from,
           }
         : null,
-    now: maker ? outputs.now.map((piece, index) => asSlot(frame, state, piece, nowRects[index] ?? nowRects[0]!)) : [],
-    later: maker ? outputs.later.map((piece, index) => asSlot(frame, state, piece, laterRects[index] ?? laterRects[0]!)) : [],
-    laterRule: screen(frame, box(269, 1629, 542, 12)),
+    now: makerLayout ? outputs.now.map((piece, index) => asSlot(frame, state, piece, makerLayout.now[index]!)) : [],
+    later: makerLayout ? outputs.later.map((piece, index) => asSlot(frame, state, piece, makerLayout.later[index]!)) : [],
+    laterRule: screen(frame, makerLayout?.laterRule ?? box(0, 0, 0, 0)),
     laterLabel: '升级后额外产出',
+  }
+}
+
+/** 母棋页不铺底背面。可产出是居中的单格，额外产出按稿放在下面，多出来的另起一行并把弹窗加高。 */
+function layoutMakerOutputs(outputs: OutputGroups): { now: Box[]; later: Box[]; laterRule: Box; cardH: number } {
+  const now = outputs.now.length ? slotRow(outputs.now.length, 1406) : []
+  const nowBottom = now.length ? Math.max(...now.map((rect) => rect.y + rect.h)) : 1364
+  const laterLabelY = Math.max(1609, nowBottom + 43)
+  const later: Box[] = []
+  let y = laterLabelY + 92
+  for (let index = 0; index < outputs.later.length; index += 2) {
+    const count = Math.min(2, outputs.later.length - index)
+    later.push(...slotRow(count, y))
+    y += 196
+  }
+  const contentBottom = later.length ? y - 196 + SLOT.h : Math.max(nowBottom, 1566)
+  const cardH = Math.max(CARD_MAKER.h, contentBottom + 98 - CARD_MAKER.y)
+  return {
+    now,
+    later,
+    laterRule: box(RULE.x, laterLabelY + 20, RULE.w, RULE.h),
+    cardH,
   }
 }
 

@@ -1911,7 +1911,6 @@ function drawChain(model: RenderModel): void {
     blitChain(ctx, 'chainSlot', popup.source.rect)
     drawChainPiece(ctx, popup.source.piece, inset(popup.source.rect, 0.16))
     blitChain(ctx, 'chainInfo', popup.source.info)
-    drawChainBadge(ctx, popup.source.badge, popup.source.count)
   }
   for (const slot of popup.now) drawOutputSlot(ctx, slot)
   if (popup.later.length > 0) {
