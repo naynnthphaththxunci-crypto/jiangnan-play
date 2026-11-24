@@ -142,6 +142,7 @@ export interface LayoutInput {
   mode: 'story' | 'board' | 'house'
   orderCount: number
   orderSlots: number[]
+  orderReady?: boolean[]
   orderScroll: number
   guestCanvasScale?: number
   showHint: boolean
@@ -619,6 +620,7 @@ export function layout(input: LayoutInput): Frame {
         capsule: input.capsule ?? null,
         orderCount: boardMode ? input.orderCount : 0,
         orderSlots: boardMode ? input.orderSlots : [],
+        orderReady: boardMode ? input.orderReady : [],
         orderScroll: input.orderScroll,
         showRush: input.showRush,
         guestCanvasScale: input.guestCanvasScale,
@@ -808,6 +810,9 @@ export function hitTest(frame: Frame, x: number, y: number): Hit | null {
   if (frame.rushBtn.w > 0 && contains(frame.rushBtn, x, y)) return { kind: 'rush' }
   if (frame.adBtn.w > 0 && contains(frame.adBtn, x, y)) return { kind: 'adRush' }
   if (contains(frame.chainBtn, x, y)) return { kind: 'chain' }
+  for (let i = 0; i < frame.completes.length; i++) {
+    if (contains(frame.completes[i], x, y)) return { kind: 'complete', index: i }
+  }
   if (contains(frame.orderClip, x, y)) {
     for (let i = 0; i < frame.completes.length; i++) {
       if (contains(frame.completes[i], x, y)) return { kind: 'complete', index: i }

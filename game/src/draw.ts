@@ -57,6 +57,7 @@ import {
   BOARD_FRAME,
   COUNTER_TABLE,
   DESK_BOX,
+  DESIGN_W,
   cellWoodRect,
   contentScale,
   designToScreen,
@@ -766,13 +767,58 @@ function shiftX(box: Rect, dx: number): Rect {
   return dx ? { ...box, x: box.x + dx } : box
 }
 
+/** 横向铺满：两头花纹整段挪到画面外，只拉中间。 */
+function blitEndsOff(
+  ctx: CanvasRenderingContext2D,
+  id: Parameters<typeof hechengImage>[0],
+  y: number,
+  h: number,
+  viewW: number,
+  capFrac = 0.07,
+): void {
+  const img = hechengImage(id)
+  if (!img || h <= 0 || viewW <= 0 || (img.naturalWidth || 0) <= 0) return
+  const iw = img.naturalWidth || 1
+  const ih = img.naturalHeight || 1
+  const cap = Math.max(8, Math.min(Math.floor(iw * capFrac), Math.floor(iw / 2) - 4))
+  const capW = (cap / ih) * h
+  ctx.drawImage(img, 0, 0, cap, ih, -capW - 2, y, capW, h)
+  ctx.drawImage(img, cap, 0, iw - cap * 2, ih, -2, y, viewW + 4, h)
+  ctx.drawImage(img, iw - cap, 0, cap, ih, viewW + 2, y, capW, h)
+}
+
 function drawHecheng(model: RenderModel): void {
   const { ctx, frame, state, cfg, realNow } = model
   const at = (box: Rect) => designToScreen(frame, box, 'top')
   ctx.fillStyle = '#3a2418'
   ctx.fillRect(0, 0, frame.w, frame.h)
-  blit(ctx, 'bg', at(BG_BOX))
-  blit(ctx, 'desk', at(DESK_BOX))
+  const bg = hechengImage('bg')
+  if (bg && (bg.naturalWidth || 0) > 0) {
+    let box = at(BG_BOX)
+    const cover = Math.max(1, frame.w / Math.max(1, box.w), frame.h / Math.max(1, box.h))
+    if (cover > 1) {
+      // 以画面顶边中点的那一个像素为锚，只向外铺，不再把顶部灯笼裁掉。
+      const ax = frame.w / 2
+      const ay = 0
+      const u = (ax - box.x) / box.w
+      const v = (ay - box.y) / box.h
+      box = { x: ax - u * box.w * cover, y: ay - v * box.h * cover, w: box.w * cover, h: box.h * cover }
+    }
+    if (box.x > 0) box.x = 0
+    if (box.y > 0) box.y = 0
+    if (box.x + box.w < frame.w) box.x = frame.w - box.w
+    if (box.y + box.h < frame.h) box.y = frame.h - box.h
+    ctx.drawImage(bg as CanvasImageSource, box.x, box.y, box.w, box.h)
+  }
+  const column = at({ x: 0, y: 0, w: DESIGN_W, h: 10 })
+  const desk = at(DESK_BOX)
+  const deskH = Math.max(desk.h, frame.h - desk.y + 2)
+  ctx.save()
+  ctx.beginPath()
+  ctx.rect(column.x - 1, desk.y, column.w + 2, deskH)
+  ctx.clip()
+  blit(ctx, 'desk', { x: desk.x, y: desk.y, w: desk.w, h: deskH })
+  ctx.restore()
   ctx.save()
   ctx.beginPath()
   ctx.rect(frame.orderClip.x, frame.orderClip.y, frame.orderClip.w, frame.orderClip.h)
@@ -793,7 +839,8 @@ function drawHecheng(model: RenderModel): void {
     )
   })
   ctx.restore()
-  blit(ctx, 'counter', at(COUNTER_TABLE))
+  const counter = at(COUNTER_TABLE)
+  blitEndsOff(ctx, 'counter', counter.y, counter.h, frame.w, 0.08)
   blit(ctx, 'board', at(BOARD_FRAME))
   blit(ctx, 'stash', frame.pendingBtn)
   blit(ctx, 'info', frame.infoBar)
@@ -1101,7 +1148,7 @@ function drawBuriedPiece(ctx: CanvasRenderingContext2D, cfg: GameConfig, lock: {
 
 /** 柜台压在棋盘上沿。托盘、物品和气泡跟着订单滑动，柜台本身不动。 */
 function drawCounterFront(model: RenderModel): void {
-  const { ctx, frame, state, cfg } = model
+  const { ctx, frame, state, cfg, realNow } = model
   if (frame.mode !== 'board') return
   ctx.save()
   ctx.beginPath()
@@ -1144,6 +1191,21 @@ function drawCounterFront(model: RenderModel): void {
     })
   })
   ctx.restore()
+  state.orders.forEach((order, index) => {
+    const btn = frame.completes[index]
+    if (!btn || btn.w <= 0 || !orderSatisfied(state, order)) return
+    const lead = orderLead(model, index)
+    const drawn = shiftX(btn, lead)
+    const age = order.readyAt != null ? realNow - order.readyAt : 400
+    const pop = age >= 240 ? 1 : easeOutBack(Math.max(0, age / 240))
+    const cx = drawn.x + drawn.w / 2
+    const cy = drawn.y + drawn.h / 2
+    ctx.save()
+    ctx.translate(cx, cy)
+    ctx.scale(pop, pop)
+    blit(ctx, 'done', { x: -drawn.w / 2, y: -drawn.h / 2, w: drawn.w, h: drawn.h })
+    ctx.restore()
+  })
 }
 
 function drawBoard(model: RenderModel): void {

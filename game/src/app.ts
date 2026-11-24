@@ -261,6 +261,7 @@ export function startGame(platform: Platform): void {
       mode: current,
       orderCount: state.orders.length,
       orderSlots: state.orders.map((order) => order.slots.length),
+      orderReady: state.orders.map((order) => orderSatisfied(state, order)),
       orderScroll,
       guestCanvasScale: cfg.economy.guestCanvasScale,
       showHint: false,

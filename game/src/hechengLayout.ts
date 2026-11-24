@@ -66,6 +66,8 @@ export interface HechengInput {
   capsule?: { x: number; y: number; w: number; h: number } | null
   orderCount: number
   orderSlots: number[]
+  /** 这一单已经凑齐，才给出完成按钮。 */
+  orderReady?: boolean[]
   orderScroll: number
   showRush?: boolean
   /** 1024 画布相对设计稿宽度的缩放，默认 0.29。 */
@@ -223,16 +225,42 @@ export function cellWoodRect(board: { x: number; y: number }, scale: number, row
 
 export function hechengParts(input: HechengInput): HechengScene {
   const availBottom = input.h - Math.max(0, input.insetBottom)
-  // 同一套 1080×2340 排版，按能放下整页的比例缩放。多出来的地方由大图背景铺满。
-  const scale = Math.min(input.w / DESIGN_W, Math.max(1, availBottom) / DESIGN_H)
+  // 竖屏按宽度缩放。比稿矮时只上推客人、柜台、棋盘和底栏，压掉顶栏和客人之间的背景。
+  // 顶到顶栏还放不下，才把整页缩小。横屏保持手机宽的一列，两侧留给大图。
+  const screenH = Math.max(1, availBottom)
+  const widthScale = input.w / DESIGN_W
+  const guestTop = 312
+  const barBottom = 2252
+  const hudClear = input.insetTop > 20 ? 276 : 168
+  const maxLift = Math.max(0, guestTop - hudClear - 6)
+  const portrait = input.h + 8 >= input.w
+  let scale = widthScale
+  let bodyShift = 0
+  if (portrait) {
+    const needLift = barBottom - screenH / widthScale
+    if (needLift > 0) {
+      if (needLift <= maxLift) bodyShift = -needLift
+      else {
+        bodyShift = -maxLift
+        scale = Math.min(widthScale, screenH / (barBottom + bodyShift))
+      }
+    }
+  } else {
+    const packed = barBottom - maxLift
+    scale = Math.min(widthScale, screenH / packed)
+    const needLift = Math.max(0, barBottom - screenH / scale)
+    bodyShift = -Math.min(maxLift, needLift)
+  }
   const offsetX = (input.w - DESIGN_W * scale) / 2
-  const sceneTop = availBottom - DESIGN_H * scale
-  const place = (box: Box, scroll = 0): Box => ({
+  const sceneTop = Math.max(0, screenH - DESIGN_H * scale)
+  const placeAt = (box: Box, scroll = 0, yShift = 0): Box => ({
     x: offsetX + box.x * scale - scroll,
-    y: sceneTop + box.y * scale,
+    y: sceneTop + (box.y + yShift) * scale,
     w: box.w * scale,
     h: box.h * scale,
   })
+  const place = (box: Box, scroll = 0) => placeAt(box, scroll, 0)
+  const placeBody = (box: Box, scroll = 0) => placeAt(box, scroll, bodyShift)
   // 有刘海时沿用苹果 16 稿（已经放低）。没有刘海时整排往上贴顶，但要停在胶囊下面。
   let hudDy = input.insetTop > 20 ? 0 : -(130 - 16)
   const capsule = input.capsule
@@ -250,7 +278,7 @@ export function hechengParts(input: HechengInput): HechengScene {
   const orderMaxScroll = Math.max(0, lastRight * scale - DESIGN_W * scale)
   const scroll = input.orderScroll
   const tableSlots: Box[] = []
-  for (let i = 0; i < n; i++) tableSlots.push(place(orderPlateDesign(i), scroll))
+  for (let i = 0; i < n; i++) tableSlots.push(placeBody(orderPlateDesign(i), scroll))
   const orders: Box[] = []
   const completes: Box[] = []
   const orderPlates: Box[] = []
@@ -259,26 +287,28 @@ export function hechengParts(input: HechengInput): HechengScene {
   const orderIcons: { order: number; slot: number; rect: Box }[] = []
   for (let i = 0; i < n; i++) {
     const design = orderPlateDesign(i)
-    const plate = place(design, scroll)
-    const guest = place({ x: design.x, y: design.y - 270, w: design.w, h: 270 }, scroll)
-    const reward = place({ x: design.x + 217, y: design.y - 113, w: 113, h: 56 }, scroll)
+    const plate = placeBody(design, scroll)
+    const guest = placeBody({ x: design.x, y: design.y - 270, w: design.w, h: 270 }, scroll)
+    const reward = placeBody({ x: design.x + 217, y: design.y - 113, w: 113, h: 56 }, scroll)
+    const doneH = design.w * (220 / 640)
+    const done = placeBody({ x: design.x, y: design.y + design.h - 6, w: design.w, h: doneH }, scroll)
     orders.push(plate)
     orderPlates.push(plate)
     orderGuests.push(guest)
     orderRewards.push(reward)
-    completes.push(plate)
+    completes.push(input.orderReady?.[i] ? done : ZERO_BOX)
     const slots = Math.max(1, input.orderSlots[i] ?? 1)
     for (let slot = 0; slot < slots; slot++) {
       const spec = orderItemDesign(slots, slot).item
       orderIcons.push({
         order: i,
         slot,
-        rect: place({ x: design.x + spec.x, y: design.y + spec.y, w: spec.w, h: spec.h }, scroll),
+        rect: placeBody({ x: design.x + spec.x, y: design.y + spec.y, w: spec.w, h: spec.h }, scroll),
       })
     }
   }
-  const boardArt = place(MERGE_BOARD)
-  const info = place({ x: 188, y: 2089, w: 705, h: 166 })
+  const boardArt = placeBody(MERGE_BOARD)
+  const info = placeBody({ x: 188, y: 2089, w: 705, h: 166 })
   const unit = Math.max(0.72, input.w / 390)
   const sellW = Math.round(54 * unit)
   const rushW = input.showRush ? Math.round(58 * unit) : 0
@@ -298,13 +328,13 @@ export function hechengParts(input: HechengInput): HechengScene {
     w: Math.round(24 * unit),
     h: Math.round(24 * unit),
   }
-  const build = place({ x: 914, y: 2092, w: 154, h: 159 })
-  const stash = place({ x: 13, y: 2099, w: 157, h: 145 })
+  const build = placeBody({ x: 914, y: 2092, w: 154, h: 159 })
+  const stash = placeBody({ x: 13, y: 2099, w: 157, h: 145 })
   const dockTop = Math.min(build.y, stash.y, info.y)
   const storyBtn = ZERO_BOX
   const taskBtn = ZERO_BOX
   const chestBtn = chestOn ? stash : ZERO_BOX
-  const orderClip = place({ x: 0, y: 280, w: DESIGN_W, h: 370 })
+  const orderClip = placeBody({ x: 0, y: 250, w: DESIGN_W, h: 520 })
   const avatarSlot = placeHud({ x: 45, y: 139, w: 137, h: 137 })
   const taskIcon = childOf(taskBtn, TASK_BTN, TASK_ICON)
   const bookIcon = childOf(storyBtn, STORY_BTN, BOOK_ICON)
@@ -348,7 +378,7 @@ export function hechengParts(input: HechengInput): HechengScene {
     taskBtn,
     hud: placeHud({ x: 0, y: 130, w: DESIGN_W, h: 190 }),
     gemPlus: placeHud({ x: 699, y: 207, w: 44, h: 44 }),
-    counter: place(COUNTER_TABLE),
+    counter: placeBody(COUNTER_TABLE),
     boardArt,
     taskIcon,
     bookIcon,

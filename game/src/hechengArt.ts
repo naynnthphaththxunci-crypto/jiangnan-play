@@ -5,6 +5,7 @@ import counterUrl from './assets/hecheng/counter.webp'
 import boardUrl from './assets/hecheng/board.webp'
 import shadowUrl from './assets/hecheng/shadow.webp'
 import checkUrl from './assets/hecheng/check.webp'
+import doneUrl from './assets/hecheng/done.webp'
 import payUrl from './assets/hecheng/pay.webp'
 import smileOrderUrl from './assets/hecheng/smile_order.webp'
 import plusUrl from './assets/hecheng/plus.webp'
@@ -54,6 +55,7 @@ export const HECHENG_ART = {
   board: boardUrl,
   shadow: shadowUrl,
   check: checkUrl,
+  done: doneUrl,
   pay: payUrl,
   smileOrder: smileOrderUrl,
   plus: plusUrl,
