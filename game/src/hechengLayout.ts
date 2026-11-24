@@ -1,21 +1,17 @@
-import { KEEP_TOP } from './viewport'
-
 export const DESIGN_W = 1080
 export const DESIGN_H = 2340
-/** 柜台整图。底边停在棋盘上沿之上，桌面和深色压边都不能盖住格子。 */
-export const COUNTER_TABLE = { x: 0, y: 508, w: 1080, h: 324 }
-export const COUNTER_BAND = { x: 24, y: 613, w: 1045, h: 141 }
+/** 苹果 16 稿。大图背景相对这块画面的偏移是 (234, 935)。 */
+export const BIG_ANCHOR = { x: 234, y: 935 }
+export const BG_BOX = { x: -234, y: -935, w: 1608, h: 2889 }
+export const DESK_BOX = { x: -287, y: 653, w: 1661, h: 1687 }
+export const COUNTER_TABLE = { x: -153, y: 609, w: 1430, h: 115 }
 
-const BOARD_TOP = 846
-const BOARD_BOTTOM = 2102
-const BOARD_H = BOARD_BOTTOM - BOARD_TOP
-const BOARD_PITCH = BOARD_H / 9
-const BOARD_W = BOARD_PITCH * 7
-/** 7×9 方格，整盘在柜台底边和底栏之间，水平居中。 */
-export const MERGE_BOARD = { x: (DESIGN_W - BOARD_W) / 2, y: BOARD_TOP, w: BOARD_W, h: BOARD_H }
+/** 稿里棋盘 13,690–1068,2038。 */
+export const MERGE_BOARD = { x: 13, y: 690, w: 1055, h: 1348 }
 export const BOARD_X = MERGE_BOARD.x
 export const BOARD_Y = MERGE_BOARD.y
-const CELL_PITCH = MERGE_BOARD.h / 9
+const CELL_W = MERGE_BOARD.w / 7
+const CELL_H = MERGE_BOARD.h / 9
 
 export interface Box {
   x: number
@@ -24,7 +20,7 @@ export interface Box {
   h: number
 }
 
-const PITCH = 313
+const PITCH = 345
 
 /** 第一张小桌子的设计横坐标。原来第一位在画面中间，现在改到柜台最左边。 */
 const ORDER_LEFT = 28
@@ -40,22 +36,6 @@ const GUEST_ANCHOR: { x: number; y: number }[] = [
   { x: 632, y: 316 },
   { x: 975, y: 316 },
 ]
-const PLATES: Box[] = [
-  { x: 354, y: 518, w: 294, h: 112 },
-  { x: 667, y: 518, w: 294, h: 112 },
-  { x: 980, y: 518, w: 294, h: 112 },
-]
-const REWARDS: Box[] = [
-  { x: 568, y: 359, w: 107, h: 101 },
-  { x: 902, y: 359, w: 107, h: 101 },
-  { x: 1210, y: 359, w: 107, h: 101 },
-]
-const COMPLETES: Box[] = [
-  { x: 403, y: 574, w: 182, h: 94 },
-  { x: 716, y: 574, w: 182, h: 94 },
-  { x: 1029, y: 574, w: 182, h: 94 },
-]
-
 /** 绿书和任务板从这一级起才出现。 */
 export const SIDE_ICON_LEVEL = 5
 
@@ -75,6 +55,8 @@ export interface HechengInput {
   h: number
   insetTop: number
   insetBottom: number
+  /** 右上角胶囊，屏幕坐标。顶部一排要躲开会。 */
+  capsule?: { x: number; y: number; w: number; h: number } | null
   orderCount: number
   orderSlots: number[]
   orderScroll: number
@@ -119,6 +101,7 @@ export interface HechengScene {
   rushBtn: Box
   adBtn: Box
   energyPlus: Box
+  gemPlus: Box
   chestBtn: Box
   storyBtn: Box
   taskBtn: Box
@@ -146,14 +129,6 @@ function childOf(button: Box, designButton: Box, designChild: Box): Box {
   }
 }
 
-function slotAt(list: Box[], index: number, dx = 0): Box {
-  const raw = index < list.length ? list[index]! : (() => {
-    const last = list[list.length - 1]!
-    return { ...last, x: last.x + (index - (list.length - 1)) * PITCH }
-  })()
-  return { ...raw, x: raw.x - ORDER_SHIFT + dx }
-}
-
 /** 整张 1024 画布的设计坐标。默认比例下左上角就是锚点；改比例时绕画布中心缩放。 */
 export function guestCanvasBox(index: number, guestScale = GUEST_SCALE, dx = 0): Box {
   const raw = index < GUEST_ANCHOR.length
@@ -165,25 +140,42 @@ export function guestCanvasBox(index: number, guestScale = GUEST_SCALE, dx = 0):
   return { x: anchor.x + nominal / 2 - size / 2, y: anchor.y, w: size, h: size }
 }
 
-/** 7×9 等边格子，在棋盘外框里水平居中。 */
+/** 7×9 格子铺满稿里的棋盘。 */
 export function designCell(row: number, col: number): Box | null {
   if (row < 0 || col < 0 || row >= 9 || col >= 7) return null
-  const gridW = CELL_PITCH * 7
-  const originX = MERGE_BOARD.x + (MERGE_BOARD.w - gridW) / 2
   return {
-    x: originX + col * CELL_PITCH,
-    y: MERGE_BOARD.y + row * CELL_PITCH,
-    w: CELL_PITCH,
-    h: CELL_PITCH,
+    x: MERGE_BOARD.x + col * CELL_W,
+    y: MERGE_BOARD.y + row * CELL_H,
+    w: CELL_W,
+    h: CELL_H,
   }
 }
 
-/** 棋盘图左上角在屏幕上的位置。格子跟着这张图走。 */
-/** 用棋盘图左上角和底栏上沿反推设计坐标。底栏锚在屏幕底部，棋盘锚在顶部。 */
-/** 棋盘格子相对设计稿的缩放。内容可以比屏幕窄，背景仍然铺满。 */
 export function contentScale(board: { cell: number }): number {
-  const pitch = MERGE_BOARD.h / 9
-  return pitch > 0 && board.cell > 0 ? board.cell / pitch : 1
+  return CELL_H > 0 && board.cell > 0 ? board.cell / CELL_H : 1
+}
+
+/** 第 index 张托盘。一屏三位，间距 345。 */
+export function orderPlateDesign(index: number): Box {
+  return { x: 36 + index * PITCH, y: 558, w: 281, h: 80 }
+}
+
+const ITEM_PATTERNS: { shadow: Box; item: Box }[][] = [
+  [{ shadow: { x: 88, y: 15, w: 101, h: 51 }, item: { x: 93, y: -29, w: 88, h: 83 } }],
+  [
+    { shadow: { x: 39, y: 15, w: 101, h: 51 }, item: { x: 47, y: -2, w: 82, h: 55 } },
+    { shadow: { x: 151, y: 15, w: 101, h: 51 }, item: { x: 165, y: -20, w: 73, h: 75 } },
+  ],
+  [
+    { shadow: { x: 6, y: 15, w: 101, h: 51 }, item: { x: 22, y: -57, w: 82, h: 111 } },
+    { shadow: { x: 92, y: 15, w: 101, h: 51 }, item: { x: 104, y: -20, w: 77, h: 72 } },
+    { shadow: { x: 176, y: 15, w: 101, h: 51 }, item: { x: 185, y: -23, w: 83, h: 75 } },
+  ],
+]
+
+export function orderItemDesign(count: number, slot: number): { shadow: Box; item: Box } {
+  const pattern = ITEM_PATTERNS[Math.min(3, Math.max(1, count)) - 1] ?? ITEM_PATTERNS[0]!
+  return pattern[Math.min(slot, pattern.length - 1)] ?? pattern[0]!
 }
 
 export function designToScreen(
@@ -223,11 +215,9 @@ export function cellWoodRect(board: { x: number; y: number }, scale: number, row
 }
 
 export function hechengParts(input: HechengInput): HechengScene {
-  const availTop = Math.max(0, input.insetTop)
   const availBottom = input.h - Math.max(0, input.insetBottom)
-  const availH = Math.max(1, availBottom - availTop)
-  // 内容按宽和高里更紧的一边缩放并居中。背景另铺满整屏，不留黑边。
-  const scale = Math.min(input.w / DESIGN_W, availH / (DESIGN_H - KEEP_TOP))
+  // 同一套 1080×2340 排版，按能放下整页的比例缩放。多出来的地方由大图背景铺满。
+  const scale = Math.min(input.w / DESIGN_W, Math.max(1, availBottom) / DESIGN_H)
   const offsetX = (input.w - DESIGN_W * scale) / 2
   const sceneTop = availBottom - DESIGN_H * scale
   const place = (box: Box, scroll = 0): Box => ({
@@ -236,32 +226,24 @@ export function hechengParts(input: HechengInput): HechengScene {
     w: box.w * scale,
     h: box.h * scale,
   })
-  const guestScale = input.guestCanvasScale && input.guestCanvasScale > 0 ? input.guestCanvasScale : GUEST_SCALE
-  const n = Math.max(0, input.orderCount)
-  const storyOn = input.showStory !== false
-  const taskOn = input.showTask !== false
-  const chestOn = input.showChest !== false
-  const columnRight = storyOn || chestOn ? ORDER_LEFT + STORY_BTN.w : 0
-  const taskRight = taskOn ? ORDER_LEFT + (TASK_BTN.x - STORY_BTN.x) + TASK_BTN.w : 0
-  const buttonRight = Math.max(columnRight, taskRight)
-  const orderPad = buttonRight === 0 ? 0 : buttonRight + 28 - ORDER_LEFT
-  const pitchPx = PITCH * scale
-  let right = buttonRight * scale
-  if (n > 0) {
-    const last = n - 1
-    for (const box of [
-      guestCanvasBox(last, guestScale, orderPad),
-      slotAt(PLATES, last, orderPad),
-      slotAt(REWARDS, last, orderPad),
-      slotAt(COMPLETES, last, orderPad),
-    ]) {
-      right = Math.max(right, (box.x + box.w) * scale)
-    }
+  // 有刘海时沿用苹果 16 稿（已经放低）。没有刘海时整排往上贴顶，但要停在胶囊下面。
+  let hudDy = input.insetTop > 20 ? 0 : -(130 - 16)
+  const capsule = input.capsule
+  if (capsule && capsule.h > 0) {
+    const shopTop = sceneTop + (239 + hudDy) * scale
+    const limit = capsule.y + capsule.h + 8
+    if (shopTop < limit) hudDy += (limit - shopTop) / scale
   }
-  const orderMaxScroll = Math.max(0, right - DESIGN_W * scale)
+  const placeHud = (box: Box): Box => place({ ...box, y: box.y + hudDy })
+  const n = Math.max(0, input.orderCount)
+  const chestOn = input.showChest !== false
+  const pitchPx = PITCH * scale
+  const lastPlate = n > 0 ? orderPlateDesign(n - 1) : orderPlateDesign(0)
+  const lastRight = lastPlate.x + 217 + 113
+  const orderMaxScroll = Math.max(0, lastRight * scale - DESIGN_W * scale)
   const scroll = input.orderScroll
   const tableSlots: Box[] = []
-  for (let i = 0; i < n; i++) tableSlots.push(place(slotAt(PLATES, i, orderPad), scroll))
+  for (let i = 0; i < n; i++) tableSlots.push(place(orderPlateDesign(i), scroll))
   const orders: Box[] = []
   const completes: Box[] = []
   const orderPlates: Box[] = []
@@ -269,32 +251,28 @@ export function hechengParts(input: HechengInput): HechengScene {
   const orderGuests: Box[] = []
   const orderIcons: { order: number; slot: number; rect: Box }[] = []
   for (let i = 0; i < n; i++) {
-    const plate = place(slotAt(PLATES, i, orderPad), scroll)
-    const guest = place(guestCanvasBox(i, guestScale, orderPad), scroll)
-    const reward = place(slotAt(REWARDS, i, orderPad), scroll)
-    const button = place(slotAt(COMPLETES, i, orderPad), scroll)
+    const design = orderPlateDesign(i)
+    const plate = place(design, scroll)
+    const guest = place({ x: design.x, y: design.y - 270, w: design.w, h: 270 }, scroll)
+    const reward = place({ x: design.x + 217, y: design.y - 113, w: 113, h: 56 }, scroll)
     orders.push(plate)
     orderPlates.push(plate)
     orderGuests.push(guest)
     orderRewards.push(reward)
-    completes.push(button)
+    completes.push(plate)
     const slots = Math.max(1, input.orderSlots[i] ?? 1)
-    const size = Math.min(plate.h * 0.92, (plate.w * 0.84) / slots)
-    const gap = size * 0.08
-    const total = slots * size + (slots - 1) * gap
-    const x0 = plate.x + (plate.w - total) / 2
-    const y = plate.y - size * 0.28
     for (let slot = 0; slot < slots; slot++) {
+      const spec = orderItemDesign(slots, slot).item
       orderIcons.push({
         order: i,
         slot,
-        rect: { x: x0 + slot * (size + gap), y, w: size, h: size },
+        rect: place({ x: design.x + spec.x, y: design.y + spec.y, w: spec.w, h: spec.h }, scroll),
       })
     }
   }
   const boardArt = place(MERGE_BOARD)
   const first = designCell(0, 0)
-  const info = place({ x: 178, y: 2126, w: 723, h: 148 })
+  const info = place({ x: 188, y: 2089, w: 705, h: 166 })
   const unit = Math.max(0.72, input.w / 390)
   const sellW = Math.round(54 * unit)
   const rushW = input.showRush ? Math.round(58 * unit) : 0
@@ -314,17 +292,14 @@ export function hechengParts(input: HechengInput): HechengScene {
     w: Math.round(24 * unit),
     h: Math.round(24 * unit),
   }
-  const build = place({ x: 912, y: 2112, w: 153, h: 163 })
-  const dockTop = build.y
-  const shiftBtn = (box: Box): Box => ({ ...box, x: box.x - STORY_BTN.x + ORDER_LEFT })
-  const storyDesign = storyOn ? shiftBtn(chestOn ? STORY_BTN : { ...STORY_BTN, y: CHEST_BTN.y }) : null
-  const chestDesign = chestOn ? shiftBtn(CHEST_BTN) : null
-  const taskDesign = taskOn ? shiftBtn(TASK_BTN) : null
-  const storyBtn = storyDesign ? place(storyDesign, scroll) : ZERO_BOX
-  const taskBtn = taskDesign ? place(taskDesign, scroll) : ZERO_BOX
-  const chestBtn = chestDesign ? place(chestDesign, scroll) : ZERO_BOX
-  const orderClip = place({ x: 0, y: 300, w: DESIGN_W, h: 420 })
-  const avatarSlot = place({ x: 29, y: 150, w: 149, h: 149 })
+  const build = place({ x: 914, y: 2092, w: 154, h: 159 })
+  const stash = place({ x: 13, y: 2099, w: 157, h: 145 })
+  const dockTop = Math.min(build.y, stash.y, info.y)
+  const storyBtn = ZERO_BOX
+  const taskBtn = ZERO_BOX
+  const chestBtn = chestOn ? stash : ZERO_BOX
+  const orderClip = place({ x: 0, y: 280, w: DESIGN_W, h: 370 })
+  const avatarSlot = placeHud({ x: 45, y: 139, w: 137, h: 137 })
   const taskIcon = childOf(taskBtn, TASK_BTN, TASK_ICON)
   const bookIcon = childOf(storyBtn, STORY_BTN, BOOK_ICON)
   const chestIcon = childOf(chestBtn, CHEST_BTN, CHEST_ICON)
@@ -347,25 +322,26 @@ export function hechengParts(input: HechengInput): HechengScene {
     board: { x: boardArt.x, y: boardArt.y, cell: (first?.w ?? 139) * scale },
     rewardTray: chestBtn,
     dock: { x: 0, y: dockTop, w: input.w, h: Math.max(0, availBottom - dockTop) },
-    pendingBtn: place({ x: 14, y: 2113, w: 143, h: 160 }),
+    pendingBtn: stash,
     houseBtn: build,
     infoBar: info,
     avatarSlot,
-    energySlot: place({ x: 178, y: 169, w: 204, h: 71 }),
-    coinSlot: place({ x: 397, y: 169, w: 202, h: 71 }),
-    gemSlot: place({ x: 613, y: 168, w: 206, h: 72 }),
-    smileSlot: place({ x: 717, y: 260, w: 86, h: 86 }),
-    multBtn: place({ x: 827, y: 265, w: 80, h: 78 }),
-    shopBtn: place({ x: 918, y: 247, w: 124, h: 107 }),
+    energySlot: placeHud({ x: 234, y: 179, w: 157, h: 56 }),
+    coinSlot: placeHud({ x: 454, y: 179, w: 169, h: 56 }),
+    gemSlot: placeHud({ x: 661, y: 179, w: 185, h: 56 }),
+    smileSlot: avatarSlot,
+    multBtn: placeHud({ x: 865, y: 236, w: 83, h: 78 }),
+    shopBtn: placeHud({ x: 972, y: 239, w: 73, h: 73 }),
     sellBtn,
     chainBtn,
     rushBtn,
     adBtn,
-    energyPlus: place({ x: 342, y: 169, w: 40, h: 71 }),
+    energyPlus: placeHud({ x: 244, y: 207, w: 44, h: 44 }),
     chestBtn,
     storyBtn,
     taskBtn,
-    hud: place({ x: 0, y: 140, w: DESIGN_W, h: 220 }),
+    hud: placeHud({ x: 0, y: 130, w: DESIGN_W, h: 190 }),
+    gemPlus: placeHud({ x: 699, y: 207, w: 44, h: 44 }),
     counter: place(COUNTER_TABLE),
     boardArt,
     taskIcon,

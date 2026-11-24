@@ -83,6 +83,8 @@ export interface Fx {
   comicFadeAt: number
   /** 整页慢推镜头开始的时刻。换页时重设，同一页里点台词不重设。 */
   pagePushAt: number
+  /** 交单后，后面的客人从原来的位置滑到新位置。index 是被交掉的那一单。 */
+  orderSlide: null | { index: number; start: number; dur: number }
   ghostOrder: null | {
     customerId: string
     slots: OrderSlot[]
@@ -107,6 +109,7 @@ export function createFx(): Fx {
     drag: null,
     hover: null,
     shakeUntil: 0,
+    orderSlide: null,
     silaAt: 0,
     comicFrom: -1,
     comicFadeAt: 0,

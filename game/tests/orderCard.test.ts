@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { defaultConfig } from '../src/config'
 import { cellRect, hitTest, layout, type LayoutInput, type Rect } from '../src/layout'
-import { MERGE_BOARD, designCell } from '../src/hechengLayout'
+import { MERGE_BOARD, contentScale, designCell } from '../src/hechengLayout'
 import { scrollOrders } from '../src/logic/sim'
 import type { NormBox } from '../src/types'
 import { PORTRAITS, portraitConfig } from '../src/portraits'
@@ -64,7 +64,7 @@ describe('订单卡', () => {
     expect(view.tableSlots).toHaveLength(1)
     const chest = frame({ showStory: false, showTask: false, showChest: true, orderCount: 1, orderSlots: [1] })
     expect(chest.chestBtn.w).toBeGreaterThan(0)
-    expect(chest.orderPlates[0]!.x).toBeGreaterThan(chest.chestBtn.x + chest.chestBtn.w)
+    expect(chest.orderPlates[0]!.x).toBeCloseTo(view.orderPlates[0]!.x, 1)
   })
 
   it('滑动时桌子不动，客人吸附到桌位，最右的奖励能拉进屏幕', () => {
@@ -121,37 +121,36 @@ describe('订单卡', () => {
     }
   })
 
-  it('5 级按钮和订单一起滑，没宝箱时绿书下移，桌子留在槽位上', () => {
-    const full = frame({ w: 1080, h: 2340, showStory: true, showTask: true, showChest: true, orderCount: 1, orderSlots: [1] })
-    expect(full.storyBtn.y).toBeLessThan(full.chestBtn.y)
-    expect(full.taskBtn.x).toBeGreaterThan(full.chestBtn.x + full.chestBtn.w)
-    expect(full.orderPlates[0]!.x).toBeGreaterThan(full.taskBtn.x + full.taskBtn.w - 2)
-    const noChest = frame({ w: 1080, h: 2340, showStory: true, showTask: true, showChest: false, orderCount: 1, orderSlots: [1] })
+  it('柜台和底栏不跟着订单滑，客人跟着托盘走', () => {
+    const full = frame({ w: 1080, h: 2340, showChest: true, orderCount: 1, orderSlots: [1] })
+    expect(full.storyBtn.w).toBe(0)
+    expect(full.taskBtn.w).toBe(0)
+    expect(full.chestBtn.w).toBeGreaterThan(0)
+    expect(full.orderPlates[0]!.x).toBeCloseTo(36, 0)
+    const noChest = frame({ w: 1080, h: 2340, showChest: false, orderCount: 1, orderSlots: [1] })
     expect(noChest.chestBtn.w).toBe(0)
-    expect(noChest.storyBtn.y).toBeCloseTo(full.chestBtn.y, 0)
+    expect(noChest.pendingBtn.x).toBeCloseTo(full.pendingBtn.x, 0)
     const scrolled = frame({
       w: 1080,
       h: 2340,
-      showStory: true,
-      showTask: true,
       showChest: true,
       orderCount: 4,
       orderSlots: [1, 1, 1, 1],
       orderScroll: 80,
     })
-    expect(scrolled.storyBtn.x).toBeCloseTo(full.storyBtn.x - 80, 0)
-    expect(scrolled.taskBtn.x).toBeCloseTo(full.taskBtn.x - 80, 0)
-    expect(full.orderGuests[0]!.x - scrolled.orderGuests[0]!.x).toBeCloseTo(full.tableSlots[0]!.x - scrolled.tableSlots[0]!.x, 1)
+    expect(scrolled.pendingBtn.x).toBeCloseTo(full.pendingBtn.x, 0)
+    expect(scrolled.houseBtn.x).toBeCloseTo(full.houseBtn.x, 0)
+    expect(full.orderGuests[0]!.x - scrolled.orderGuests[0]!.x).toBeCloseTo(80, 0)
     expect(scrolled.orderGuests[0]!.x).toBeLessThan(full.orderGuests[0]!.x - 70)
   })
 
   it('棋盘格子用排版表的坐标，点在格子中心能点中', () => {
     const view = frame()
-    const scale = view.w / 1080
+    const scale = contentScale(view.board)
     const spec = designCell(3, 4)!
     const box = cellRect(view, 3, 4)
     expect(box.w).toBeCloseTo(spec.w * scale, 3)
-    expect(box.h).toBeCloseTo(box.w, 3)
+    expect(box.h).toBeCloseTo(spec.h * scale, 3)
     expect(box.x + box.w / 2).toBeCloseTo(view.board.x + (spec.x + spec.w / 2 - MERGE_BOARD.x) * scale, 3)
     expect(box.y + box.h / 2).toBeCloseTo(view.board.y + (spec.y + spec.h / 2 - MERGE_BOARD.y) * scale, 3)
     expect(hitTest(view, box.x + box.w / 2, box.y + box.h / 2)).toMatchObject({ kind: 'cell', row: 3, col: 4 })

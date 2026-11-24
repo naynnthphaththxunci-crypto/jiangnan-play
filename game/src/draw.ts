@@ -52,9 +52,18 @@ import { alignedHome, arrowPoke, storyCardRects, type HomeBox } from './homeLayo
 import { assignArtSrc } from './artGate'
 import { homeArt, type HomeArtId } from './homeArt'
 import { HOME_MAP_H, HOME_MAP_W, homeDaughterRect, homeHostessRect, homeTreeRect, placeHomeBuildings, type HomeCam } from './homeMap'
-import { COUNTER_BAND, COUNTER_TABLE, MERGE_BOARD, cellWoodRect, contentScale, designToScreen } from './hechengLayout'
+import {
+  BG_BOX,
+  COUNTER_TABLE,
+  DESK_BOX,
+  MERGE_BOARD,
+  cellWoodRect,
+  contentScale,
+  designToScreen,
+  orderItemDesign,
+} from './hechengLayout'
 import { BUBBLE_BOX, CHEST_BADGE_BOX, badgeImage, bubbleImage, chestBubble, moundImage, soilImage } from './boardCover'
-import { drawOrderGuest, orderGuestReady } from './orderCast'
+import { drawOrderGuestAt, orderGuestReady } from './orderCast'
 import { orderTickPlace } from './orderTick'
 import { COMIC_FONT, comicCursor, comicFontReady, comicPanelImage, comicPrompt, comicSilaImage, wrapComicText } from './comic'
 import { openingFilm } from './openingFilm'
@@ -728,41 +737,6 @@ function resourcePill(ctx: CanvasRenderingContext2D, rect: Rect, mark: string, m
 
 const guestSeen = new Map<string, number>()
 
-/** 浅色棋盘。底是深格色，浅格是内缩圆角方块，左上格为深色。 */
-function drawMergeBoard(ctx: CanvasRenderingContext2D, board: Rect): void {
-  if (board.w <= 0 || board.h <= 0) return
-  const scale = board.w / MERGE_BOARD.w
-  const radius = 12 * scale
-  const border = Math.max(1, 1.5 * scale)
-  const pitch = board.h / 9
-  const gridW = pitch * 7
-  const originX = board.x + (board.w - gridW) / 2
-  const originY = board.y
-  const light = pitch * (143 / 150)
-  const inset = (pitch - light) / 2
-  const lightRadius = 8 * scale
-  ctx.save()
-  roundRect(ctx, board.x, board.y, board.w, board.h, radius)
-  ctx.fillStyle = '#c7b8b8'
-  ctx.fill()
-  ctx.clip()
-  ctx.fillStyle = '#d3c6c6'
-  for (let row = 0; row < 9; row++) {
-    for (let col = 0; col < 7; col++) {
-      if ((row + col) % 2 === 0) continue
-      roundRect(ctx, originX + col * pitch + inset, originY + row * pitch + inset, light, light, lightRadius)
-      ctx.fill()
-    }
-  }
-  ctx.restore()
-  ctx.save()
-  roundRect(ctx, board.x + border / 2, board.y + border / 2, board.w - border, board.h - border, Math.max(1, radius - border / 2))
-  ctx.lineWidth = border
-  ctx.strokeStyle = '#55454a'
-  ctx.stroke()
-  ctx.restore()
-}
-
 function blit(ctx: CanvasRenderingContext2D, id: Parameters<typeof hechengImage>[0], rect: Rect): void {
   if (rect.w <= 0 || rect.h <= 0) return
   const img = hechengImage(id)
@@ -770,159 +744,100 @@ function blit(ctx: CanvasRenderingContext2D, id: Parameters<typeof hechengImage>
   ctx.drawImage(img as CanvasImageSource, rect.x, rect.y, rect.w, rect.h)
 }
 
-/** 铺满一块区域：按比例放大后裁切，不拉伸。焦点落在区域正中。 */
-function coverImage(
-  ctx: CanvasRenderingContext2D,
-  img: CanvasImageSource & { naturalWidth?: number; naturalHeight?: number },
-  dest: Rect,
-  focusX: number,
-  focusY: number,
-): void {
-  const iw = img.naturalWidth || 0
-  const ih = img.naturalHeight || 0
-  if (iw <= 0 || ih <= 0 || dest.w <= 0 || dest.h <= 0) return
-  const scale = Math.max(dest.w / iw, dest.h / ih)
-  const dw = iw * scale
-  const dh = ih * scale
-  let dx = dest.x + dest.w * 0.5 - dw * focusX
-  let dy = dest.y + dest.h * 0.5 - dh * focusY
-  if (dx > dest.x) dx = dest.x
-  if (dy > dest.y) dy = dest.y
-  if (dx + dw < dest.x + dest.w) dx = dest.x + dest.w - dw
-  if (dy + dh < dest.y + dest.h) dy = dest.y + dest.h - dh
-  ctx.save()
-  ctx.beginPath()
-  ctx.rect(dest.x, dest.y, dest.w, dest.h)
-  ctx.clip()
-  ctx.drawImage(img, dx, dy, dw, dh)
-  ctx.restore()
+const GUEST_AT: Record<string, { x: number; y: number; w: number; h: number; coinY: number }> = {
+  ajiang: { x: 28, y: -255, w: 227, h: 260, coinY: -122 },
+  ghost: { x: 12, y: -257, w: 244, h: 266, coinY: -113 },
+  mengpo: { x: -4, y: -264, w: 269, h: 320, coinY: -113 },
+  jin: { x: 5, y: -239, w: 272, h: 288, coinY: -122 },
+  liuyan: { x: 44, y: -251, w: 222, h: 267, coinY: -113 },
+  xiaotao: { x: 16, y: -251, w: 258, h: 266, coinY: -113 },
+  zhongkui: { x: -3, y: -264, w: 294, h: 301, coinY: -122 },
+}
+
+function orderLead(model: RenderModel, index: number): number {
+  const slide = model.fx.orderSlide
+  if (!slide || index < slide.index) return 0
+  const t = Math.min(1, (model.realNow - slide.start) / Math.max(1, slide.dur))
+  const ease = 1 - (1 - t) ** 3
+  return (1 - ease) * model.frame.orderPitch
+}
+
+function shiftX(box: Rect, dx: number): Rect {
+  return dx ? { ...box, x: box.x + dx } : box
 }
 
 function drawHecheng(model: RenderModel): void {
   const { ctx, frame, state, cfg, realNow } = model
-  const scale = contentScale(frame.board)
-  const wood = hechengImage('wood')
-  if (wood && (wood.naturalWidth || 0) > 0) {
-    coverImage(ctx, wood, { x: 0, y: 0, w: frame.w, h: frame.h }, 0.5, 0.51)
-  } else {
-    ctx.fillStyle = '#8a5a32'
-    ctx.fillRect(0, 0, frame.w, frame.h)
-  }
-  const at = (box: Rect, anchor: 'top' | 'bottom' = 'top') => designToScreen(frame, box, anchor)
-  const tableBox = at(COUNTER_TABLE)
-  const scene = hechengImage('scene')
-  if (scene && (scene.naturalWidth || 0) > 0 && tableBox.y > 1) {
-    coverImage(ctx, scene, { x: 0, y: 0, w: frame.w, h: tableBox.y }, 0.5, 0.52)
-  }
-  const clipOrders = () => {
-    ctx.beginPath()
-    ctx.rect(frame.orderClip.x, frame.orderClip.y, frame.orderClip.w, frame.orderClip.h)
-    ctx.clip()
-  }
-  const guestDrop = 88 * scale
+  const at = (box: Rect) => designToScreen(frame, box, 'top')
+  ctx.fillStyle = '#3a2418'
+  ctx.fillRect(0, 0, frame.w, frame.h)
+  blit(ctx, 'bg', at(BG_BOX))
+  blit(ctx, 'desk', at(DESK_BOX))
   ctx.save()
-  clipOrders()
+  ctx.beginPath()
+  ctx.rect(frame.orderClip.x, frame.orderClip.y, frame.orderClip.w, frame.orderClip.h)
+  ctx.clip()
   state.orders.forEach((order, index) => {
-    const guest = frame.orderGuests[index]
-    if (!guest) return
-    const table = frame.tableSlots[index]
-    if (table && orderGuestReady(order.customerId)) {
-      if (!guestSeen.has(order.id)) guestSeen.set(order.id, realNow)
-      drawOrderGuest(
-        ctx,
-        order.customerId,
-        { ...table, y: table.y + guestDrop },
-        realNow,
-        guestSeen.get(order.id) ?? realNow,
-      )
-    }
-    void guest
+    const plate = frame.tableSlots[index]
+    if (!plate || !orderGuestReady(order.customerId)) return
+    if (!guestSeen.has(order.id)) guestSeen.set(order.id, realNow)
+    const spec = GUEST_AT[order.customerId] ?? GUEST_AT.ajiang!
+    const k = plate.w / 281
+    const lead = orderLead(model, index)
+    drawOrderGuestAt(
+      ctx,
+      order.customerId,
+      shiftX({ x: plate.x + spec.x * k, y: plate.y + spec.y * k, w: spec.w * k, h: spec.h * k }, lead),
+      realNow,
+      guestSeen.get(order.id) ?? realNow,
+    )
   })
   ctx.restore()
-  drawMergeBoard(ctx, at(MERGE_BOARD))
+  blit(ctx, 'board', at(MERGE_BOARD))
   blit(ctx, 'stash', frame.pendingBtn)
   blit(ctx, 'info', frame.infoBar)
   blit(ctx, 'build', frame.houseBtn)
+  if (state.rewards.length > 1) {
+    const badge = frame.pendingBtn
+    text(
+      ctx,
+      String(state.rewards.length),
+      badge.x + badge.w * 0.78,
+      badge.y + badge.h * 0.22,
+      Math.max(11, badge.h * 0.16),
+      '#fffaf3',
+    )
+  }
   const task = nextTask(state, cfg)
   const buildHot = state.phase === 'play' && state.guide === 'none' && task && state.coins >= taskPrice(task, cfg)
-  blit(ctx, 'energy', frame.energySlot)
-  blit(ctx, 'coin', frame.coinSlot)
-  blit(ctx, 'gem', frame.gemSlot)
-  const num = (rect: Rect, value: string, flash = false) => {
-    text(ctx, value, rect.x + rect.w * 0.58 + 1, rect.y + rect.h / 2 + 1, rect.h * 0.42, 'rgba(40,24,12,0.45)', 'center', 'middle', 700)
-    text(ctx, value, rect.x + rect.w * 0.58, rect.y + rect.h / 2, rect.h * 0.42, flash ? '#ffd0c8' : '#fffaf2', 'center', 'middle', 700)
-  }
-  num(frame.energySlot, String(state.energy), realNow < model.fx.energyFlash)
-  const shown = Math.max(0, state.coins - model.fx.incoming)
-  num(frame.coinSlot, String(shown))
-  num(frame.gemSlot, String(state.gems))
-  const avatar = frame.avatarSlot
-  const avatarArt = {
-    x: avatar.x + (12 / 149) * avatar.w,
-    y: avatar.y + (15 / 149) * avatar.h,
-    w: (125 / 149) * avatar.w,
-    h: (126 / 149) * avatar.h,
-  }
-  const badge = {
-    x: avatar.x + (102 / 149) * avatar.w,
-    y: avatar.y + (100 / 149) * avatar.h,
-    w: (47 / 149) * avatar.w,
-    h: (47 / 149) * avatar.h,
-  }
-  const portrait = hechengImage('avatar')
-  if (portrait) drawAvatar(ctx, portrait, avatarArt, realNow)
-  blit(ctx, 'avatarFrame', avatar)
-  blit(ctx, 'levelBadge', badge)
-  const levelText = String(state.level)
-  const levelSize = badge.w * (levelText.length >= 3 ? 0.34 : 0.46)
-  ctx.lineWidth = Math.max(2, levelSize * 0.16)
-  ctx.strokeStyle = '#6a3a22'
-  ctx.font = `700 ${Math.round(levelSize)}px ${FONT}`
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.strokeText(levelText, badge.x + badge.w / 2, badge.y + badge.h / 2)
-  ctx.fillStyle = '#fffaf2'
-  ctx.fillText(levelText, badge.x + badge.w / 2, badge.y + badge.h / 2)
-  const goal = Math.max(1, cfg.economy.smileGoal)
-  const ratio = Math.max(0, Math.min(1, state.smiles / goal))
-  const full = state.smiles >= goal
-  blit(ctx, full ? 'smileFull' : 'smile', frame.smileSlot)
-  if (!full && ratio > 0) {
-    const cx = frame.smileSlot.x + frame.smileSlot.w / 2
-    const cy = frame.smileSlot.y + frame.smileSlot.h / 2
-    ctx.beginPath()
-    ctx.strokeStyle = '#3cca5f'
-    ctx.lineWidth = Math.max(3, frame.smileSlot.w * 0.12)
-    ctx.lineCap = 'round'
-    ctx.arc(cx, cy, frame.smileSlot.w * 0.445, -Math.PI / 2, -Math.PI / 2 + ratio * Math.PI * 2)
-    ctx.stroke()
-  }
-  if (full) {
-    const smile = frame.smileSlot
-    blit(ctx, 'badgeSmall', {
-      x: smile.x + (59 / 86) * smile.w,
-      y: smile.y - (12 / 86) * smile.h,
-      w: (36 / 86) * smile.w,
-      h: (36 / 86) * smile.h,
-    })
-  }
-  blit(ctx, speedArtId(state.spawnMult ?? 1), frame.multBtn)
-  blit(ctx, 'shop', frame.shopBtn)
-  if (!state.shopPackClaimed || !state.shopClaimDate) {
-    const shop = frame.shopBtn
-    blit(ctx, 'badgeShop', {
-      x: shop.x + (102 / 124) * shop.w,
-      y: shop.y - (1 / 107) * shop.h,
-      w: (38 / 124) * shop.w,
-      h: (38 / 107) * shop.h,
-    })
-  }
   if (buildHot) {
     ctx.beginPath()
     ctx.fillStyle = '#c4552a'
-    ctx.arc(frame.houseBtn.x + frame.houseBtn.w - 16 * scale, frame.houseBtn.y + 16 * scale, 7 * scale, 0, Math.PI * 2)
+    ctx.arc(frame.houseBtn.x + frame.houseBtn.w * 0.82, frame.houseBtn.y + frame.houseBtn.h * 0.18, Math.max(5, frame.houseBtn.w * 0.08), 0, Math.PI * 2)
     ctx.fill()
   }
+  const rel = (bar: Rect, dx: number, dy: number, w: number, h: number, designW: number): Rect => {
+    const k = bar.w / designW
+    return { x: bar.x + dx * k, y: bar.y + dy * k, w: w * k, h: h * k }
+  }
+  blit(ctx, 'frame', rel(frame.avatarSlot, -9, -9, 155, 155, 137))
+  blit(ctx, 'portrait', frame.avatarSlot)
+  blit(ctx, 'barEnergy', frame.energySlot)
+  blit(ctx, 'barCoin', frame.coinSlot)
+  blit(ctx, 'barGem', frame.gemSlot)
+  blit(ctx, 'iconEnergy', rel(frame.energySlot, -20, -11, 59, 78, 157))
+  blit(ctx, 'iconCoin', rel(frame.coinSlot, -41, -9, 92, 69, 169))
+  blit(ctx, 'iconGem', rel(frame.gemSlot, -16, -9, 83, 75, 185))
+  blit(ctx, 'plus', frame.energyPlus)
+  blit(ctx, 'plus', frame.gemPlus)
+  const num = (rect: Rect, value: string, flash = false) => {
+    text(ctx, value, rect.x + rect.w * 0.58, rect.y + rect.h / 2, rect.h * 0.46, flash ? '#ffd0c8' : '#fffaf2', 'center', 'middle', 700)
+  }
+  num(frame.energySlot, String(state.energy), realNow < model.fx.energyFlash)
+  num(frame.coinSlot, String(Math.max(0, state.coins - model.fx.incoming)))
+  num(frame.gemSlot, String(state.gems))
+  blit(ctx, speedArtId(state.spawnMult ?? 1), frame.multBtn)
+  blit(ctx, 'shop', frame.shopBtn)
 }
 
 export function drawHud(model: RenderModel): void {
@@ -1183,87 +1098,52 @@ function drawBuriedPiece(ctx: CanvasRenderingContext2D, cfg: GameConfig, lock: {
   if (item) drawItem(ctx, cfg, item, cell, 1, 1, now)
 }
 
-/** 柜台压在棋盘上沿和客人下半身前面，订单盘子和侧栏按钮再画在柜台上面。 */
+/** 柜台压在棋盘上沿。托盘、物品和气泡跟着订单滑动，柜台本身不动。 */
 function drawCounterFront(model: RenderModel): void {
-  const { ctx, frame, state, cfg, realNow } = model
+  const { ctx, frame, state, cfg } = model
   if (frame.mode !== 'board') return
-  const at = (box: Rect) => designToScreen(frame, box, 'top')
-  const table = hechengImage('table')
-  if (table && (table.naturalWidth || 0) > 0) {
-    const box = at(COUNTER_TABLE)
-    ctx.drawImage(table as CanvasImageSource, box.x, box.y, box.w, box.h)
-  }
-  const under = hechengImage('under')
-  if (under && (under.naturalWidth || 0) > 0) {
-    const box = at(COUNTER_BAND)
-    ctx.drawImage(under as CanvasImageSource, box.x, box.y, box.w, box.h)
-  }
+  blit(ctx, 'counter', designToScreen(frame, COUNTER_TABLE, 'top'))
   ctx.save()
   ctx.beginPath()
-  ctx.rect(frame.orderClip.x, frame.orderClip.y, frame.orderClip.w, frame.orderClip.h)
+  ctx.rect(0, frame.orderClip.y, frame.w, frame.orderClip.h)
   ctx.clip()
-  frame.tableSlots.forEach((plate) => blit(ctx, 'plate', plate))
   state.orders.forEach((order, index) => {
-    order.slots.forEach((slot, slotIndex) => {
-      const icon = frame.orderIcons.find((entry) => entry.order === index && entry.slot === slotIndex)
-      if (!icon) return
-      const sprite = itemSprite(slot.line, slot.level)
-      if (sprite) drawFittedSprite(ctx, sprite, icon.rect, 1)
-      else {
-        roundRect(ctx, icon.rect.x, icon.rect.y, icon.rect.w, icon.rect.h, 6)
-        ctx.fillStyle = lineColor(cfg, slot.line)
-        ctx.fill()
-      }
-      if (slotChecked(state, order, slotIndex)) {
-        const r = Math.max(4, Math.min(7, icon.rect.h * 0.22))
-        ctx.beginPath()
-        ctx.fillStyle = '#fffaf3'
-        ctx.arc(icon.rect.x + icon.rect.w - r - 1, icon.rect.y + icon.rect.h - r - 1, r, 0, Math.PI * 2)
-        ctx.fill()
-        text(ctx, '✓', icon.rect.x + icon.rect.w - r - 1, icon.rect.y + icon.rect.h - r - 1, r * 1.15, '#2c7a58')
-      }
-    })
-    const payRect = frame.orderRewards[index]
-    if (payRect) drawPayBubble(ctx, payRect, orderPayout(order, cfg).coins)
-    if (orderSatisfied(state, order)) {
-      const btn = frame.completes[index]
-      if (btn) blit(ctx, 'complete', btn)
+    const plate = frame.tableSlots[index]
+    if (!plate) return
+    const lead = orderLead(model, index)
+    const drawn = shiftX(plate, lead)
+    const k = drawn.w / 281
+    blit(ctx, 'plate', drawn)
+    const spec = GUEST_AT[order.customerId] ?? GUEST_AT.ajiang!
+    const coin = {
+      x: drawn.x + 217 * k,
+      y: drawn.y + spec.coinY * k,
+      w: 113 * k,
+      h: 56 * k,
     }
+    const smile = { ...coin, y: coin.y - 61 * k }
+    const payout = orderPayout(order, cfg)
+    blit(ctx, 'smileOrder', smile)
+    text(ctx, String(payout.smiles), smile.x + smile.w * 0.68, smile.y + smile.h / 2, smile.h * 0.46, '#6a3a22', 'center', 'middle', 700)
+    blit(ctx, 'pay', coin)
+    text(ctx, String(payout.coins), coin.x + coin.w * 0.68, coin.y + coin.h / 2, coin.h * 0.46, '#6a3a22', 'center', 'middle', 700)
+    order.slots.forEach((slot, slotIndex) => {
+      const placed = orderItemDesign(order.slots.length, slotIndex)
+      const shadow = shiftX(
+        { x: plate.x + placed.shadow.x * k, y: plate.y + placed.shadow.y * k, w: placed.shadow.w * k, h: placed.shadow.h * k },
+        lead,
+      )
+      const icon = shiftX(
+        { x: plate.x + placed.item.x * k, y: plate.y + placed.item.y * k, w: placed.item.w * k, h: placed.item.h * k },
+        lead,
+      )
+      blit(ctx, 'shadow', shadow)
+      const sprite = itemSprite(slot.line, slot.level)
+      if (sprite) drawFittedSprite(ctx, sprite, icon, 1)
+      if (slotChecked(state, order, slotIndex)) blit(ctx, 'check', { x: icon.x + icon.w * 0.08, y: icon.y + icon.h * 0.2, w: icon.w * 0.9, h: icon.h * 0.72 })
+    })
   })
   ctx.restore()
-  const task = nextTask(state, cfg)
-  const buildHot = state.phase === 'play' && state.guide === 'none' && task && state.coins >= taskPrice(task, cfg)
-  if (frame.taskBtn.w > 0) {
-    blit(ctx, 'taskFrame', frame.taskBtn)
-    blit(ctx, 'taskIcon', frame.taskIcon)
-    if (buildHot) blit(ctx, 'badgeTask', frame.badgeTask)
-  }
-  if (frame.chestBtn.w > 0) {
-    blit(ctx, 'chestFrame', frame.chestBtn)
-    blit(ctx, 'chestIcon', frame.chestIcon)
-    blit(ctx, 'badgeSmall', frame.badgeChest)
-    if (state.rewards.length > 1) {
-      text(
-        ctx,
-        String(state.rewards.length),
-        frame.badgeChest.x + frame.badgeChest.w / 2,
-        frame.badgeChest.y + frame.badgeChest.h / 2,
-        Math.max(9, frame.badgeChest.h * 0.46),
-        '#fffaf3',
-      )
-    }
-  }
-  if (frame.storyBtn.w > 0) {
-    const pulse = state.level >= 2 && storyReady(state, cfg) ? 1 + 0.08 * Math.sin(realNow / 180) : 1
-    ctx.save()
-    ctx.translate(frame.storyBtn.x + frame.storyBtn.w / 2, frame.storyBtn.y + frame.storyBtn.h / 2)
-    ctx.scale(pulse, pulse)
-    ctx.translate(-(frame.storyBtn.x + frame.storyBtn.w / 2), -(frame.storyBtn.y + frame.storyBtn.h / 2))
-    blit(ctx, 'chestFrame', frame.storyBtn)
-    blit(ctx, 'book', frame.bookIcon)
-    if (storyReady(state, cfg)) blit(ctx, 'badgeSmall', frame.badgeStory)
-    ctx.restore()
-  }
 }
 
 function drawBoard(model: RenderModel): void {
@@ -2392,7 +2272,15 @@ function paintLiftedOrder(model: RenderModel, index: number): void {
   const table = frame.tableSlots[index]
   if (table && orderGuestReady(order.customerId)) {
     if (!guestSeen.has(order.id)) guestSeen.set(order.id, realNow)
-    drawOrderGuest(ctx, order.customerId, table, realNow, guestSeen.get(order.id) ?? realNow)
+    const spec = GUEST_AT[order.customerId] ?? GUEST_AT.ajiang!
+    const k = table.w / 281
+    drawOrderGuestAt(
+      ctx,
+      order.customerId,
+      { x: table.x + spec.x * k, y: table.y + spec.y * k, w: spec.w * k, h: spec.h * k },
+      realNow,
+      guestSeen.get(order.id) ?? realNow,
+    )
   }
   void guest
   const plate = frame.tableSlots[index]

@@ -35,6 +35,7 @@ interface WxApi {
   setClipboardData?: (opt: { data: string }) => void
   env?: { USER_DATA_PATH?: string }
   getFileSystemManager?: () => { writeFileSync: (path: string, data: string, enc?: string) => void }
+  getMenuButtonBoundingClientRect?: () => { left: number; top: number; width: number; height: number }
 }
 
 function getWx(): WxApi {
@@ -60,9 +61,11 @@ export function createWxPlatform(): Platform {
   }
   apply(info.windowWidth, info.windowHeight, info.pixelRatio)
 
+  const menu = wx.getMenuButtonBoundingClientRect?.()
   const insets = {
     top: Math.min(64, Math.max(0, info.safeArea?.top ?? info.statusBarHeight ?? 0)),
     bottom: Math.min(48, Math.max(0, info.safeArea ? info.screenHeight - info.safeArea.bottom : 0)),
+    capsule: menu && menu.width > 0 ? { x: menu.left, y: menu.top, w: menu.width, h: menu.height } : null,
   }
 
   return {

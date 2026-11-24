@@ -4,7 +4,7 @@ import { canvasFit, coverCanvas } from '../viewport'
 export function createWebPlatform(canvas: HTMLCanvasElement): Platform {
   let dpr = Math.min(3, window.devicePixelRatio || 1)
   let logical = { w: 390, h: 844 }
-  const insets = { top: 0, bottom: 0 }
+  const insets = { top: 0, bottom: 0, capsule: null as { x: number; y: number; w: number; h: number } | null }
   let resizeCb: (() => void) | null = null
   let wheelCb: ((x: number, y: number, dy: number) => void) | null = null
   let keyCb: ((key: string) => void) | null = null

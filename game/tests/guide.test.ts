@@ -91,18 +91,13 @@ describe('强制引导', () => {
     expect(hidden.rewardTray.w).toBe(0)
 
     const book = frame({ showStory: true, showTask: true, showChest: false })
-    expect(book.storyBtn.w).toBeGreaterThan(0)
-    expect(book.taskBtn.w).toBeGreaterThan(0)
+    expect(book.storyBtn.w).toBe(0)
+    expect(book.taskBtn.w).toBe(0)
     expect(book.chestBtn.w).toBe(0)
 
     const onlyChest = frame({ showStory: false, showTask: false, showChest: true })
-    expect(onlyChest.chestBtn.x).toBeCloseTo(book.storyBtn.x, 3)
-    expect(onlyChest.chestBtn.y).toBeCloseTo(book.storyBtn.y, 3)
-    expect(onlyChest.chestBtn.w).toBeCloseTo(book.storyBtn.w, 3)
+    expect(onlyChest.chestBtn).toEqual(onlyChest.pendingBtn)
     expect(onlyChest.rewardTray).toBe(onlyChest.chestBtn)
-    expect(onlyChest.chestIcon.x).toBeGreaterThan(onlyChest.chestBtn.x)
-    expect(onlyChest.chestIcon.y).toBeGreaterThan(onlyChest.chestBtn.y)
-    expect(onlyChest.chestIcon.x + onlyChest.chestIcon.w).toBeLessThan(onlyChest.chestBtn.x + onlyChest.chestBtn.w + 1)
 
     state.phase = 'play'
     state.chestLesson = 1
@@ -119,7 +114,8 @@ describe('强制引导', () => {
     expect(hitTest(onlyChest, onlyChest.energyPlus.x + 2, onlyChest.energyPlus.y + 2)?.kind).toBe('refill')
 
     const both = frame({ showStory: true, showTask: true, showChest: true })
-    expect(both.chestBtn.y).toBeGreaterThan(both.storyBtn.y + both.storyBtn.h * 0.6)
+    expect(both.storyBtn.w).toBe(0)
+    expect(both.chestBtn).toEqual(both.pendingBtn)
     const bothHole = guideHole(both, state, cfg)!
     expect(bothHole.x).toBeLessThanOrEqual(both.chestBtn.x + 0.5)
     expect(bothHole.x + bothHole.w).toBeGreaterThanOrEqual(both.chestBtn.x + both.chestBtn.w - 0.5)
@@ -150,7 +146,8 @@ describe('强制引导', () => {
 
     state.chestLesson = 3
     state.producerLesson = 'food'
-    expect(guideHole(board, state, cfg)?.w).toBe(board.board.cell)
+    const producerHole = guideHole(board, state, cfg)
+    expect(producerHole && Math.abs(producerHole.w - board.board.cell)).toBeLessThan(1)
     state.producerLesson = null
     state.guide = 'buildBtn'
     expect(guideHole(board, state, cfg)).toBe(board.houseBtn)

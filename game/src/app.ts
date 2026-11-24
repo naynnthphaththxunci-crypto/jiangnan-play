@@ -257,6 +257,7 @@ export function startGame(platform: Platform): void {
       h: size.h,
       insetTop: platform.insets.top,
       insetBottom: platform.insets.bottom,
+      capsule: platform.insets.capsule ?? null,
       mode: current,
       orderCount: state.orders.length,
       orderSlots: state.orders.map((order) => order.slots.length),
@@ -562,6 +563,7 @@ export function startGame(platform: Platform): void {
       return
     }
     if (hit.kind === 'house') {
+      if (state.lesson === 'book') state.lesson = 'home2'
       beginCurtain('house')
       return
     }
@@ -570,7 +572,10 @@ export function startGame(platform: Platform): void {
       const order = state.orders[hit.index]
       const rect = frame.orders[hit.index]
       if (!order || !rect || !orderSatisfied(state, order)) return
-      present(completeOrder(state, order.id, cfg, rng, now), {
+      const removed = hit.index
+      const result = completeOrder(state, order.id, cfg, rng, now)
+      if (result.ok) fx.orderSlide = { index: removed, start: now, dur: 320 }
+      present(result, {
         coinFrom: { x: rect.x + rect.w / 2, y: rect.y + rect.h / 2 },
       })
       return
@@ -977,7 +982,10 @@ export function startGame(platform: Platform): void {
     if (state.lesson === 'deliver' && hit?.kind === 'complete') {
       const order = state.orders[hit.index]
       if (!order) return false
-      present(completeOrder(state, order.id, cfg, rng, platform.now()))
+      const removed = hit.index
+      const result = completeOrder(state, order.id, cfg, rng, platform.now())
+      if (result.ok) fx.orderSlide = { index: removed, start: platform.now(), dur: 320 }
+      present(result)
       return true
     }
     return false
@@ -1024,7 +1032,7 @@ export function startGame(platform: Platform): void {
       return !(item?.kind === 'product' && item.line === 'food')
     }
     if (lesson === 'deliver') return hit.kind !== 'complete'
-    if (lesson === 'book') return hit.kind !== 'storyBook'
+    if (lesson === 'book') return hit.kind !== 'storyBook' && hit.kind !== 'house'
     return false
   }
 

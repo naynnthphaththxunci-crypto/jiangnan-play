@@ -42,7 +42,7 @@ export interface Platform {
   kind: 'web' | 'wx'
   canvas: CanvasLike
   dpr: number
-  insets: { top: number; bottom: number }
+  insets: { top: number; bottom: number; capsule: { x: number; y: number; w: number; h: number } | null }
   now(): number
   size(): Size
   raf(cb: (t: number) => void): void

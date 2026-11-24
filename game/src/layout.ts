@@ -114,6 +114,7 @@ export interface Frame {
   gemSlot: Rect
   smileSlot: Rect
   energyPlus: Rect
+  gemPlus: Rect
   chestBtn: Rect
   storyBtn: Rect
   taskBtn: Rect
@@ -137,6 +138,7 @@ export interface LayoutInput {
   h: number
   insetTop: number
   insetBottom: number
+  capsule?: { x: number; y: number; w: number; h: number } | null
   mode: 'story' | 'board' | 'house'
   orderCount: number
   orderSlots: number[]
@@ -614,6 +616,7 @@ export function layout(input: LayoutInput): Frame {
         h,
         insetTop: top,
         insetBottom: bottomInset,
+        capsule: input.capsule ?? null,
         orderCount: boardMode ? input.orderCount : 0,
         orderSlots: boardMode ? input.orderSlots : [],
         orderScroll: input.orderScroll,
@@ -698,6 +701,7 @@ export function layout(input: LayoutInput): Frame {
     gemSlot: scene?.gemSlot ?? gemSlot,
     smileSlot: scene?.smileSlot ?? smileSlot,
     energyPlus: scene?.energyPlus ?? Z,
+    gemPlus: scene?.gemPlus ?? Z,
     chestBtn: scene?.chestBtn ?? Z,
     storyBtn: scene?.storyBtn ?? Z,
     taskBtn: scene?.taskBtn ?? Z,
@@ -785,6 +789,7 @@ export function hitTest(frame: Frame, x: number, y: number): Hit | null {
   }
   if (contains(frame.tuneBtn, x, y)) return { kind: 'tune' }
   if (contains(frame.energyPlus, x, y)) return { kind: 'refill' }
+  if (contains(frame.gemPlus, x, y)) return { kind: 'shop' }
   const chest = chestTarget(frame)
   if (chest && contains(chest, x, y)) return { kind: 'reward' }
   if (contains(frame.storyBtn, x, y)) return { kind: 'storyBook' }

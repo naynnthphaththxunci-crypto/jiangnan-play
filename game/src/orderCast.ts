@@ -150,3 +150,33 @@ export function drawOrderGuest(
   )
   return true
 }
+
+/** 把当前帧画进稿子给定的矩形。出场和待机共用这块。 */
+export function drawOrderGuestAt(
+  ctx: CanvasRenderingContext2D,
+  id: string,
+  rect: { x: number; y: number; w: number; h: number },
+  now: number,
+  startedAt: number,
+): boolean {
+  const frame = orderGuestFrame(id, now, startedAt)
+  if (!frame || rect.w <= 0 || rect.h <= 0) return false
+  const name = NAMES[id as (typeof ORDER_CAST_IDS)[number]]
+  const anim = name ? anims.get(`${name}:${frame.anim}`) : undefined
+  const img = anim?.image
+  if (!anim || !img || (img.naturalWidth || 0) <= 0) return false
+  const col = frame.index % anim.meta.columns
+  const row = Math.floor(frame.index / anim.meta.columns)
+  ctx.drawImage(
+    img,
+    col * anim.meta.frame_width,
+    row * anim.meta.frame_height,
+    anim.meta.frame_width,
+    anim.meta.frame_height,
+    rect.x,
+    rect.y,
+    rect.w,
+    rect.h,
+  )
+  return true
+}

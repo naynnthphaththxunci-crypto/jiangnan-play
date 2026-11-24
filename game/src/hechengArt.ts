@@ -1,8 +1,21 @@
 import { assignArtSrc } from './artGate'
-import woodUrl from './assets/hecheng/wood.webp'
-import sceneUrl from './assets/hecheng/scene.webp'
-import tableUrl from './assets/hecheng/table.webp'
-import underUrl from './assets/hecheng/under.webp'
+import bgUrl from './assets/hecheng/bg.webp'
+import deskUrl from './assets/hecheng/desk.webp'
+import counterUrl from './assets/hecheng/counter.webp'
+import boardUrl from './assets/hecheng/board.webp'
+import shadowUrl from './assets/hecheng/shadow.webp'
+import checkUrl from './assets/hecheng/check.webp'
+import payUrl from './assets/hecheng/pay.webp'
+import smileOrderUrl from './assets/hecheng/smile_order.webp'
+import plusUrl from './assets/hecheng/plus.webp'
+import barEnergyUrl from './assets/hecheng/bar_energy.webp'
+import barCoinUrl from './assets/hecheng/bar_coin.webp'
+import barGemUrl from './assets/hecheng/bar_gem.webp'
+import iconEnergyUrl from './assets/hecheng/icon_energy.webp'
+import iconCoinUrl from './assets/hecheng/icon_coin.webp'
+import iconGemUrl from './assets/hecheng/icon_gem.webp'
+import portraitUrl from './assets/hecheng/portrait.webp'
+import frameUrl from './assets/hecheng/frame.webp'
 import plateUrl from './assets/hecheng/plate.webp'
 import completeUrl from './assets/hecheng/complete.webp'
 import bubbleUrl from './assets/hecheng/bubble.webp'
@@ -35,10 +48,23 @@ import readyCellUrl from './assets/hecheng/ready_cell.webp'
 import orderTickUrl from './assets/hecheng/order_tick.webp'
 
 export const HECHENG_ART = {
-  wood: woodUrl,
-  scene: sceneUrl,
-  table: tableUrl,
-  under: underUrl,
+  bg: bgUrl,
+  desk: deskUrl,
+  counter: counterUrl,
+  board: boardUrl,
+  shadow: shadowUrl,
+  check: checkUrl,
+  pay: payUrl,
+  smileOrder: smileOrderUrl,
+  plus: plusUrl,
+  barEnergy: barEnergyUrl,
+  barCoin: barCoinUrl,
+  barGem: barGemUrl,
+  iconEnergy: iconEnergyUrl,
+  iconCoin: iconCoinUrl,
+  iconGem: iconGemUrl,
+  portrait: portraitUrl,
+  frame: frameUrl,
   plate: plateUrl,
   complete: completeUrl,
   bubble: bubbleUrl,

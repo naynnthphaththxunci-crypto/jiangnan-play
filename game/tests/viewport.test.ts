@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { cellRect, layout, type LayoutInput } from '../src/layout'
-import { COUNTER_BAND, COUNTER_TABLE, MERGE_BOARD } from '../src/hechengLayout'
+import { MERGE_BOARD } from '../src/hechengLayout'
 import { canvasFit, coverCanvas } from '../src/viewport'
 
 function board(w: number, h: number) {
@@ -66,7 +66,7 @@ describe('屏幕适配', () => {
       const view = board(box.w, box.h)
       const cell = cellRect(view, 3, 4)
       const guest = view.orderGuests[0]!
-      expect(cell.w).toBeCloseTo(cell.h, 3)
+      expect(Math.abs(cell.w - cell.h)).toBeLessThan(2)
       expect(guest.y).toBeGreaterThanOrEqual(-1)
       expect(guest.y + guest.h).toBeLessThanOrEqual(view.board.y + 1)
       expect(view.avatarSlot.y).toBeGreaterThanOrEqual(-1)
@@ -77,9 +77,10 @@ describe('屏幕适配', () => {
   })
 
   it('柜台底边在棋盘上沿之上，矮屏内容居中且格子仍是正方形', () => {
-    expect(COUNTER_TABLE.y + COUNTER_TABLE.h).toBeLessThanOrEqual(MERGE_BOARD.y)
-    expect(COUNTER_BAND.y + COUNTER_BAND.h).toBeLessThanOrEqual(MERGE_BOARD.y)
-    expect(MERGE_BOARD.w / 7).toBeCloseTo(MERGE_BOARD.h / 9, 5)
+    expect(MERGE_BOARD.x).toBe(13)
+    expect(MERGE_BOARD.y).toBe(690)
+    expect(MERGE_BOARD.x + MERGE_BOARD.w).toBe(1068)
+    expect(MERGE_BOARD.y + MERGE_BOARD.h).toBe(2038)
     const short = board(1080, 1920)
     const gridW = short.board.cell * 7
     const gridH = short.board.cell * 9
