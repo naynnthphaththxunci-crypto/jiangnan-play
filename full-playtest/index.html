@@ -24,7 +24,7 @@ const patches = [
 ];
 
 async function start() {
-  const response = await fetch('../preview/index.html?v=e777855');
+  const response = await fetch('../preview/base.html');
   if (!response.ok) throw new Error('完整美术版加载失败');
   let game = await response.text();
   for (const [before, after] of [...patches, ...uiPatches]) {
