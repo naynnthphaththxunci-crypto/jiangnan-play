@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>江南 · 完整美术试玩</title>
+<body style="background:#302044;color:#fff3db;font:18px system-ui;display:grid;place-items:center;min-height:95vh">
+<p id="status">正在加载《江南》完整美术版…</p>
+<script>
+const patches = [
+  [
+    'let n=Ta,r=[],i=!1,a=t.producers.find(e=>e.id===`bev`)?.produceFrom??4;for(let o of n){if(o.item.kind===`producer`&&o.item.id===`bev`){if(!i){i=!0,r.push({row:o.row,col:o.col}),e.board[o.row][o.col]=Ed(e,`bev`,t,a);continue}e.locks.push({row:o.row,col:o.col,cover:`sand`,veil:`full`,buried:{kind:`coin`,amount:2,line:`coin`,level:1}});continue}',
+    'let n=Ta,r=[];for(let o of n){',
+  ],
+  ['e.hasProducer.food=!0,e.hasProducer.bev=!0', 'e.hasProducer.food=!0'],
+  ['wp(e,t),t.board.open=r', 't.board.open=r'],
+  ['wp(o,t),(o.phase===', '(o.phase==='],
+  [
+    'let i=r.id===`bev`&&r.producerLevel===1;return vm(e,t,n,r.id,r.producerLevel??1,i).filter(e=>e.type!==`toast`)',
+    'let i=r.id===`bev`&&r.producerLevel===1,a=vm(e,t,n,r.id,r.producerLevel??1,i);if(i){e.producerLesson=null;for(const lock of e.locks)if(lock.buried.kind===`producer`&&lock.buried.id===`bev`)lock.veil=`half`;e.notice={text:`领取奖励栏的 1 级茶壶，再与棋盘上的茶壶合成。4 级可以泡忘川茶，5 级可以出酸梅汤。`}}return a.filter(e=>e.type!==`toast`)',
+  ],
+  ['var jb=`jiangnan.save.v1`', 'var jb=`jiangnan.full-art-teapot.v1`'],
+];
+
+async function start() {
+  const response = await fetch('../preview/index.html?v=e777855');
+  if (!response.ok) throw new Error('完整美术版加载失败');
+  let game = await response.text();
+  for (const [before, after] of patches) {
+    const offset = game.indexOf(before);
+    if (offset < 0 || game.indexOf(before, offset + before.length) >= 0) {
+      throw new Error('完整美术版已更新，试玩补丁需要重新验证');
+    }
+    game = game.slice(0, offset) + after + game.slice(offset + before.length);
+  }
+  document.open();
+  document.write(game);
+  document.close();
+}
+
+start().catch((error) => {
+  document.getElementById('status').textContent = error.message;
+});
+</script>
+</body>
