@@ -223,3 +223,28 @@ describe('体力', () => {
     expect(state.rewards.some((item) => item.kind === 'chest')).toBe(true)
   })
 })
+
+describe('体力宝箱的饮料母棋掉落', () => {
+  it('领取饮料母棋前不会从体力宝箱提前获得', () => {
+    const { state, cfg } = boot()
+    cfg.economy.lateProducerChance = 1
+    const pos = { row: 4, col: 2 }
+    state.board[pos.row][pos.col] = makeChest(state)
+    const rolls = [0, 0.99, 0]
+
+    expect(openChest(state, pos, cfg, () => rolls.shift() ?? 0).ok).toBe(true)
+    expect(state.rewards).toContainEqual(expect.objectContaining({ kind: 'producer', producerId: 'bed' }))
+  })
+
+  it('领取饮料母棋后可以掉落饮料母棋碎片', () => {
+    const { state, cfg } = boot()
+    state.hasProducer.bev = true
+    cfg.economy.lateProducerChance = 1
+    const pos = { row: 4, col: 2 }
+    state.board[pos.row][pos.col] = makeChest(state)
+    const rolls = [0, 0.99, 0]
+
+    expect(openChest(state, pos, cfg, () => rolls.shift() ?? 0).ok).toBe(true)
+    expect(state.rewards).toContainEqual(expect.objectContaining({ kind: 'producer', producerId: 'bev', level: 1 }))
+  })
+})
