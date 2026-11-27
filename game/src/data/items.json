@@ -553,115 +553,38 @@
     },
     {
       "id": "bev",
-      "name": "饮料",
+      "name": "忘川茶",
       "color": "#2a7a68",
       "levels": [
-        {
-          "level": 1,
-          "name": "一勺清洌山泉",
-          "orderable": false,
-          "coins": 0
-        },
-        {
-          "level": 2,
-          "name": "粗陶蓄水钵",
-          "orderable": false,
-          "coins": 0
-        },
-        {
-          "level": 3,
-          "name": "铜吊子滚沸水",
-          "orderable": true,
-          "coins": 8
-        },
-        {
-          "level": 4,
-          "name": "碎瓷粗碗凉茶",
-          "orderable": true,
-          "coins": 16
-        },
-        {
-          "level": 5,
-          "name": "青翠竹筒鲜果汁",
-          "orderable": true,
-          "coins": 32
-        },
-        {
-          "level": 6,
-          "name": "冷泡绿茶玻璃瓶",
-          "orderable": true,
-          "coins": 64,
-          "big": true,
-          "producer": true,
-          "cooldownMs": 40000,
-          "drops": [
-            1
-          ]
-        },
-        {
-          "level": 7,
-          "name": "陶罐冰镇酸梅汤",
-          "orderable": true,
-          "coins": 128,
-          "producer": true,
-          "cooldownMs": 55000,
-          "drops": [
-            1,
-            2
-          ]
-        },
-        {
-          "level": 8,
-          "name": "宜兴紫砂大红袍",
-          "orderable": true,
-          "coins": 256,
-          "producer": true,
-          "cooldownMs": 70000,
-          "drops": [
-            2,
-            3
-          ]
-        },
-        {
-          "level": 9,
-          "name": "荷叶碗雪梨羹",
-          "orderable": true,
-          "coins": 512,
-          "producer": true,
-          "cooldownMs": 85000,
-          "drops": [
-            2,
-            3,
-            4
-          ]
-        },
-        {
-          "level": 10,
-          "name": "醉仙玉石桃花酿",
-          "orderable": true,
-          "coins": 1024,
-          "producer": true,
-          "cooldownMs": 110000,
-          "drops": [
-            3,
-            4,
-            5
-          ]
-        },
-        {
-          "level": 11,
-          "name": "瑶池百花神仙露",
-          "orderable": true,
-          "coins": 2048,
-          "producer": true,
-          "cooldownMs": 25000,
-          "drops": [
-            3,
-            4,
-            5,
-            6
-          ]
-        }
+        {"level": 1, "name": "忘川茶 1级", "orderable": false, "coins": 0},
+        {"level": 2, "name": "忘川茶 2级", "orderable": false, "coins": 0},
+        {"level": 3, "name": "忘川茶 3级", "orderable": true, "coins": 8},
+        {"level": 4, "name": "忘川茶 4级", "orderable": true, "coins": 16},
+        {"level": 5, "name": "忘川茶 5级", "orderable": true, "coins": 32},
+        {"level": 6, "name": "忘川茶 6级", "orderable": true, "coins": 64},
+        {"level": 7, "name": "忘川茶 7级", "orderable": true, "coins": 128},
+        {"level": 8, "name": "忘川茶 8级", "orderable": true, "coins": 256},
+        {"level": 9, "name": "忘川茶 9级", "orderable": true, "coins": 512},
+        {"level": 10, "name": "忘川茶 10级", "orderable": true, "coins": 1024},
+        {"level": 11, "name": "忘川茶 11级", "orderable": true, "coins": 2048},
+        {"level": 12, "name": "忘川茶 12级", "orderable": true, "coins": 4096},
+        {"level": 13, "name": "忘川茶 13级", "orderable": true, "coins": 8192},
+        {"level": 14, "name": "忘川茶 14级", "orderable": true, "coins": 16384},
+        {"level": 15, "name": "忘川茶 15级", "orderable": true, "coins": 32768}
+      ]
+    },
+    {
+      "id": "sourPlum",
+      "name": "酸梅汤",
+      "color": "#924867",
+      "levels": [
+        {"level": 1, "name": "酸梅汤 1级", "orderable": false, "coins": 0},
+        {"level": 2, "name": "酸梅汤 2级", "orderable": false, "coins": 0},
+        {"level": 3, "name": "酸梅汤 3级", "orderable": true, "coins": 8},
+        {"level": 4, "name": "酸梅汤 4级", "orderable": true, "coins": 16},
+        {"level": 5, "name": "酸梅汤 5级", "orderable": true, "coins": 32},
+        {"level": 6, "name": "酸梅汤 6级", "orderable": true, "coins": 64},
+        {"level": 7, "name": "酸梅汤 7级", "orderable": true, "coins": 128}
       ]
     }
   ],

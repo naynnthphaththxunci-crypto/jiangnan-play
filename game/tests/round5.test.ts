@@ -9,6 +9,7 @@ import {
   dropItem,
   findEmpty,
   gemEnergyPrice,
+  hydrate,
   inProducerGrace,
   lockAt,
   makePotion,
@@ -18,6 +19,7 @@ import {
   orderSatisfied,
   queueReward,
   sellItem,
+  serialize,
   syncEnergy,
   takeReward,
   tapConsumable,
@@ -37,7 +39,33 @@ describe('第五轮', () => {
     queueReward(state, makeProducer(state, 'bev', cfg, 1))
     expect(orderCraftable(state, cfg, 'bev', 3)).toBe(false)
     queueReward(state, makeProducer(state, 'bev', cfg, 6))
+    expect(orderCraftable(state, cfg, 'bev', 4)).toBe(false)
+    state.hasProducer.bev = true
     expect(orderCraftable(state, cfg, 'bev', 4)).toBe(true)
+  })
+
+  it('茶壶从 1 级开始，4 级解锁忘川茶，5 级解锁酸梅汤', () => {
+    const cfg = defaultConfig()
+    const state = createGame(1, cfg)
+    state.level = 3
+    const reloaded = hydrate(serialize(state, cfg), cfg)!
+    expect(reloaded.levelModal?.rewards).toContainEqual({ id: 'bev', name: '茶壶' })
+    expect(claimLevelModal(reloaded, cfg, () => 0).ok).toBe(true)
+    const tea = reloaded.board.flat().find((item) => item?.kind === 'producer' && item.producerId === 'bev')
+    expect(tea).toMatchObject({ level: 1 })
+    const pos = { row: 4, col: 2 }
+    expect(tapProducer(reloaded, pos, cfg, () => 0, 1).reason).toBe('low')
+
+    reloaded.board[pos.row][pos.col] = makeProducer(reloaded, 'bev', cfg, 4)
+    expect(orderCraftable(reloaded, cfg, 'bev', 3)).toBe(true)
+    expect(orderCraftable(reloaded, cfg, 'sourPlum', 3)).toBe(false)
+    expect(tapProducer(reloaded, pos, cfg, () => 0, 1).ok).toBe(true)
+    expect(reloaded.board.flat()).toContainEqual(expect.objectContaining({ kind: 'product', line: 'bev', level: 1 }))
+
+    reloaded.board[pos.row][pos.col] = makeProducer(reloaded, 'bev', cfg, 5)
+    expect(orderCraftable(reloaded, cfg, 'sourPlum', 3)).toBe(true)
+    expect(tapProducer(reloaded, pos, cfg, () => 0, 2).ok).toBe(true)
+    expect(reloaded.board.flat()).toContainEqual(expect.objectContaining({ kind: 'product', line: 'sourPlum', level: 1 }))
   })
 
   it('开局按游戏时长不冷却，次数用完才冷却', () => {

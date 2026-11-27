@@ -279,6 +279,9 @@ export function levelSpec(cfg: GameConfig, line: string, level: number) {
 }
 
 export function makeChainItem(state: GameState, cfg: GameConfig, line: string, level: number): Item {
+  if (cfg.producers.some((producer) => producer.outputs?.some((output) => output.line === line))) {
+    return makeProduct(state, line, level)
+  }
   const spec = levelSpec(cfg, line, level)
   if (spec?.producer || level >= cfg.economy.producerSpawnLevel) return makeProducer(state, line, cfg, level)
   return makeProduct(state, line, level)
@@ -632,10 +635,16 @@ export function tapProducer(state: GameState, pos: Pos, cfg: GameConfig, rng: Rn
   const item = inBoard(pos.row, pos.col) ? state.board[pos.row][pos.col] : null
   if (!item || item.kind !== 'producer') return { ok: false, reason: 'not-producer', events: [] }
   const name = producerName(cfg, item.producerId)
+  const definition = cfg.producers.find((entry) => entry.id === item.producerId)
+  const outputs = definition?.outputs?.filter((output) => item.level >= output.minLevel)
   const spec = levelSpec(cfg, item.line, item.level)
-  const drops = spec?.drops ?? []
-  if (item.level < cfg.economy.producerSpawnLevel || !drops.length) {
-    return { ok: false, reason: 'low', events: [{ type: 'toast', text: '合到 6 级才能产出' }] }
+  const drops = outputs ? [1] : spec?.drops ?? []
+  const minimum = definition?.outputs?.[0]?.minLevel ?? cfg.economy.producerSpawnLevel
+  if (definition?.outputs && !state.hasProducer[item.producerId]) {
+    return { ok: false, reason: 'locked', events: [{ type: 'toast', text: '先领取茶壶奖励' }] }
+  }
+  if (item.level < minimum || !drops.length) {
+    return { ok: false, reason: 'low', events: [{ type: 'toast', text: `合到 ${minimum} 级才能产出` }] }
   }
   const grace = inProducerGrace(state, cfg)
   if (!grace && item.charges <= 0 && item.cooldownUntil > now) {
@@ -666,9 +675,12 @@ export function tapProducer(state: GameState, pos: Pos, cfg: GameConfig, rng: Rn
     item.charges = 0
     item.cooldownUntil = now + (spec?.cooldownMs ?? cfg.economy.producerCooldownMs)
   }
-  const dropLevel = drops[Math.min(drops.length - 1, Math.floor(rng() * drops.length))] ?? drops[0] ?? 1
-  const product = makeChainItem(state, cfg, item.line, dropLevel)
-  noteUnlock(state, item.line, dropLevel)
+  const roll = rng()
+  const dropLevel = drops[Math.min(drops.length - 1, Math.floor(roll * drops.length))] ?? 1
+  const secondary = outputs?.[1]
+  const line = secondary && roll < secondary.chance ? secondary.line : item.line
+  const product = makeChainItem(state, cfg, line, dropLevel)
+  noteUnlock(state, line, dropLevel)
   state.board[spot.row][spot.col] = product
   state.stats.producerTaps += 1
   logAction(state, now, 'tap')
@@ -872,7 +884,8 @@ export function dropItem(state: GameState, from: Pos, to: Pos, cfg?: GameConfig)
       events: [{ type: 'move', fromRow: from.row, fromCol: from.col, toRow: to.row, toCol: to.col }],
     }
   }
-  const mergeCap = cfg && (item.kind === 'product' || item.kind === 'producer') ? lineCap(cfg, item.line) : PRODUCT_CAP
+  const mergeCap = cfg && item.kind === 'producer' ? cfg.economy.producerMaxLevel
+    : cfg && item.kind === 'product' ? lineCap(cfg, item.line) : PRODUCT_CAP
   if (canMerge(item, other, mergeCap)) {
     if (other.kind === 'product' && item.kind === 'product') {
       const level = other.level + 1
@@ -908,7 +921,7 @@ export function dropItem(state: GameState, from: Pos, to: Pos, cfg?: GameConfig)
       }
     }
     if (other.kind === 'producer' && item.kind === 'producer' && cfg) {
-      const level = Math.min(lineCap(cfg, other.line), other.level + 1)
+      const level = other.level + 1
       state.board[to.row][to.col] = makeProducer(state, other.producerId, cfg, level)
       state.board[from.row][from.col] = null
       if (other.producerId === 'food' && atStep(state, cfg, 'producerL2') && level === 2) advanceTutorial(state, cfg)
@@ -992,17 +1005,18 @@ export function producerLevelOwned(state: GameState, id: string): number {
 }
 
 export function orderCraftable(state: GameState, cfg: GameConfig, line: string, level: number): boolean {
-  const producer = cfg.producers.find((entry) => entry.line === line)
-  if (!producer) return false
-  if (producerLevelOwned(state, producer.id) < cfg.economy.producerSpawnLevel) return false
-  const cap = cfg.items.lines.find((entry) => entry.id === line)?.levels.length ?? PRODUCT_CAP
-  return level >= 1 && level <= cap
+  return ownedLines(state, cfg).includes(line) && level >= 1 && level <= lineCap(cfg, line)
 }
 
 function ownedLines(state: GameState, cfg: GameConfig): string[] {
-  return cfg.producers
-    .filter((producer) => producerLevelOwned(state, producer.id) >= cfg.economy.producerSpawnLevel)
-    .map((producer) => producer.line)
+  return cfg.producers.flatMap((producer) => {
+    const level = producerLevelOwned(state, producer.id)
+    if (producer.outputs) {
+      if (!state.hasProducer[producer.id]) return []
+      return producer.outputs.filter((output) => level >= output.minLevel).map((output) => output.line)
+    }
+    return level >= cfg.economy.producerSpawnLevel ? [producer.line] : []
+  })
 }
 
 function maxOrderLevel(state: GameState, line: string): number {
@@ -1448,7 +1462,7 @@ export function lineChain(cfg: GameConfig, state: GameState, line: string, curre
 }
 
 export function producerOfLine(cfg: GameConfig, line: string): { id: string; name: string } | null {
-  const found = cfg.producers.find((entry) => entry.line === line)
+  const found = cfg.producers.find((entry) => entry.line === line || entry.outputs?.some((output) => output.line === line))
   return found ? { id: found.id, name: found.name } : null
 }
 
@@ -1468,7 +1482,13 @@ export function tryAdvanceStory(state: GameState, cfg: GameConfig, hotspot: bool
 }
 
 export function producerOutputs(cfg: GameConfig, state: GameState, line: string, level = 6): ChainSlot[] {
-  const drops = levelSpec(cfg, line, level)?.drops ?? [1]
+  const definition = cfg.producers.find((entry) => entry.line === line)
+  if (definition?.outputs) {
+    return definition.outputs.filter((output) => level >= output.minLevel).map((output) => ({
+      level: 1, label: productName(cfg, output.line, 1), seen: lineSeen(state, output.line, 1), current: false,
+    }))
+  }
+  const drops = levelSpec(cfg, line, level)?.drops ?? (level >= cfg.economy.producerSpawnLevel ? [1] : [])
   return drops.map((drop) => {
     const name = productName(cfg, line, drop)
     const seen = lineSeen(state, line, drop)
@@ -1600,26 +1620,29 @@ export function levelForXp(xp: number, cfg: GameConfig): number {
 }
 
 function grantProducer(state: GameState, cfg: GameConfig, rng: Rng, id: string): GameEvent[] {
-  if (state.hasProducer[id] || producerLevelOwned(state, id) > 0) return []
   const def = cfg.producers.find((p) => p.id === id)
-  if (!def) return []
+  if (!def || state.hasProducer[id] || (!def.outputs && producerLevelOwned(state, id) > 0)) return []
   state.hasProducer[id] = true
-  state.newestLine = def.line
-  state.orderBias = def.line
-  state.producerLesson = id
-  const made = makeProducer(state, id, cfg, cfg.economy.producerSpawnLevel)
+  const grantLevel = def.grantLevel ?? cfg.economy.producerSpawnLevel
+  const ready = grantLevel >= (def.outputs?.[0]?.minLevel ?? cfg.economy.producerSpawnLevel)
+  if (ready) {
+    state.newestLine = def.line
+    state.orderBias = def.line
+    state.producerLesson = id
+  }
+  const made = makeProducer(state, id, cfg, grantLevel)
   const spot = findEmpty(state)[0]
   if (spot) {
     state.board[spot.row][spot.col] = made
-    nudgeOrder(state, cfg, rng, def.line)
-    state.notice = { text: `${def.name}放到棋盘上了。点一下，看看它能出什么。` }
+    if (ready) nudgeOrder(state, cfg, rng, def.line)
+    state.notice = { text: ready ? `${def.name}放到棋盘上了。点一下，看看它能出什么。` : `${def.name}放到棋盘上了。合到 ${def.outputs?.[0]?.minLevel} 级就能产出。` }
     return [
       { type: 'grant', kind: 'producer', name: def.name, row: spot.row, col: spot.col, pending: false },
       { type: 'toast', text: `${def.name}到了` },
     ]
   }
   queueReward(state, made)
-  nudgeOrder(state, cfg, rng, def.line)
+  if (ready) nudgeOrder(state, cfg, rng, def.line)
   state.notice = { text: `${def.name}先放在奖励框里，棋盘空了再拿出来。` }
   return [
     { type: 'grant', kind: 'producer', name: def.name, row: -1, col: -1, pending: true },
@@ -2172,7 +2195,7 @@ export function hydrate(raw: string, cfg: GameConfig): GameState | null {
     if (!data || data.v !== 2 || !data.state || !Array.isArray(data.state.board)) return null
     if (data.state.board.length !== ROWS) return null
     if (!data.state.board.every((row) => Array.isArray(row) && row.length === COLS)) return null
-    if (data.economy) cfg.economy = { ...cfg.economy, ...data.economy }
+    if (data.economy) cfg.economy = { ...cfg.economy, ...data.economy, levelRewards: cfg.economy.levelRewards }
     const state = data.state
     state.pending ||= []
     state.rewards ||= []
@@ -2218,6 +2241,18 @@ export function hydrate(raw: string, cfg: GameConfig): GameState | null {
     state.locks ||= []
     state.levelQueue ||= []
     state.levelModal ??= null
+    const teaReward = cfg.economy.levelRewards.find((entry) => entry.rewards.some((reward) => reward.id === 'bev'))
+    const tea = teaReward?.rewards.find((reward) => reward.id === 'bev')
+    if (teaReward && tea) {
+      const modals = [state.levelModal, ...state.levelQueue].filter((modal) => modal !== null)
+      for (const modal of modals) modal.rewards = modal.rewards.filter((reward) => reward.id !== tea.id)
+      if (!state.hasProducer.bev && state.level >= teaReward.level) {
+        const existing = modals.find((modal) => modal.level === teaReward.level)
+        if (existing) existing.rewards.push(tea)
+        else if (state.levelModal) state.levelQueue.push({ level: teaReward.level, rewards: [tea] })
+        else state.levelModal = { level: teaReward.level, rewards: [tea] }
+      }
+    }
     state.smileModal ??= null
     state.smiles ??= 0
     state.adUsedToday ??= 0

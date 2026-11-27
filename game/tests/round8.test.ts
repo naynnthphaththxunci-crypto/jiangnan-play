@@ -63,7 +63,7 @@ describe('第八轮猫猫合成', () => {
 
   it('配置里不再有蒸笼、旧茶炉、竹编篓', () => {
     const ids = defaultConfig().items.lines.map((line) => line.id)
-    expect(ids).toEqual(['food', 'toy', 'plant', 'boat', 'bed', 'bev'])
+    expect(ids).toEqual(['food', 'toy', 'plant', 'boat', 'bed', 'bev', 'sourPlum'])
     const banned = ['"steamer"', '"bamboo"']
     const blob = JSON.stringify({ items, producers, orders, economy, board, copy, opening })
     for (const word of banned) expect(blob.includes(word), word).toBe(false)

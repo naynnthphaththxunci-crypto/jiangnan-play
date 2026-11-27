@@ -15,12 +15,11 @@
         { "id": "bag", "name": "购物袋" }
       ]
     },
-    { "level": 3, "rewards": [{ "id": "toy", "name": "玩具" }] },
+    { "level": 3, "rewards": [{ "id": "toy", "name": "玩具" }, { "id": "bev", "name": "茶壶" }] },
     { "level": 4, "rewards": [{ "id": "blue", "name": "蓝宝箱" }] },
     { "level": 5, "rewards": [{ "id": "blue", "name": "蓝宝箱" }] },
     { "level": 6, "rewards": [{ "id": "blue", "name": "蓝宝箱" }] },
-    { "level": 7, "rewards": [{ "id": "gem", "name": "钻石" }] },
-    { "level": 8, "rewards": [{ "id": "bev", "name": "饮料" }] }
+    { "level": 7, "rewards": [{ "id": "gem", "name": "钻石" }] }
   ],
   "freeRefill": 100,
   "adEnergy": 15,

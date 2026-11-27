@@ -32,9 +32,14 @@
     },
     {
       "id": "bev",
-      "name": "饮料",
+      "name": "茶壶",
       "line": "bev",
-      "grant": "level:8"
+      "grant": "level:3",
+      "grantLevel": 1,
+      "outputs": [
+        { "line": "bev", "minLevel": 4, "chance": 1 },
+        { "line": "sourPlum", "minLevel": 5, "chance": 0.1 }
+      ]
     }
   ]
 }
