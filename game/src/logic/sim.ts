@@ -746,7 +746,7 @@ export function openChest(state: GameState, pos: Pos, cfg: GameConfig, rng: Rng)
 
 function maybeLateProducer(state: GameState, cfg: GameConfig, rng: Rng): void {
   if (rng() >= (cfg.economy.lateProducerChance ?? 0)) return
-  const list = cfg.producers
+  const list = cfg.producers.filter((producer) => producer.id !== 'bev' || state.hasProducer[producer.id])
   const pick = list[Math.floor(rng() * list.length)]
   if (!pick) return
   const level = rng() < 0.5 ? 1 : 2
