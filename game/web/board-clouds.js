@@ -19,13 +19,26 @@ function noise(x, y, period, salt) {
   const dx = smooth(x - ix)
   const dy = smooth(y - iy)
   const sample = (col, row) => {
-    const seed = (col % period) * 374761393 + (row % period) * 668265263 + salt
+    const wrap = value => ((value % period) + period) % period
+    const seed = wrap(col) * 374761393 + wrap(row) * 668265263 + salt
     const hash = Math.imul(seed ^ (seed >>> 13), 1274126177)
     return ((hash ^ (hash >>> 16)) >>> 0) / 4294967295
   }
   const top = sample(ix, iy) * (1 - dx) + sample(ix + 1, iy) * dx
   const bottom = sample(ix, iy + 1) * (1 - dx) + sample(ix + 1, iy + 1) * dx
   return top * (1 - dy) + bottom * dy
+}
+
+function ramp(value, low, high) {
+  return smooth(Math.max(0, Math.min(1, (value - low) / (high - low))))
+}
+
+function cloudDensity(u, v) {
+  const x = u + (noise(u * 5, v * 5, 5, 882) - 0.5) * 0.17
+  const y = v + (noise(u * 5, v * 5, 5, 135) - 0.5) * 0.13
+  return 0.70 * noise(x * 6, y * 6, 6, 232)
+    + 0.25 * noise(x * 12, y * 12, 12, 111)
+    + 0.05 * noise(x * 20, y * 20, 20, 409)
 }
 
 function cloudTexture(document) {
@@ -37,14 +50,18 @@ function cloudTexture(document) {
     for (let x = 0; x < textureSize; x++) {
       const u = x / textureSize
       const v = y / textureSize
-      const broad = noise(u * 4, v * 4, 4, 232)
-      const curl = noise(u * 9, v * 9, 9, 111)
-      const wisps = noise(u * 18, v * 18, 18, 409)
-      const density = Math.max(0, Math.min(1, (broad * 0.57 + curl * 0.33 + wisps * 0.10 - 0.15) * 1.45))
+      const density = cloudDensity(u, v)
+      const upper = cloudDensity(u - 0.006, v - 0.009)
+      const rim = Math.max(0, Math.min(1, (density - upper) * 18))
+      const base = ramp(density, 0.19, 0.72)
+      const folds = 0.36 * ramp(density, 0.30, 0.39)
+        + 0.39 * ramp(density, 0.46, 0.55)
+        + 0.25 * ramp(density, 0.62, 0.70)
+      const light = base * 0.52 + folds * 0.48
       const offset = (y * textureSize + x) * 4
-      image.data[offset] = 58 + 114 * density
-      image.data[offset + 1] = 38 + 96 * density
-      image.data[offset + 2] = 96 + 109 * density
+      image.data[offset] = 65 + 101 * light + 24 * rim
+      image.data[offset + 1] = 40 + 70 * light + 22 * rim
+      image.data[offset + 2] = 105 + 103 * light + 22 * rim
       image.data[offset + 3] = 255
     }
   }
@@ -54,7 +71,7 @@ function cloudTexture(document) {
 
 function fullCell(path, box, edges) {
   const { x, y, w, h } = box
-  const corner = Math.min(w, h) * 0.32
+  const corner = Math.min(w, h) * 0.25
   const connected = bit => Boolean(edges & bit)
   const padding = 1
   path.roundRect(x - padding, y - padding, w + padding * 2, h + padding * 2, [
@@ -70,8 +87,8 @@ function lowMist(ctx, box, row, col) {
   const offset = ((row + col * 3) % 4 - 1.5) * 0.035
   const veil = ctx.createRadialGradient(x + w * 0.48, y + h * (0.88 + offset), 0,
     x + w * 0.48, y + h * (0.88 + offset), w * 0.46)
-  veil.addColorStop(0, 'rgba(255, 255, 255, 0.91)')
-  veil.addColorStop(0.62, 'rgba(255, 255, 255, 0.74)')
+  veil.addColorStop(0, 'rgba(255, 255, 255, 0.98)')
+  veil.addColorStop(0.70, 'rgba(255, 255, 255, 0.87)')
   veil.addColorStop(1, 'rgba(255, 255, 255, 0)')
   ctx.save()
   ctx.translate(0, y + h * 0.86)
@@ -112,7 +129,7 @@ export function drawBoardClouds(ctx, cells) {
   }
 
   // A blurred union keeps touching tiles entirely opaque and softens only the outside contour.
-  const softness = Math.max(2, first.w * 0.078)
+  const softness = Math.max(0.8, first.w * 0.026)
   const inset = width + 30
   maskCtx.save()
   maskCtx.translate(-inset, 0)
