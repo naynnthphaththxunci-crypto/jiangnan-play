@@ -48,16 +48,13 @@ export function drawAtScale(ctx, box, scale, paint) {
   }
 }
 
-export function drawProducerSparkles(ctx, box, now, phaseOffset, tapAge) {
-  const cycle = ((now + phaseOffset) % 3200 + 3200) % 3200
-  const burst = tapAge >= 50 && tapAge < producerTapDuration
-  const time = burst ? (tapAge - 50) * 3 : cycle
-  if (time >= 610) return
-  const points = [[0.24, 0.36, 0, 0.075], [0.70, 0.25, 120, 0.055], [0.63, 0.65, 230, 0.068]]
+export function drawProducerSparkles(ctx, box, now, phaseOffset) {
+  const time = now + phaseOffset
+  const points = [[0.24, 0.36, 0, 0.075], [0.70, 0.25, 950, 0.055], [0.63, 0.65, 1900, 0.068]]
   ctx.save()
   ctx.fillStyle = '#fff8de'
   for (const [x, y, delay, size] of points) {
-    const t = (time - delay) / 380
+    const t = (((time - delay) % 2850 + 2850) % 2850) / 1650
     if (t <= 0 || t >= 1) continue
     const glow = Math.sin(Math.PI * t)
     const cx = box.x + box.w * x
