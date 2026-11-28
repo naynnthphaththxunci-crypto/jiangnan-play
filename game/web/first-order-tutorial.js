@@ -23,7 +23,7 @@ export function firstOrderAction(state) {
     }
   }
   const part = all.find(cell => foodProduct(cell.item, partLevel))
-  if (part) return { kind: 'unlock', from: part, to: unlockCell, lock }
+  if (part) return lock.veil === 'half' ? { kind: 'unlock', from: part, to: unlockCell, lock } : null
 
   const pieces = all.filter(cell => foodProduct(cell.item, outputLevel))
   if (pieces.length >= 2) {
@@ -43,9 +43,4 @@ export function allowsFirstOrderDrop(action, from, to) {
   if (action.kind === 'unlock') return sameCell(from, action.from) && sameCell(to, action.to)
   return (sameCell(from, action.from) && sameCell(to, action.to))
     || (sameCell(from, action.to) && sameCell(to, action.from))
-}
-
-export function revealFirstOrderTarget(state) {
-  const action = firstOrderAction(state)
-  if (action?.kind === 'unlock') action.lock.veil = 'half'
 }
