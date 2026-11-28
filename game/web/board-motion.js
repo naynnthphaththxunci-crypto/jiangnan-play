@@ -78,13 +78,13 @@ function paintStar(ctx, x, y, radius, opacity) {
   ctx.fill()
 }
 
-const producerStars = [[0.19, 0.31, 0, 0.19], [0.78, 0.16, 950, 0.15], [0.69, 0.69, 1900, 0.17]]
+const producerStars = [[0.19, 0.31, 0, 0.146], [0.78, 0.16, 680, 0.113], [0.69, 0.69, 1360, 0.132]]
 
 export function drawProducerSparkles(ctx, box, now, phaseOffset) {
   const time = now + phaseOffset
   ctx.save()
   for (const [x, y, delay, size] of producerStars) {
-    const t = (((time - delay) % 2850 + 2850) % 2850) / 1750
+    const t = (((time - delay) % 2040 + 2040) % 2040) / 1160
     if (t <= 0 || t >= 1) continue
     const glow = Math.sin(Math.PI * t)
     paintStar(ctx, box.x + box.w * x, box.y + box.h * (y - t * 0.08),
