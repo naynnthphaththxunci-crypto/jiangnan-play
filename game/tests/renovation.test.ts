@@ -51,9 +51,9 @@ function finish(state: GameState, cfg: ReturnType<typeof defaultConfig>, n: numb
 }
 
 describe('修缮', () => {
-  it('配置表是六条链、十二件小活，女掌柜有当前衣装', () => {
+  it('配置表是七条链、十二件小活，女掌柜有当前衣装', () => {
     const { cfg } = boot()
-    expect(cfg.items.lines).toHaveLength(6)
+    expect(cfg.items.lines).toHaveLength(7)
     expect(cfg.items.lines.find((line) => line.id === 'food')?.levels).toHaveLength(11)
     expect(cfg.items.lines.find((line) => line.id === 'plant')?.levels).toHaveLength(10)
     expect(allTasks(cfg)).toHaveLength(12)

@@ -36,6 +36,8 @@ export interface ProducerDef {
   name: string
   line: string
   grant: string
+  grantLevel?: number
+  outputs?: { line: string; minLevel: number; chance: number }[]
 }
 
 export interface ChoiceDef {

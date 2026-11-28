@@ -1138,9 +1138,10 @@ function drawChain(model: RenderModel): void {
       text(ctx, slot.label, x + 31, y + 29, 16, PAL.white)
     })
     let cursor = card.y + 240
-    if (chain.level >= cfg.economy.producerSpawnLevel) {
+    const outputs = producerOutputs(cfg, state, chain.line, chain.level)
+    if (outputs.length) {
       text(ctx, '可生成：', card.x + 24, cursor, 15, PAL.ink, 'left')
-      producerOutputs(cfg, state, chain.line, chain.level).forEach((slot, index) => {
+      outputs.forEach((slot, index) => {
         const x = card.x + 24 + index * 72
         const y = cursor + 16
         roundRect(ctx, x, y, 60, 52, 8)
