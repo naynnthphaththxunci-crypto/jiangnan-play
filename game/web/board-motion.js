@@ -19,18 +19,31 @@ export function mergeScale(age, duration) {
   return mix(0.97, 1, ease((t - 0.72) / 0.28))
 }
 
+export const spawnLandingPoint = 0.68
+
 export function spawnDuration(configuredDuration) {
-  return Math.max(210, Math.min(380, configuredDuration * 0.85))
+  return Math.max(390, Math.min(540, configuredDuration * 1.2))
 }
 
 export function spawnPose(from, to, cellWidth, elapsed, duration) {
   const t = unit(elapsed / duration)
-  const travel = 1 - (1 - t) ** 2
-  const lift = Math.sin(Math.PI * t) * cellWidth * 0.52
-  const scale = t < 0.54
-    ? mix(0.42, 1.08, ease(t / 0.54))
-    : mix(1.08, 1, ease((t - 0.54) / 0.46))
-  return { x: mix(from.x, to.x, travel), y: mix(from.y, to.y, travel) - lift, scale }
+  if (t < spawnLandingPoint) {
+    const flight = t / spawnLandingPoint
+    const travel = ease(flight)
+    const lift = Math.sin(Math.PI * flight) * cellWidth * 0.57
+    return {
+      x: mix(from.x, to.x, travel),
+      y: mix(from.y, to.y, travel) - lift,
+      scale: mix(0.20, 1, 1 - (1 - flight) ** 2),
+    }
+  }
+
+  const settle = (t - spawnLandingPoint) / (1 - spawnLandingPoint)
+  let scale
+  if (settle < 0.32) scale = mix(1, 1.20, ease(settle / 0.32))
+  else if (settle < 0.70) scale = mix(1.20, 0.94, ease((settle - 0.32) / 0.38))
+  else scale = mix(0.94, 1, ease((settle - 0.70) / 0.30))
+  return { ...to, scale }
 }
 
 export function drawAtScale(ctx, box, scale, paint) {
@@ -48,26 +61,54 @@ export function drawAtScale(ctx, box, scale, paint) {
   }
 }
 
+function paintStar(ctx, x, y, radius, opacity) {
+  ctx.globalAlpha = opacity
+  ctx.lineWidth = Math.max(0.8, radius * 0.22)
+  ctx.lineJoin = 'round'
+  ctx.strokeStyle = '#da8b25'
+  ctx.fillStyle = '#fff8de'
+  ctx.beginPath()
+  ctx.moveTo(x, y - radius)
+  ctx.quadraticCurveTo(x + radius * 0.18, y - radius * 0.18, x + radius * 0.85, y)
+  ctx.quadraticCurveTo(x + radius * 0.18, y + radius * 0.18, x, y + radius)
+  ctx.quadraticCurveTo(x - radius * 0.18, y + radius * 0.18, x - radius * 0.85, y)
+  ctx.quadraticCurveTo(x - radius * 0.18, y - radius * 0.18, x, y - radius)
+  ctx.closePath()
+  ctx.stroke()
+  ctx.fill()
+}
+
+const producerStars = [[0.19, 0.31, 0, 0.19], [0.78, 0.16, 950, 0.15], [0.69, 0.69, 1900, 0.17]]
+
 export function drawProducerSparkles(ctx, box, now, phaseOffset) {
   const time = now + phaseOffset
-  const points = [[0.24, 0.36, 0, 0.075], [0.70, 0.25, 950, 0.055], [0.63, 0.65, 1900, 0.068]]
   ctx.save()
-  ctx.fillStyle = '#fff8de'
-  for (const [x, y, delay, size] of points) {
-    const t = (((time - delay) % 2850 + 2850) % 2850) / 1650
+  for (const [x, y, delay, size] of producerStars) {
+    const t = (((time - delay) % 2850 + 2850) % 2850) / 1750
     if (t <= 0 || t >= 1) continue
     const glow = Math.sin(Math.PI * t)
-    const cx = box.x + box.w * x
-    const cy = box.y + box.h * y - t * box.h * 0.09
-    const r = box.w * size * (0.5 + glow * 0.5)
-    ctx.globalAlpha = glow * 0.82
-    ctx.beginPath()
-    ctx.moveTo(cx, cy - r)
-    ctx.quadraticCurveTo(cx + r * 0.18, cy - r * 0.15, cx + r * 0.85, cy)
-    ctx.quadraticCurveTo(cx + r * 0.15, cy + r * 0.15, cx, cy + r)
-    ctx.quadraticCurveTo(cx - r * 0.15, cy + r * 0.15, cx - r * 0.85, cy)
-    ctx.quadraticCurveTo(cx - r * 0.18, cy - r * 0.15, cx, cy - r)
-    ctx.fill()
+    paintStar(ctx, box.x + box.w * x, box.y + box.h * (y - t * 0.08),
+      box.w * size * (0.65 + glow * 0.35), glow)
+  }
+  ctx.restore()
+}
+
+const mergeStars = [
+  [-0.77, -0.40, 0.18], [-0.41, -0.79, 0.14], [0.33, -0.72, 0.18],
+  [0.78, -0.30, 0.15], [0.65, 0.39, 0.17], [-0.62, 0.41, 0.13],
+]
+
+export function drawMergeSparkles(ctx, box, age, duration) {
+  const t = unit(age / duration)
+  if (t === 0 || t === 1) return
+  const spread = 0.28 + 0.72 * (1 - (1 - t) ** 2)
+  const opacity = Math.min(1, t * 10) * (1 - t ** 2)
+  const x = box.x + box.w / 2
+  const y = box.y + box.h * 0.45
+  ctx.save()
+  for (const [dx, dy, size] of mergeStars) {
+    paintStar(ctx, x + dx * box.w * spread, y + dy * box.h * spread,
+      box.w * size * (0.75 + 0.25 * Math.sin(Math.PI * t)), opacity)
   }
   ctx.restore()
 }
