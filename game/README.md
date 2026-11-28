@@ -1,68 +1,27 @@
 # 江南合成
 
-竖屏合成经营。网页和微信小游戏共用同一套规则。棋盘 7×9。这份说明是交给下一位的交接，不是功能介绍。
+网页试玩以 GitHub Pages 的完整美术包为开发基准，源码在 `web/`。棋盘为 7×9，原存档键为 `jiangnan.save.v1`。
 
-当前源码在本仓库 `main`。发布到 GitHub Pages 时，源码放在 [naynnthphaththxunci-crypto/jiangnan-play](https://github.com/naynnthphaththxunci-crypto/jiangnan-play) 的 `game/` 目录；玩家打开的是该仓库根目录的单文件 `index.html`。
-
-## 进度
-
-已做完，并随提交 `316eddb` 上线（单文件 HTML 约 7.96 MB，`7961167` 字节）：
-
-- Phase A：六条新链（猫粮、玩具、花盆、鱼篓、猫窝、饮料）。6 级及以上的链上棋子本身就是母棋。棋子切片在 `src/assets/items/`，对照表在 `docs/棋子切图对照.md`。
-- Phase B：六位客人抠图站在柜台后面（陆老伯、柳砚、晴娘、阿桨、金老爷、鲍大叔）。剧情全身立绘是温如月、小桃、赵文轩、柳姑娘。浣熊仍是色块。
-
-还没做：
-
-- Phase C：登录屏。素材是 `login_v2`（背景招牌「姑苏客栈」、按钮「进入客栈」），还没接到游戏里。
-- Phase D：界面切片、客人待机动画、对照清单逐条自检。
-- 单文件体积：目标压到 4 MB 以下（按显示尺寸 ×2 的 WebP 或量化 PNG）。现在大约 8 MB，还没压。
-
-## 安装
-
-需要 Node.js 22（这台机器是 `v22.23.4`）和随它带的 npm（这台是 `10.9.9`）。
+## 本地开发
 
 ```bash
-npm install
-```
-
-## 本地运行
-
-```bash
+npm ci
 npm run dev
-```
-
-开发服务器是 `vite --host 127.0.0.1 --port 47321 --strictPort`。浏览器打开终端里打印的地址，一般是 `http://127.0.0.1:47321/`。
-
-测试：
-
-```bash
 npm test
 ```
 
-## 打单文件 HTML
+开发服务器地址为 `http://127.0.0.1:47321/`。完整包的棋子素材与 PSD 摆放数据在 `web/piece-items.js`、`web/piece-producers.js`，谛听窝原图在 `web/diting-nest/`。开局棋盘和茶壶存档迁移分别在 `web/opening-board.js`、`web/teapot.js`。`web/playtest.js` 来自原发布包，保留了其中的压缩变量名。
+
+## 构建与发布
 
 ```bash
 npm run build
-node scripts/inline-html.mjs
+npm run preview
 ```
 
-`npm run build` 先做类型检查，再打到 `dist/`（`vite.config.ts` 里 `base` 是 `'./'`，资源内联上限 1 MB）。`scripts/inline-html.mjs` 把 `dist/index.html` 引用的 CSS 和 JS 收成一个文件，并把里面的 PNG 换成 data URL。
+构建输出到 `dist/`，包含同版的 `index.html` 和 `fast.html`。验证新档、旧档、教程和棋盘后，把 `dist/` 的内容覆盖到仓库根目录下的 `preview/`，提交到 `main`。固定试玩入口为 [GitHub Pages](https://naynnthphaththxunci-crypto.github.io/jiangnan-play/preview/)。
 
-不带参数时，输出是 `dist/jiangnan.html`。要写到别的路径：
-
-```bash
-node scripts/inline-html.mjs /你的路径/jiangnan.html
-```
-
-## 发布到 GitHub Pages
-
-仓库：[naynnthphaththxunci-crypto/jiangnan-play](https://github.com/naynnthphaththxunci-crypto/jiangnan-play)。
-
-1. 把打好的单文件 HTML 复制成该仓库根目录的 `index.html`（覆盖旧的）。
-2. 保留根目录的 `.nojekyll`，不要删。Pages 直接发这个 `index.html`。
-3. 这份源码放到同一仓库的 `game/`。解压源码包时，包内就是项目根（直接是 `package.json`），解进 `game/` 即得到 `game/package.json`。
-
-微信小游戏另打：`npm run build:wx`，用微信开发者工具打开 `dist-wx/`。AppID 在 `jiangnan.config.json`，不要改。
+早期 TypeScript 原型使用 `npm run build:prototype`，输出到 `dist-prototype/`。如需为原型生成单文件，可再运行 `node scripts/inline-html.mjs`。以下原型记录仍可供参考。微信小游戏使用 `npm run build:wx`，生成的 `dist-wx/` 可用微信开发者工具打开。
 
 ## 已知问题
 

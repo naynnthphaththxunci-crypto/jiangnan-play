@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 
-const dist = resolve(import.meta.dirname, '../dist')
+const dist = resolve(import.meta.dirname, '../dist-prototype')
 const htmlPath = resolve(dist, 'index.html')
 let html = readFileSync(htmlPath, 'utf8')
 

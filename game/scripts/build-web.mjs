@@ -1,0 +1,11 @@
+import { cp, mkdir, rm } from 'node:fs/promises'
+
+const source = new URL('../web/', import.meta.url)
+const output = new URL('../dist/', import.meta.url)
+
+await rm(output, { recursive: true, force: true })
+await mkdir(output, { recursive: true })
+await cp(source, output, { recursive: true })
+await cp(new URL('index.html', output), new URL('fast.html', output))
+
+console.log('Built the full-art playtest in dist/ (index.html and fast.html)')

@@ -4,4 +4,4 @@
 - GitHub Pages 的正式试玩入口是 `preview/`。当前入口为 `preview/index.html`，同版备用入口为 `preview/fast.html`。这两个入口使用 `preview/ui-media-*.js` 和棋子素材模块。`preview/base.html` 是较早保留的完整包。
 - `8721a07` 是最近一次棋子美术更新的基准提交。7 条母棋和 9 条子棋共 160 张，格内尺寸及偏移来自用户的 PSD。新增素材在 `preview/piece-items.js`、`preview/piece-producers.js` 和 `preview/diting-nest/`。纸扎箱母棋沿用旧图，两条子棋已更新。谛听窝 8–10 级暂沿用 7 级产出与冷却。
 - 维护原存档键和棋子内部 ID，显示名可按策划调整。检查新档、旧档、棋盘贴图、新手教程和母棋解锁。验证通过后可直接发布到 GitHub Pages，给用户固定试玩入口，可用提交号作查询参数。
-- 首个待办：比较 `game/` 源码、构建配置与线上大包，逐项同步已发布的素材和行为，包括茶壶延后解锁。先验证新构建能复现当前大包及旧档行为，再替换正式试玩入口。
+- 后续在 `game/web/` 的完整美术包上开发。用 `game/` 下的 `npm run build` 生成试玩版，验证后将 `game/dist/` 的内容发布到 `preview/`。

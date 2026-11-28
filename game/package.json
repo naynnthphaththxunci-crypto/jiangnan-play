@@ -4,11 +4,12 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 127.0.0.1 --port 47321 --strictPort",
-    "build": "tsc --noEmit && vite build",
+    "dev": "vite --config vite.config.web.ts",
+    "build": "tsc --noEmit && node scripts/build-web.mjs",
     "build:wx": "tsc --noEmit && vite build --config vite.config.wx.ts && node scripts/emit-wx-config.mjs",
     "test": "vitest run",
-    "preview": "vite preview --host 127.0.0.1 --port 47321 --strictPort"
+    "preview": "vite preview --host 127.0.0.1 --port 47321 --strictPort",
+    "build:prototype": "tsc --noEmit && vite build --outDir dist-prototype"
   },
   "devDependencies": {
     "puppeteer-core": "^25.16.0",
