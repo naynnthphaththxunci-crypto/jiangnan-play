@@ -61,12 +61,12 @@ export function drawAtScale(ctx, box, scale, paint) {
   }
 }
 
-function paintStar(ctx, x, y, radius, opacity) {
+function paintStar(ctx, x, y, radius, opacity, outline = true) {
   ctx.globalAlpha = opacity
   ctx.lineWidth = Math.max(0.8, radius * 0.22)
   ctx.lineJoin = 'round'
   ctx.strokeStyle = '#da8b25'
-  ctx.fillStyle = '#fff8de'
+  ctx.fillStyle = outline ? '#fff8de' : '#fff'
   ctx.beginPath()
   ctx.moveTo(x, y - radius)
   ctx.quadraticCurveTo(x + radius * 0.18, y - radius * 0.18, x + radius * 0.85, y)
@@ -74,23 +74,40 @@ function paintStar(ctx, x, y, radius, opacity) {
   ctx.quadraticCurveTo(x - radius * 0.18, y + radius * 0.18, x - radius * 0.85, y)
   ctx.quadraticCurveTo(x - radius * 0.18, y - radius * 0.18, x, y - radius)
   ctx.closePath()
-  ctx.stroke()
+  if (outline) ctx.stroke()
   ctx.fill()
 }
 
-const producerStars = [[0.19, 0.31, 0, 0.146], [0.78, 0.16, 680, 0.113], [0.69, 0.69, 1360, 0.132]]
+const producerStars = [
+  [0.22, 0.35, 0, 0.17],
+  [0.68, 0.28, 560, 0.15],
+  [0.56, 0.77, 1120, 0.16],
+]
 
 export function drawProducerSparkles(ctx, box, now, phaseOffset) {
   const time = now + phaseOffset
   ctx.save()
+  ctx.shadowColor = 'rgba(246, 255, 255, 0.8)'
+  ctx.shadowBlur = box.w * 0.085
   for (const [x, y, delay, size] of producerStars) {
-    const t = (((time - delay) % 2040 + 2040) % 2040) / 1160
+    const t = (((time - delay) % 1680 + 1680) % 1680) / 1030
     if (t <= 0 || t >= 1) continue
     const glow = Math.sin(Math.PI * t)
-    paintStar(ctx, box.x + box.w * x, box.y + box.h * (y - t * 0.08),
-      box.w * size * (0.65 + glow * 0.35), glow)
+    const cx = box.x + box.w * (x + t * 0.09)
+    const cy = box.y + box.h * (y - t * 0.11)
+    paintStar(ctx, cx, cy, box.w * size * (0.68 + glow * 0.32), glow, false)
+    ctx.globalAlpha = glow * 0.64
+    ctx.beginPath()
+    ctx.arc(cx + box.w * 0.14, cy - box.h * 0.09, box.w * 0.025, 0, Math.PI * 2)
+    ctx.fill()
   }
   ctx.restore()
+}
+
+export function producerEnergyBadgeRect(cell, aspectRatio) {
+  const w = cell.w * 0.23
+  const h = w / aspectRatio
+  return { x: cell.x + cell.w * 0.81, y: cell.y + cell.h * 1.08 - h, w, h }
 }
 
 const mergeStars = [
