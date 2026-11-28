@@ -1,4 +1,4 @@
-import { cloudEdges, drawBoardClouds } from './board-clouds.js'
+import { drawSandCover, drawSandWeb } from './board-sand.js'
 import openingBoard from './opening-board.js'
 import { allowsFirstOrderDrop, firstOrderAction, sameCell } from './first-order-tutorial.js'
 import { drawAtScale, drawMergeSparkles, drawProducerSparkles, mergeScale, producerEnergyBadgeRect, producerTapDuration, producerTapScale, spawnDuration, spawnLandingPoint, spawnPose } from './board-motion.js'
@@ -75,25 +75,21 @@ function paintBoardPiece(ctx, cfg, item, box, artBox, scale, now, unlimited, fal
     iy(ctx, cfg, item, box, fallbackScale, 1, now, unlimited)
   })
 }
-function Ay(e){let{ctx:t,frame:n,state:r,cfg:i,realNow:a,animNow:o,fx:s}=e;if(n.board.cell<=0)return;let c=i.boardTheme,l=Sy(s),u=new Set,d=Bp(r),f=new Set(d.check),p=new Set(d.ready),m=new Set(yh(r).map(e=>`${e.row},${e.col}`)),h=n.mode===`board`,readyBadges=[], cloudCells=[], cloudRewards=[];
-const fullClouds = new Set(r.locks.filter(lock => lock.cover !== 'gift' && lock.veil !== 'half'
-  && !r.board[lock.row]?.[lock.col]).map(lock => `${lock.row},${lock.col}`));
-const isFullCloud = (row, col) => fullClouds.has(`${row},${col}`);
-if(!h){let e=n.orderClip.h>0?n.orderClip.y+n.orderClip.h:n.hud.y+n.hud.h,r=n.dock.h>0?n.dock.y:n.h;t.fillStyle=c.mat,t.fillRect(0,e,n.w,Math.max(0,r-e))}for(let d=0;d<9;d++)for(let g=0;g<7;g++){let _=vy(n,d,g),v=`${d},${g}`,y=Math.max(6,(_.w-4)*.18);h||(X(t,_.x+2,_.y+2,_.w-4,_.h-4,y),t.fillStyle=(d+g)%2==0?c.cellLight:c.cellDark,t.fill(),t.lineWidth=1,t.strokeStyle=c.cellLine,t.stroke()),p.has(v)&&!l.has(v)&&yy(t,_);let b=s.hover?.kind===`cell`&&s.hover.row===d&&s.hover.col===g;(u.has(v)||b)&&(t.save(),X(t,_.x+1.5,_.y+1.5,_.w-3,_.h-3,Math.max(4,_.w*.08)),t.lineWidth=2.5,t.strokeStyle=b&&s.hover?.kind===`cell`&&s.hover.merge?Y.energy:Y.gold,t.stroke(),t.restore());let x=V(r,d,g),S=r.board[d][g],ee=Md(r,i);if(x&&!S){if(x.cover===`gift`){let e=gy(x);e&&iy(t,i,e,_,1,.45,a),t.fillStyle=`rgba(180,140,60,0.45)`,X(t,_.x+3,_.y+3,_.w-6,_.h-6,6),t.fill();let n=x.giftUntil==null?0:x.giftUntil-a;Z(t,x.giftUntil==null?`礼物`:n>0?ft(n):`可开`,_.x+_.w/2,_.y+_.h*.72,Math.max(9,_.w*.16),Y.ink)}else {
+function Ay(e){let{ctx:t,frame:n,state:r,cfg:i,realNow:a,animNow:o,fx:s}=e;if(n.board.cell<=0)return;let c=i.boardTheme,l=Sy(s),u=new Set,d=Bp(r),f=new Set(d.check),p=new Set(d.ready),m=new Set(yh(r).map(e=>`${e.row},${e.col}`)),h=n.mode===`board`,readyBadges=[];if(!h){let e=n.orderClip.h>0?n.orderClip.y+n.orderClip.h:n.hud.y+n.hud.h,r=n.dock.h>0?n.dock.y:n.h;t.fillStyle=c.mat,t.fillRect(0,e,n.w,Math.max(0,r-e))}for(let d=0;d<9;d++)for(let g=0;g<7;g++){let _=vy(n,d,g),v=`${d},${g}`,y=Math.max(6,(_.w-4)*.18);h||(X(t,_.x+2,_.y+2,_.w-4,_.h-4,y),t.fillStyle=(d+g)%2==0?c.cellLight:c.cellDark,t.fill(),t.lineWidth=1,t.strokeStyle=c.cellLine,t.stroke()),p.has(v)&&!l.has(v)&&yy(t,_);let b=s.hover?.kind===`cell`&&s.hover.row===d&&s.hover.col===g;(u.has(v)||b)&&(t.save(),X(t,_.x+1.5,_.y+1.5,_.w-3,_.h-3,Math.max(4,_.w*.08)),t.lineWidth=2.5,t.strokeStyle=b&&s.hover?.kind===`cell`&&s.hover.merge?Y.energy:Y.gold,t.stroke(),t.restore());let x=V(r,d,g),S=r.board[d][g],ee=Md(r,i);if(x&&!S){if(x.cover===`gift`){let e=gy(x);e&&iy(t,i,e,_,1,.45,a),t.fillStyle=`rgba(180,140,60,0.45)`,X(t,_.x+3,_.y+3,_.w-6,_.h-6,6),t.fill();let n=x.giftUntil==null?0:x.giftUntil-a;Z(t,x.giftUntil==null?`礼物`:n>0?ft(n):`可开`,_.x+_.w/2,_.y+_.h*.72,Math.max(9,_.w*.16),Y.ink)}else {
   const cell = oe(n.board, T(n.board), d, g);
   t.save();
   if (x.veil === 'half') {
-    t.globalAlpha = 0.84;
+    t.globalAlpha = 0.88;
     Oy(t, i, x, cell, a);
     t.globalAlpha = 1;
-  }
-  cloudCells.push({ box: cell, lock: x, edges: cloudEdges(d, g, isFullCloud) });
-  if (x.veil !== 'half') {
+    drawSandWeb(t, cell);
+  } else {
+    drawSandCover(t, cell, d, g);
     const reward = oo(d, g);
     if (reward?.naturalWidth) {
       const width = cell.w * Ba.w;
       const height = cell.h * Ba.h;
-      cloudRewards.push({ reward, x: cell.x + (cell.w - width) / 2, y: cell.y + (cell.h - height) / 2, width, height });
+      t.drawImage(reward, cell.x + (cell.w - width) / 2, cell.y + (cell.h - height) / 2, width, height);
     }
   }
   t.restore();
@@ -114,8 +110,7 @@ if (S.kind === 'producer' && kf(i, S)) {
   else if (cooldown) Fy(t, _, cooldown.left, cooldown.total)
 }
 f.has(v)&&by(t,_,i.economy.tickScale??1,i.economy.tickOffsetX??78,i.economy.tickOffsetY??91)}
-drawBoardClouds(t, cloudCells);
-for (const { reward, x, y, width, height } of cloudRewards) t.drawImage(reward, x, y, width, height);
+
 for (const box of readyBadges) Ry(t, box);
 if(e.selected&&!s.drag){let a=e.selected,o=r.board[a.row]?.[a.col],s=V(r,a.row,a.col);(o||s)&&xy(t,vy(n,a.row,a.col),i.economy.selectFrameScale??1.16)}if(ky(e),s.drag){let e=s.drag.pending?r.pending[s.drag.index??0]:r.board[s.drag.row]?.[s.drag.col],o=s.drag.pending?n.pendingBtn:vy(n,s.drag.row,s.drag.col);if(e){iy(t,i,e,o,1,.28,a);let n={x:s.drag.x-o.w/2,y:s.drag.y-o.h/2-16,w:o.w,h:o.h};t.save(),t.shadowColor=`rgba(42,33,24,0.28)`,t.shadowBlur=14,t.shadowOffsetY=6,iy(t,i,e,n,1.08,1,a),t.restore()}}}var jy=null;function My(){let e=globalThis;return!e.document||typeof e.Image!=`function`?null:(jy||(jy=new e.Image,A(jy,L_)),jy)}var Ny={x:8/284,y:14/310},Py=284/310;function Fy(e,t,n,r){let i=ty(t,Sa()),a=Math.min(i.w,i.h),o=i.x+(i.w-a)/2,s=i.y+(i.h-a)/2,c=o+a*.5,l=s+a*.5,u=a*.42,d=Math.max(0,Math.min(1,n/Math.max(1,r)));e.save(),e.beginPath(),e.fillStyle=`#fffaf3`,e.arc(c,l,u+a*.06,0,Math.PI*2),e.fill(),e.beginPath(),e.strokeStyle=`#e4d3bc`,e.lineWidth=Math.max(2,a*.14),e.arc(c,l,u,0,Math.PI*2),e.stroke(),e.beginPath(),e.strokeStyle=`#e08a14`,e.lineCap=`round`,e.arc(c,l,u,-Math.PI/2,-Math.PI/2+Math.PI*2*d),e.stroke(),e.restore()}var Iy=null;function Ly(){let e=globalThis;return!e.document||typeof e.Image!=`function`?null:(Iy||(Iy=new e.Image,A(Iy,R_)),Iy)}function Ry(ctx, cell) {
   const icon = Ly();
