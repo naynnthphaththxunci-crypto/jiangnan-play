@@ -7,8 +7,7 @@
   "lock": "拖入同级同种的物品，合并后解开这一格。在旁边合成不会揭开。",
   "gift": "礼物要等冷却。点「解锁」直接打开，灰盒不花钻石。",
   "potion": "再点一次使用，补 {energy} 点体力。两瓶一样的可以合成。",
-  "chest": "点一下拆出五瓶体力，不消耗体力。",
-  "blue": "蓝宝箱。点开得到体力瓶。",
+  "chest": "再点一次，出一瓶体力。出完这只宝箱就消失。",
   "purple": "紫礼盒。点开得到一些可交单的子棋。",
   "bag": "购物袋。点开得到一些子棋。",
   "bagPiece": "购物袋。拖上棋盘后，和相同的棋子合成更大的。",
@@ -26,70 +25,22 @@
   ],
   "tutorial": [
     {
-      "id": "enter",
-      "type": "操作",
-      "gesture": "tap",
-      "text": "这里就是厨房的操作台了！哇，这里太脏了！我们需要整理一下。"
-    },
-    {
       "id": "merge",
       "type": "操作",
       "gesture": "drag",
-      "text": "将两个棋子合并为一个高一级的棋子。"
+      "text": "把这两个 1 级猫粮母棋拖到一起。"
     },
     {
-      "id": "unlock",
+      "id": "mergeC",
       "type": "操作",
       "gesture": "drag",
-      "text": "通过合并来解锁被风沙掩埋的物品。"
+      "text": "再拖到半遮着的 2 级猫粮母棋上。"
     },
     {
-      "id": "produce",
-      "type": "操作",
-      "gesture": "tap",
-      "text": "点开砂锅，拿出猫草。"
-    },
-    {
-      "id": "deliver",
-      "type": "操作",
-      "gesture": "tap",
-      "text": "小鱼干好了！端给{daughter}去。"
-    },
-    {
-      "id": "bagMerge",
+      "id": "mergeD",
       "type": "操作",
       "gesture": "drag",
-      "text": "再和另一只合成更大的。"
-    },
-    {
-      "id": "giftTalk",
-      "type": "对话",
-      "gesture": "none",
-      "text": "点一下礼物，冷却才开始计时。"
-    },
-    {
-      "id": "giftTap",
-      "type": "操作",
-      "gesture": "tap",
-      "text": "点礼物，开始冷却。"
-    },
-    {
-      "id": "giftRush",
-      "type": "操作",
-      "gesture": "tap",
-      "text": "点下面的加速。这一次免费。"
-    },
-    {
-      "id": "coinTalk",
-      "type": "对话",
-      "gesture": "none",
-      "text": "铜钱够了。"
-    },
-    {
-      "id": "build",
-      "type": "操作",
-      "gesture": "tap",
-      "text": "去右下角建造，修修铺子。"
+      "text": "和旁边的 3 级合成 4 级，就能产出了。"
     }
   ]
 }

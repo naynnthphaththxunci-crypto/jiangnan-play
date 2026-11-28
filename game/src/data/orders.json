@@ -5,13 +5,11 @@
   "customersByLine": {
     "food": [
       "xiaotao",
-      "teaGuest",
       "boatman",
       "scholar",
       "fisherman"
     ],
     "bev": [
-      "teaGuest",
       "scholar"
     ],
     "toy": [
@@ -25,7 +23,6 @@
     ],
     "boat": [
       "boatman",
-      "teaGuest",
       "fisherman"
     ],
     "bed": [
@@ -37,10 +34,6 @@
     "xiaotao": {
       "normal": "娘，我要吃这个。",
       "big": "娘做的最好吃了！"
-    },
-    "teaGuest": {
-      "normal": "这味正。",
-      "big": "掌柜的，这桌我做东了。"
     },
     "boatman": {
       "normal": "路上就吃这个。",
@@ -61,6 +54,14 @@
     "fisherman": {
       "normal": "肚皮早咕咕叫啦。",
       "big": "大碗盛满些，吃饱了还要收网。"
+    },
+    "siamese": {
+      "normal": "这个，我要。",
+      "big": "都摆上来吧。"
+    },
+    "bossDaughter": {
+      "normal": "我要这个。",
+      "big": "今天我请。"
     }
   }
 }

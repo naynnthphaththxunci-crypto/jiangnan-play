@@ -89,7 +89,7 @@ describe('合成', () => {
 
   it('体力瓶按 5→10→20→40→100 合成，一百点不能再合', () => {
     const { state, cfg } = boot()
-    const energies = [5, 10, 20, 40, 100]
+    const energies = [2, 6, 15, 40, 100]
     state.board[0][0] = makePotion(state, 1)
     for (let tier = 1; tier < 5; tier++) {
       state.board[0][1] = makePotion(state, tier)
@@ -98,7 +98,7 @@ describe('合成', () => {
       expect(item.kind).toBe('potion')
       if (item.kind === 'potion') {
         expect(item.tier).toBe(tier + 1)
-        expect(cfg.items.potions.find((p) => p.tier === item.tier)?.energy).toBe(energies[tier])
+        expect(cfg.items.potions.find((p) => p.tier === item.tier)?.energy).toBe(energies[item.tier - 1])
       }
       state.board[0][0] = state.board[0][1]
       state.board[0][1] = null

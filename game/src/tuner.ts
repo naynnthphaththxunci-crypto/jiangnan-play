@@ -1,3 +1,6 @@
+import { CURTAIN_BOUNCE_MAX } from './curtain'
+import { defaultConfig } from './config'
+import economySeed from './data/economy.json'
 import type { GameConfig } from './types'
 
 export interface SliderSpec {
@@ -11,18 +14,11 @@ export interface SliderSpec {
   text(value: number): string
 }
 
-function setThreshold(index: number): (cfg: GameConfig, value: number) => void {
-  return (cfg, value) => {
-    const next = cfg.economy.levelTaskThresholds.slice()
-    next[index] = Math.round(value)
-    for (let i = 1; i < next.length; i++) {
-      if (next[i] <= next[i - 1]) next[i] = next[i - 1] + 1
-    }
-    for (let i = next.length - 2; i >= 0; i--) {
-      if (next[i] >= next[i + 1]) next[i] = next[i + 1] - 1
-    }
-    cfg.economy.levelTaskThresholds = next
-  }
+export function resetSlider(cfg: GameConfig, index: number): void {
+  const spec = SLIDERS[index]
+  if (!spec) return
+  const fresh = defaultConfig()
+  spec.set(cfg, spec.get(fresh))
 }
 
 export const SLIDERS: SliderSpec[] = [
@@ -35,6 +31,162 @@ export const SLIDERS: SliderSpec[] = [
     get: (c) => c.economy.animMs,
     set: (c, v) => {
       c.economy.animMs = v
+    },
+    text: (v) => `${Math.round(v)} 毫秒`,
+  },
+  {
+    id: 'curtainPull',
+    label: '竹帘下拉时长',
+    min: 80,
+    max: 800,
+    step: 10,
+    get: (c) => c.economy.curtainPullMs ?? 500,
+    set: (c, v) => {
+      c.economy.curtainPullMs = v
+    },
+    text: (v) => `${Math.round(v)} 毫秒`,
+  },
+  {
+    id: 'curtainBounce',
+    label: '竹帘回弹幅度',
+    min: 0,
+    max: CURTAIN_BOUNCE_MAX,
+    step: 0.005,
+    get: (c) => c.economy.curtainBounce ?? 0,
+    set: (c, v) => {
+      c.economy.curtainBounce = Math.round(v * 1000) / 1000
+    },
+    text: (v) => `${Math.round(v * 1000) / 10}%`,
+  },
+  {
+    id: 'curtainHold',
+    label: '竹帘盖满后停留',
+    min: 0,
+    max: 400,
+    step: 10,
+    get: (c) => c.economy.curtainHoldMs ?? 0,
+    set: (c, v) => {
+      c.economy.curtainHoldMs = v
+    },
+    text: (v) => `${Math.round(v)} 毫秒`,
+  },
+  {
+    id: 'selectBreath',
+    label: '选中呼吸幅度',
+    min: 0,
+    max: 0.2,
+    step: 0.01,
+    get: (c) => c.economy.selectBreath ?? 0.06,
+    set: (c, v) => {
+      c.economy.selectBreath = Math.round(v * 100) / 100
+    },
+    text: (v) => `${Math.round(v * 100)}%`,
+  },
+  {
+    id: 'selectBreathMs',
+    label: '选中呼吸周期',
+    min: 200,
+    max: 3000,
+    step: 50,
+    get: (c) => c.economy.selectBreathMs ?? 1000,
+    set: (c, v) => {
+      c.economy.selectBreathMs = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)} 毫秒`,
+  },
+  {
+    id: 'selectBreathTimes',
+    label: '选中呼吸次数',
+    min: 0,
+    max: 6,
+    step: 1,
+    get: (c) => c.economy.selectBreathTimes ?? 2,
+    set: (c, v) => {
+      c.economy.selectBreathTimes = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)} 次`,
+  },
+  {
+    id: 'selectFrameScale',
+    label: '选中框大小',
+    min: 1,
+    max: 1.5,
+    step: 0.02,
+    get: (c) => c.economy.selectFrameScale ?? 1.16,
+    set: (c, v) => {
+      c.economy.selectFrameScale = Math.round(v * 100) / 100
+    },
+    text: (v) => `${Math.round(v * 100)}%`,
+  },
+  {
+    id: 'tickScale',
+    label: '打勾大小',
+    min: 0.5,
+    max: 1.8,
+    step: 0.02,
+    get: (c) => c.economy.tickScale ?? 1,
+    set: (c, v) => {
+      c.economy.tickScale = Math.round(v * 100) / 100
+    },
+    text: (v) => `${Math.round(v * 100)}%`,
+  },
+  {
+    id: 'tickOffsetX',
+    label: '打勾偏移X',
+    min: 0,
+    max: 140,
+    step: 1,
+    get: (c) => c.economy.tickOffsetX ?? 78,
+    set: (c, v) => {
+      c.economy.tickOffsetX = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)}`,
+  },
+  {
+    id: 'tickOffsetY',
+    label: '打勾偏移Y',
+    min: 0,
+    max: 140,
+    step: 1,
+    get: (c) => c.economy.tickOffsetY ?? 91,
+    set: (c, v) => {
+      c.economy.tickOffsetY = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)}`,
+  },
+  {
+    id: 'guideTimeout',
+    label: '引导兜底超时',
+    min: 1000,
+    max: 8000,
+    step: 500,
+    get: (c) => c.economy.guideTimeoutMs ?? 3000,
+    set: (c, v) => {
+      c.economy.guideTimeoutMs = Math.round(v)
+    },
+    text: (v) => `${Math.round(v / 100) / 10} 秒`,
+  },
+  {
+    id: 'orderOverscroll',
+    label: '订单越界拖动上限',
+    min: 0,
+    max: 240,
+    step: 8,
+    get: (c) => c.economy.orderOverscroll ?? 120,
+    set: (c, v) => {
+      c.economy.orderOverscroll = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)} 像素`,
+  },
+  {
+    id: 'orderBounceMs',
+    label: '订单回弹时长',
+    min: 80,
+    max: 800,
+    step: 20,
+    get: (c) => c.economy.orderBounceMs ?? 320,
+    set: (c, v) => {
+      c.economy.orderBounceMs = Math.round(v)
     },
     text: (v) => `${Math.round(v)} 毫秒`,
   },
@@ -86,68 +238,7 @@ export const SLIDERS: SliderSpec[] = [
     },
     text: (v) => `${Math.round(v)}`,
   },
-  {
-    id: 'l2',
-    label: '出二级',
-    min: 0,
-    max: 80,
-    step: 1,
-    get: (c) => c.economy.producerL2Chance * 100,
-    set: (c, v) => {
-      c.economy.producerL2Chance = v / 100
-    },
-    text: (v) => `${Math.round(v)}%`,
-  },
-  {
-    id: 'charges',
-    label: '3级一轮',
-    min: 1,
-    max: 300,
-    step: 1,
-    get: (c) => c.economy.producerChargesByLevel[3] ?? c.economy.producerCharges,
-    set: (c, v) => {
-      c.economy.producerChargesByLevel[3] = Math.round(v)
-      c.economy.producerCharges = Math.round(v)
-    },
-    text: (v) => `${Math.round(v)} 次`,
-  },
-  ...[4, 5, 6, 7, 8].map((level) => ({
-    id: `charges${level}`,
-    label: `${level}级一轮`,
-    min: 1,
-    max: 300,
-    step: 1,
-    get: (c: GameConfig) => c.economy.producerChargesByLevel[level] ?? 0,
-    set: (c: GameConfig, v: number) => {
-      c.economy.producerChargesByLevel[level] = Math.round(v)
-    },
-    text: (v: number) => `${Math.round(v)} 次`,
-  })),
-  {
-    id: 'grace',
-    label: '开局不冷却',
-    min: 0,
-    max: 60,
-    step: 1,
-    get: (c) => c.economy.producerGraceMs / 60000,
-    set: (c, v) => {
-      c.economy.producerGraceMs = Math.round(v * 60000)
-    },
-    text: (v) => `${Math.round(v)} 分钟`,
-  },
-  {
-    id: 'cool',
-    label: '母棋冷却',
-    min: 0,
-    max: 600,
-    step: 5,
-    get: (c) => c.economy.producerCooldownMs / 1000,
-    set: (c, v) => {
-      c.economy.producerCooldownMs = Math.round(v * 1000)
-    },
-    text: (v) => `${Math.round(v)} 秒`,
-  },
-  {
+    {
     id: 'reward',
     label: '订单报酬',
     min: 0.2,
@@ -173,7 +264,7 @@ export const SLIDERS: SliderSpec[] = [
   },
   {
     id: 'xp',
-    label: '每件经验',
+    label: '任务经验',
     min: 5,
     max: 40,
     step: 1,
@@ -183,75 +274,81 @@ export const SLIDERS: SliderSpec[] = [
     },
     text: (v) => `${Math.round(v)}`,
   },
+  ...[30, 45, 60, 75, 75, 90, 105, 120, 135, 150, 165, 180].map((fallback, index) => ({
+    id: `lvxp${index + 2}`,
+    label: `${index + 1}升${index + 2}级经验`,
+    min: 15,
+    max: 400,
+    step: 15,
+    get: (c: GameConfig) => c.economy.levelTaskThresholds[index] ?? fallback,
+    set: (c: GameConfig, v: number) => {
+      const next = c.economy.levelTaskThresholds.slice()
+      next[index] = Math.round(v)
+      c.economy.levelTaskThresholds = next
+    },
+    text: (v: number) => `${Math.round(v)} 经验`,
+  })),
+  ...[0.7, 0.77, 0.85, 0.92, 1].map((fallback, index) => ({
+    id: `potionScale${index + 1}`,
+    label: `体力瓶${index + 1}级大小`,
+    min: 0.4,
+    max: 1.2,
+    step: 0.01,
+    get: (c: GameConfig) => c.economy.potionScales?.[index] ?? fallback,
+    set: (c: GameConfig, v: number) => {
+      const next = (c.economy.potionScales ?? [0.7, 0.77, 0.85, 0.92, 1]).slice()
+      next[index] = Math.round(v * 100) / 100
+      c.economy.potionScales = next
+    },
+    text: (v: number) => `${Math.round(v * 100)}%`,
+  })),
   {
-    id: 'lv2',
-    label: '二级门槛',
-    min: 1,
-    max: 8,
-    step: 1,
-    get: (c) => c.economy.levelTaskThresholds[0] ?? 2,
-    set: setThreshold(0),
-    text: (v) => `${Math.round(v)} 件`,
+    id: 'openingHitPad',
+    label: '进门热区',
+    min: 0,
+    max: 360,
+    step: 10,
+    get: (c) => c.economy.openingHitPad ?? 160,
+    set: (c, v) => {
+      c.economy.openingHitPad = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)}`,
   },
   {
-    id: 'lv3',
-    label: '三级门槛',
-    min: 2,
-    max: 12,
-    step: 1,
-    get: (c) => c.economy.levelTaskThresholds[1] ?? 5,
-    set: setThreshold(1),
-    text: (v) => `${Math.round(v)} 件`,
+    id: 'openingDimMs',
+    label: '开场压暗时长',
+    min: 0,
+    max: 2000,
+    step: 50,
+    get: (c) => c.economy.openingDimMs ?? 600,
+    set: (c, v) => {
+      c.economy.openingDimMs = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)} 毫秒`,
   },
   {
-    id: 'lv4',
-    label: '四级门槛',
-    min: 3,
-    max: 16,
+    id: 'openingTapHandX',
+    label: '继续手左右',
+    min: -160,
+    max: 160,
     step: 1,
-    get: (c) => c.economy.levelTaskThresholds[2] ?? 9,
-    set: setThreshold(2),
-    text: (v) => `${Math.round(v)} 件`,
+    get: (c) => c.economy.openingTapHandX ?? 0,
+    set: (c, v) => {
+      c.economy.openingTapHandX = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)}`,
   },
   {
-    id: 'lv5',
-    label: '五级门槛',
-    min: 4,
-    max: 20,
+    id: 'openingTapHandY',
+    label: '继续手上下',
+    min: -160,
+    max: 160,
     step: 1,
-    get: (c) => c.economy.levelTaskThresholds[3] ?? 12,
-    set: setThreshold(3),
-    text: (v) => `${Math.round(v)} 件`,
-  },
-  {
-    id: 'lv6',
-    label: '六级门槛',
-    min: 4,
-    max: 24,
-    step: 1,
-    get: (c) => c.economy.levelTaskThresholds[4] ?? 10,
-    set: setThreshold(4),
-    text: (v) => `${Math.round(v)} 件`,
-  },
-  {
-    id: 'lv7',
-    label: '七级门槛',
-    min: 4,
-    max: 24,
-    step: 1,
-    get: (c) => c.economy.levelTaskThresholds[5] ?? 11,
-    set: setThreshold(5),
-    text: (v) => `${Math.round(v)} 件`,
-  },
-  {
-    id: 'lv8',
-    label: '八级门槛',
-    min: 4,
-    max: 24,
-    step: 1,
-    get: (c) => c.economy.levelTaskThresholds[6] ?? 12,
-    set: setThreshold(6),
-    text: (v) => `${Math.round(v)} 件`,
+    get: (c) => c.economy.openingTapHandY ?? 0,
+    set: (c, v) => {
+      c.economy.openingTapHandY = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)}`,
   },
   {
     id: 'earlyUntil',
@@ -422,6 +519,116 @@ export const SLIDERS: SliderSpec[] = [
     text: (v) => v.toFixed(2),
   },
   {
+    id: 'testGuests',
+    label: '测试：指定订单客人',
+    min: 0,
+    max: 1,
+    step: 1,
+    get: (c) => c.economy.testOrderGuests ?? 0,
+    set: (c, v) => {
+      c.economy.testOrderGuests = v >= 1 ? 1 : 0
+    },
+    text: (v) => (v >= 1 ? '阿桨 + 鲍大叔' : '关'),
+  },
+  {
+    id: 'guestCanvas',
+    label: '客人画布比例',
+    min: 0.2,
+    max: 0.45,
+    step: 0.01,
+    get: (c) => c.economy.guestCanvasScale ?? 0.29,
+    set: (c, v) => {
+      c.economy.guestCanvasScale = Math.round(v * 100) / 100
+    },
+    text: (v) => v.toFixed(2),
+  },
+  {
+    id: 'guestNudgeX',
+    label: '客人左右微调',
+    min: -80,
+    max: 80,
+    step: 1,
+    get: (c) => c.economy.guestNudgeX ?? 0,
+    set: (c, v) => {
+      c.economy.guestNudgeX = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)} 像素`,
+  },
+  {
+    id: 'speed4Level',
+    label: 'x4解锁等级',
+    min: 1,
+    max: 40,
+    step: 1,
+    get: (c) => c.economy.speed4Level ?? 20,
+    set: (c, v) => {
+      c.economy.speed4Level = v
+    },
+    text: (v) => `${Math.round(v)} 级`,
+  },
+  {
+    id: 'food3Price',
+    label: '猫粮3单价',
+    min: 1,
+    max: 40,
+    step: 1,
+    get: (c) => c.items.lines.find((line) => line.id === 'food')?.levels.find((level) => level.level === 3)?.coins ?? 2,
+    set: (c, v) => {
+      const level = c.items.lines.find((line) => line.id === 'food')?.levels.find((entry) => entry.level === 3)
+      if (level) level.coins = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)} 金币`,
+  },
+  {
+    id: 'foodHard',
+    label: '猫粮5级难出',
+    min: 0,
+    max: 40,
+    step: 0.5,
+    get: (c) => c.producers.find((entry) => entry.id === 'food')?.drops?.find((row) => row.level === 5)?.hard ?? 10,
+    set: (c, v) => {
+      const row = c.producers.find((entry) => entry.id === 'food')?.drops?.find((entry) => entry.level === 5)
+      if (row) row.hard = Math.round(v * 10) / 10
+    },
+    text: (v) => `${Math.round(v * 10) / 10}%`,
+  },
+  {
+    id: 'cooldownSwitch',
+    label: '猫粮饮料冷却',
+    min: 0,
+    max: 1,
+    step: 1,
+    get: (c) => c.economy.producerCooldownOn ?? 0,
+    set: (c, v) => {
+      c.economy.producerCooldownOn = v >= 1 ? 1 : 0
+    },
+    text: (v) => (v >= 1 ? '旧规则开' : '不冷却'),
+  },
+  {
+    id: 'maxOrders',
+    label: '屏上订单上限',
+    min: 1,
+    max: 6,
+    step: 1,
+    get: (c) => c.orders.maxActive,
+    set: (c, v) => {
+      c.orders.maxActive = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)} 单`,
+  },
+  {
+    id: 'foodShare',
+    label: '食品饮料占比',
+    min: 0,
+    max: 1,
+    step: 0.05,
+    get: (c) => c.economy.foodDrinkShare ?? 0.8,
+    set: (c, v) => {
+      c.economy.foodDrinkShare = Math.round(v * 100) / 100
+    },
+    text: (v) => `${Math.round(v * 100)}%`,
+  },
+  {
     id: 'smileGoal',
     label: '笑脸开奖',
     min: 4,
@@ -439,7 +646,7 @@ export const SLIDERS: SliderSpec[] = [
     min: 0,
     max: 600,
     step: 10,
-    get: (c) => c.economy.smileUiAfterMs / 1000,
+    get: (c) => Math.min(600, c.economy.smileUiAfterMs / 1000),
     set: (c, v) => {
       c.economy.smileUiAfterMs = Math.round(v * 1000)
     },
@@ -456,18 +663,6 @@ export const SLIDERS: SliderSpec[] = [
       c.economy.adDailyMax = v
     },
     text: (v) => `${Math.round(v)} 次`,
-  },
-  {
-    id: 'orderXp',
-    label: '交单经验',
-    min: 0,
-    max: 40,
-    step: 1,
-    get: (c) => c.economy.orderXp,
-    set: (c, v) => {
-      c.economy.orderXp = v
-    },
-    text: (v) => `${Math.round(v)}`,
   },
   {
     id: 'chestTimes',
@@ -555,6 +750,185 @@ export const SLIDERS: SliderSpec[] = [
     },
     text: (v) => `${Math.round(v)}`,
   },
+  {
+    id: 'roundBase',
+    label: '4级一轮体力',
+    min: 40,
+    max: 400,
+    step: 10,
+    get: (c) => c.economy.producerRoundBase,
+    set: (c, v) => {
+      c.economy.producerRoundBase = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)}`,
+  },
+  {
+    id: 'roundStep',
+    label: '每级多体力',
+    min: 0,
+    max: 80,
+    step: 5,
+    get: (c) => c.economy.producerRoundStep,
+    set: (c, v) => {
+      c.economy.producerRoundStep = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)}`,
+  },
+  {
+    id: 'roundCool',
+    label: '母棋冷却',
+    min: 10,
+    max: 300,
+    step: 10,
+    get: (c) => c.economy.producerRoundCooldownMs / 1000,
+    set: (c, v) => {
+      c.economy.producerRoundCooldownMs = Math.round(v * 1000)
+    },
+    text: (v) => `${Math.round(v)} 秒`,
+  },
+  {
+    id: 'mainChance',
+    label: '主子棋概率',
+    min: 0,
+    max: 100,
+    step: 5,
+    get: (c) => c.economy.producerMainChance * 100,
+    set: (c, v) => {
+      c.economy.producerMainChance = v / 100
+    },
+    text: (v) => `${Math.round(v)}%`,
+  },
+  {
+    id: 'sideLevel',
+    label: '副子棋等级',
+    min: 4,
+    max: 10,
+    step: 1,
+    get: (c) => c.economy.producerSideLevel,
+    set: (c, v) => {
+      c.economy.producerSideLevel = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)} 级`,
+  },
+  {
+    id: 'plantCool',
+    label: '花盆冷却',
+    min: 1,
+    max: 120,
+    step: 1,
+    get: (c) => c.economy.plantCooldownMs / 60000,
+    set: (c, v) => {
+      c.economy.plantCooldownMs = Math.round(v * 60000)
+    },
+    text: (v) => `${Math.round(v)} 分钟`,
+  },
+  {
+    id: 'plantBurst',
+    label: '花盆一次出',
+    min: 1,
+    max: 12,
+    step: 1,
+    get: (c) => c.economy.plantBurst,
+    set: (c, v) => {
+      c.economy.plantBurst = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)} 个`,
+  },
+  {
+    id: 'consumeTaps',
+    label: '消耗母棋次数',
+    min: 1,
+    max: 12,
+    step: 1,
+    get: (c) => c.economy.consumableTaps,
+    set: (c, v) => {
+      c.economy.consumableTaps = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)} 次`,
+  },
+  {
+    id: 'shopEnergy',
+    label: '每日体力礼包',
+    min: 10,
+    max: 200,
+    step: 10,
+    get: (c) => c.economy.shopDailyEnergy,
+    set: (c, v) => {
+      c.economy.shopDailyEnergy = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)}`,
+  },
+  {
+    id: 'coinMax',
+    label: '满级金币',
+    min: 10,
+    max: 200,
+    step: 5,
+    get: (c) => c.items.lines.find((line) => line.id === 'coin')?.levels.at(-1)?.coins ?? 50,
+    set: (c, v) => {
+      const level = c.items.lines.find((line) => line.id === 'coin')?.levels.at(-1)
+      if (level) level.coins = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)}`,
+  },
+  {
+    id: 'gemMax',
+    label: '满级钻石',
+    min: 5,
+    max: 50,
+    step: 1,
+    get: (c) => c.items.lines.find((line) => line.id === 'gemline')?.levels.at(-1)?.coins ?? 15,
+    set: (c, v) => {
+      const level = c.items.lines.find((line) => line.id === 'gemline')?.levels.at(-1)
+      if (level) level.coins = Math.round(v)
+    },
+    text: (v) => `${Math.round(v)}`,
+  },
+
+  ...([1, 2, 4, 8] as const).flatMap((mult) => {
+    const tier = (c: GameConfig) => c.economy.spawnTable.find((entry) => entry.mult === mult)
+    const cost: SliderSpec = {
+      id: `multCost${mult}`,
+      label: `${mult}倍体力`,
+      min: 1,
+      max: 20,
+      step: 1,
+      get: (c) => tier(c)?.cost ?? mult,
+      set: (c, v) => {
+        const row = tier(c)
+        if (row) row.cost = Math.round(v)
+      },
+      text: (v) => `${Math.round(v)}`,
+    }
+    const seeded = economySeed.spawnTable.find((entry) => entry.mult === mult)?.weights ?? []
+    const weights = seeded.map((entry, index) => ({
+      id: `mult${mult}p${index}`,
+      label: `${mult}倍出${entry.level}级`,
+      min: 0,
+      max: 100,
+      step: 1,
+      get: (c: GameConfig) => Math.round((tier(c)?.weights[index]?.p ?? 0) * 100),
+      set: (c: GameConfig, v: number) => {
+        const row = tier(c)?.weights[index]
+        if (row) row.p = v / 100
+      },
+      text: (v: number) => `${Math.round(v)}%`,
+    }))
+    const gate: SliderSpec | null = mult === 8 ? {
+      id: 'mult8on',
+      label: '8倍开关',
+      min: 0,
+      max: 1,
+      step: 1,
+      get: (c) => (tier(c)?.enabled ? 1 : 0),
+      set: (c, v) => {
+        const row = tier(c)
+        if (row) row.enabled = v >= 1
+      },
+      text: (v) => (v >= 1 ? '开' : '关'),
+    } : null
+    return gate ? [gate, cost, ...weights] : [cost, ...weights]
+  }),
 ]
 
 export function sliderValue(spec: SliderSpec, trackX: number, trackW: number, x: number): number {

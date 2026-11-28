@@ -9,6 +9,7 @@ import boardJson from './data/board.json'
 import copyJson from './data/copy.json'
 import storiesJson from './data/buildStories.json'
 import themeJson from './data/theme.json'
+import { applyBalance } from './balance1120'
 import type { GameConfig } from './types'
 
 const RAW = {
@@ -17,7 +18,7 @@ const RAW = {
   orders: ordersJson,
   buildings: buildingsJson,
   characters: charactersJson.list,
-  opening: openingJson.steps,
+  opening: openingJson,
   economy: economyJson,
   board: boardJson,
   boardTheme: themeJson,
@@ -26,7 +27,9 @@ const RAW = {
 }
 
 export function defaultConfig(): GameConfig {
-  return JSON.parse(JSON.stringify(RAW)) as GameConfig
+  const cfg = JSON.parse(JSON.stringify(RAW)) as GameConfig
+  applyBalance(cfg)
+  return cfg
 }
 
 export function resetEconomy(cfg: GameConfig): void {

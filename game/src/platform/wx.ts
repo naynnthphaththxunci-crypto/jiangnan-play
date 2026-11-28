@@ -35,6 +35,7 @@ interface WxApi {
   setClipboardData?: (opt: { data: string }) => void
   env?: { USER_DATA_PATH?: string }
   getFileSystemManager?: () => { writeFileSync: (path: string, data: string, enc?: string) => void }
+  getMenuButtonBoundingClientRect?: () => { left: number; top: number; width: number; height: number }
 }
 
 function getWx(): WxApi {
@@ -47,22 +48,24 @@ export function createWxPlatform(): Platform {
   const wx = getWx()
   const info = wx.getSystemInfoSync()
   const canvas = wx.createCanvas()
-  let dpr = Math.min(2, info.pixelRatio || 1)
+  let dpr = Math.min(3, info.pixelRatio || 1)
   let logical = { w: info.windowWidth, h: info.windowHeight }
   let resizeCb: (() => void) | null = null
   let audio: AudioContextLike | null = null
 
   const apply = (w: number, h: number, ratio?: number) => {
-    dpr = Math.min(2, ratio || dpr || 1)
+    dpr = Math.min(3, ratio || dpr || 1)
     logical = { w: Math.max(1, w), h: Math.max(1, h) }
     canvas.width = Math.round(logical.w * dpr)
     canvas.height = Math.round(logical.h * dpr)
   }
   apply(info.windowWidth, info.windowHeight, info.pixelRatio)
 
+  const menu = wx.getMenuButtonBoundingClientRect?.()
   const insets = {
     top: Math.min(64, Math.max(0, info.safeArea?.top ?? info.statusBarHeight ?? 0)),
     bottom: Math.min(48, Math.max(0, info.safeArea ? info.screenHeight - info.safeArea.bottom : 0)),
+    capsule: menu && menu.width > 0 ? { x: menu.left, y: menu.top, w: menu.width, h: menu.height } : null,
   }
 
   return {

@@ -1,0 +1,160 @@
+import { assignArtSrc } from './artGate'
+import bgUrl from './assets/hecheng/bg.webp'
+import deskUrl from './assets/hecheng/desk.webp'
+import counterUrl from './assets/hecheng/counter.webp'
+import boardUrl from './assets/hecheng/board.webp'
+import shadowUrl from './assets/hecheng/shadow.webp'
+import checkUrl from './assets/hecheng/check.webp'
+import doneUrl from './assets/hecheng/done.webp'
+import payUrl from './assets/hecheng/pay.webp'
+import smileOrderUrl from './assets/hecheng/smile_order.webp'
+import plusUrl from './assets/hecheng/plus.webp'
+import barEnergyUrl from './assets/hecheng/bar_energy.webp'
+import barCoinUrl from './assets/hecheng/bar_coin.webp'
+import barGemUrl from './assets/hecheng/bar_gem.webp'
+import iconEnergyUrl from './assets/hecheng/icon_energy.webp'
+import iconCoinUrl from './assets/hecheng/icon_coin.webp'
+import iconGemUrl from './assets/hecheng/icon_gem.webp'
+import portraitUrl from './assets/hecheng/portrait.webp'
+import frameUrl from './assets/hecheng/frame.webp'
+import plateUrl from './assets/hecheng/plate.webp'
+import completeUrl from './assets/hecheng/complete.webp'
+import bubbleUrl from './assets/hecheng/bubble.webp'
+import energyUrl from './assets/hecheng/energy.webp'
+import coinUrl from './assets/hecheng/coin.webp'
+import gemUrl from './assets/hecheng/gem.webp'
+import smileUrl from './assets/hecheng/smile.webp'
+import smileFullUrl from './assets/hecheng/smile_full.webp'
+import shopUrl from './assets/hecheng/shop.webp'
+import badgeShopUrl from './assets/hecheng/badge_shop.webp'
+import badgeSmallUrl from './assets/hecheng/badge_small.webp'
+import badgeTaskUrl from './assets/hecheng/badge_task.webp'
+import speed1Url from './assets/hecheng/speed_x1.webp'
+import speed2Url from './assets/hecheng/speed_x2.webp'
+import speed4Url from './assets/hecheng/speed_x4.webp'
+import speed8Url from './assets/hecheng/speed_x8.webp'
+import stashUrl from './assets/hecheng/stash.webp'
+import infoUrl from './assets/hecheng/info.webp'
+import buildUrl from './assets/hecheng/build.webp'
+import taskFrameUrl from './assets/hecheng/task_frame.webp'
+import taskIconUrl from './assets/hecheng/task_icon.webp'
+import chestFrameUrl from './assets/hecheng/chest_frame.webp'
+import chestIconUrl from './assets/hecheng/chest_icon.webp'
+import bookUrl from './assets/hecheng/book.webp'
+import avatarUrl from './assets/hecheng/avatar.webp'
+import avatarFrameUrl from './assets/hecheng/avatar_frame.webp'
+import levelBadgeUrl from './assets/hecheng/level_badge.webp'
+import selectFrameUrl from './assets/hecheng/select_frame.webp'
+import readyCellUrl from './assets/hecheng/ready_cell.webp'
+import orderTickUrl from './assets/hecheng/order_tick.webp'
+import chainCardShortUrl from './assets/hecheng/chain_card_short.webp'
+import chainCardLongUrl from './assets/hecheng/chain_card_long.webp'
+import chainCardMakerUrl from './assets/hecheng/chain_card_maker.webp'
+import chainTitleUrl from './assets/hecheng/chain_title.webp'
+import chainCloseUrl from './assets/hecheng/chain_close.webp'
+import chainCellUrl from './assets/hecheng/chain_cell.webp'
+import chainUnknownUrl from './assets/hecheng/chain_unknown.webp'
+import chainSelectUrl from './assets/hecheng/chain_select.webp'
+import chainTrayUrl from './assets/hecheng/chain_tray.webp'
+import chainSlotUrl from './assets/hecheng/chain_slot.webp'
+import chainInfoUrl from './assets/hecheng/chain_info.webp'
+import chainBadgeUrl from './assets/hecheng/chain_badge.webp'
+import chainRuleUrl from './assets/hecheng/chain_rule.webp'
+
+export const HECHENG_ART = {
+  bg: bgUrl,
+  desk: deskUrl,
+  counter: counterUrl,
+  board: boardUrl,
+  shadow: shadowUrl,
+  check: checkUrl,
+  done: doneUrl,
+  pay: payUrl,
+  smileOrder: smileOrderUrl,
+  plus: plusUrl,
+  barEnergy: barEnergyUrl,
+  barCoin: barCoinUrl,
+  barGem: barGemUrl,
+  iconEnergy: iconEnergyUrl,
+  iconCoin: iconCoinUrl,
+  iconGem: iconGemUrl,
+  portrait: portraitUrl,
+  frame: frameUrl,
+  plate: plateUrl,
+  complete: completeUrl,
+  bubble: bubbleUrl,
+  energy: energyUrl,
+  coin: coinUrl,
+  gem: gemUrl,
+  smile: smileUrl,
+  smileFull: smileFullUrl,
+  shop: shopUrl,
+  badgeShop: badgeShopUrl,
+  badgeSmall: badgeSmallUrl,
+  badgeTask: badgeTaskUrl,
+  speed1: speed1Url,
+  speed2: speed2Url,
+  speed4: speed4Url,
+  speed8: speed8Url,
+  stash: stashUrl,
+  info: infoUrl,
+  build: buildUrl,
+  taskFrame: taskFrameUrl,
+  taskIcon: taskIconUrl,
+  chestFrame: chestFrameUrl,
+  chestIcon: chestIconUrl,
+  book: bookUrl,
+  avatar: avatarUrl,
+  avatarFrame: avatarFrameUrl,
+  levelBadge: levelBadgeUrl,
+  selectFrame: selectFrameUrl,
+  readyCell: readyCellUrl,
+  orderTick: orderTickUrl,
+  chainCardShort: chainCardShortUrl,
+  chainCardLong: chainCardLongUrl,
+  chainCardMaker: chainCardMakerUrl,
+  chainTitle: chainTitleUrl,
+  chainClose: chainCloseUrl,
+  chainCell: chainCellUrl,
+  chainUnknown: chainUnknownUrl,
+  chainSelect: chainSelectUrl,
+  chainTray: chainTrayUrl,
+  chainSlot: chainSlotUrl,
+  chainInfo: chainInfoUrl,
+  chainBadge: chainBadgeUrl,
+  chainRule: chainRuleUrl,
+} as const
+
+export type HechengArtId = keyof typeof HECHENG_ART
+
+type ArtImage = CanvasImageSource & { complete?: boolean; naturalWidth?: number; naturalHeight?: number }
+
+function loadImage(src: string): ArtImage | null {
+  const Ctor = (globalThis as { Image?: new () => HTMLImageElement }).Image
+  if (typeof Ctor !== 'function') return null
+  const img = new Ctor()
+  assignArtSrc(img, src)
+  return img
+}
+
+const images = new Map<HechengArtId, ArtImage | null>(
+  (Object.keys(HECHENG_ART) as HechengArtId[]).map((id) => [id, loadImage(HECHENG_ART[id])]),
+)
+
+export function hechengImage(id: HechengArtId): ArtImage | null {
+  return images.get(id) ?? null
+}
+
+export function hechengImageElements(): HTMLImageElement[] {
+  const Ctor = (globalThis as { HTMLImageElement?: typeof HTMLImageElement }).HTMLImageElement
+  if (!Ctor) return []
+  return [...images.values()].filter((img): img is HTMLImageElement => img instanceof Ctor)
+}
+
+/** x8 这一轮不进循环，图留着，以后付费档直接拿。 */
+export function speedArtId(mult: number): HechengArtId {
+  if (mult >= 8) return 'speed8'
+  if (mult >= 4) return 'speed4'
+  if (mult >= 2) return 'speed2'
+  return 'speed1'
+}

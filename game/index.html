@@ -6,16 +6,24 @@
       name="viewport"
       content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
     />
+    <meta name="theme-color" content="#000000" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>江南合成</title>
     <link rel="icon" href="data:," />
     <style>
+      html {
+        background: #000;
+        color-scheme: dark;
+      }
       html,
       body {
         margin: 0;
         width: 100%;
         height: 100%;
         height: 100dvh;
-        background: #1a1410;
+        min-height: 100dvh;
+        min-height: 100lvh;
+        background: #000;
         overflow: hidden;
         position: fixed;
         inset: 0;
@@ -31,6 +39,7 @@
         align-items: center;
         justify-content: center;
         box-sizing: border-box;
+        background: #000;
         padding:
           env(safe-area-inset-top)
           env(safe-area-inset-right)
@@ -39,30 +48,52 @@
         touch-action: none;
       }
       canvas {
+        position: fixed;
+        left: 0;
+        top: 0;
         touch-action: none;
         user-select: none;
         -webkit-user-select: none;
-        background: #f4ead8;
+        background: #000;
         display: block;
-        max-width: 100%;
-        max-height: 100%;
+        max-width: none;
+        max-height: none;
+      }
+      #safe-probe {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 0;
+        height: 0;
+        padding:
+          env(safe-area-inset-top)
+          env(safe-area-inset-right)
+          env(safe-area-inset-bottom)
+          env(safe-area-inset-left);
+        visibility: hidden;
+        pointer-events: none;
+      }
+      #lvh-probe {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 0;
+        height: 100lvh;
+        visibility: hidden;
+        pointer-events: none;
       }
       canvas.is-booting {
         visibility: hidden;
       }
       #boot {
-        position: absolute;
+        position: fixed;
         z-index: 5;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
-        height: 100%;
-        max-width: 100%;
-        max-height: 100%;
-        aspect-ratio: 393 / 852;
-        width: auto;
+        inset: 0;
         overflow: hidden;
-        background: #2a1c14 center / cover no-repeat;
+        background-color: #140c10;
+        background-position: center center;
+        background-size: cover;
+        background-repeat: no-repeat;
         transition: opacity 0.28s ease;
       }
       #boot.is-done {
@@ -71,13 +102,17 @@
       }
       .boot-panel {
         position: absolute;
-        left: 12%;
-        right: 12%;
-        bottom: 3.4%;
+        left: 10%;
+        right: 10%;
+        bottom: 4.2%;
         display: flex;
         flex-direction: column;
         align-items: center;
         gap: 8px;
+        padding: 12px 14px 14px;
+        border-radius: 18px;
+        background: rgba(18, 8, 14, 0.62);
+        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
       }
       .boot-caption {
         margin: 0;
@@ -121,6 +156,8 @@
     </style>
   </head>
   <body>
+    <div id="safe-probe"></div>
+    <div id="lvh-probe"></div>
     <div id="app">
       <canvas id="game" class="is-booting"></canvas>
       <div id="boot">

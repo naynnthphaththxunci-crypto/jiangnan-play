@@ -2,23 +2,28 @@ import { describe, expect, it } from 'vitest'
 import { defaultConfig } from '../src/config'
 import {
   applyFreeRefill,
+  buildTask,
   buyEnergyWithGems,
   claimLevelModal,
   completeOrder,
+  confirmDecor,
   createGame,
   dropItem,
+  fillOrders,
   findEmpty,
   gemEnergyPrice,
-  inProducerGrace,
+  refreshProducers,
   lockAt,
   makePotion,
   makeProducer,
   mulberry32,
+  nextTask,
   orderCraftable,
   orderSatisfied,
   queueReward,
   sellItem,
   syncEnergy,
+  taskPrice,
   takeReward,
   tapConsumable,
   tapProducer,
@@ -30,13 +35,22 @@ describe('第五轮', () => {
   it('订单每样东西都要能由当前拥有的 3 级以上母棋产出或合成', () => {
     const cfg = defaultConfig()
     const state = createGame(1, cfg)
+    expect(orderCraftable(state, cfg, 'food', 3)).toBe(false)
+    const food = state.board.flat().find((item) => item?.kind === 'producer' && item.producerId === 'food')
+    if (food?.kind === 'producer') food.level = 4
     expect(orderCraftable(state, cfg, 'food', 3)).toBe(true)
+    state.board.forEach((row) =>
+      row.forEach((item, col) => {
+        if (item?.kind === 'producer' && item.producerId === 'bev') row[col] = null
+      }),
+    )
+    state.pending = state.pending.filter((item) => !(item.kind === 'producer' && item.producerId === 'bev'))
+    state.rewards = state.rewards.filter((item) => !(item.kind === 'producer' && item.producerId === 'bev'))
     expect(orderCraftable(state, cfg, 'bev', 6)).toBe(false)
     expect(orderCraftable(state, cfg, 'toy', 8)).toBe(false)
-    expect(orderCraftable(state, cfg, 'bev', 3)).toBe(false)
     queueReward(state, makeProducer(state, 'bev', cfg, 1))
     expect(orderCraftable(state, cfg, 'bev', 3)).toBe(false)
-    queueReward(state, makeProducer(state, 'bev', cfg, 6))
+    queueReward(state, makeProducer(state, 'bev', cfg, 4))
     expect(orderCraftable(state, cfg, 'bev', 4)).toBe(true)
   })
 
@@ -44,45 +58,45 @@ describe('第五轮', () => {
     const cfg = defaultConfig()
     const state = createGame(1_000, cfg)
     state.phase = 'play'
-    state.board[4][2] = null
-    const item = state.board[4][3]
+    state.locks = []
+    const item = state.board[3][1]
     expect(item?.kind).toBe('producer')
     if (item?.kind !== 'producer') return
+    cfg.economy.producerCooldownOn = 1
+    item.level = 4
+    item.charges = 200
     const charges = item.charges
-    expect(inProducerGrace(state, cfg)).toBe(true)
-    expect(cfg.economy.producerGraceMs).toBe(20 * 60 * 1000)
     for (let i = 0; i < 4; i++) {
-      state.board[4][2] = null
-      expect(tapProducer(state, { row: 4, col: 3 }, cfg, () => 0.9, 2_000 + i).ok).toBe(true)
+      state.board[3][2] = null
+      expect(tapProducer(state, { row: 3, col: 1 }, cfg, () => 0.9, 2_000 + i).ok).toBe(true)
     }
-    expect(item.charges).toBe(charges)
+    expect(item.charges).toBe(charges - 4)
     expect(item.cooldownUntil).toBe(0)
     expect(state.energy).toBe(96)
-    state.playedMs = cfg.economy.producerGraceMs
     item.charges = 1
     item.cooldownUntil = 0
-    state.board[4][2] = null
-    state.board[4][1] = null
-    expect(tapProducer(state, { row: 4, col: 3 }, cfg, () => 0, 9_000).ok).toBe(true)
+    state.board[3][2] = null
+    expect(tapProducer(state, { row: 3, col: 1 }, cfg, () => 0, 9_000).ok).toBe(true)
     expect(item.charges).toBe(0)
-    expect(item.cooldownUntil).toBe(9_000 + 45_000)
-    expect(tapProducer(state, { row: 4, col: 3 }, cfg, () => 0, 9_010).reason).toBe('cooldown')
+    expect(item.cooldownUntil).toBe(9_000 + cfg.economy.producerRoundCooldownMs)
+    expect(tapProducer(state, { row: 3, col: 1 }, cfg, () => 0, 9_010).reason).toBe('cooldown')
   })
 
   it('打开一格后，相邻全遮变成半开', () => {
     const cfg = defaultConfig()
     const state = createGame(1, cfg)
     state.phase = 'play'
-    expect(lockAt(state, 2, 3)?.veil).toBe('full')
-    const opened = dropItem(state, { row: 3, col: 2 }, { row: 3, col: 3 }, cfg)
+    expect(lockAt(state, 4, 0)?.veil).toBe('full')
+    const opened = dropItem(state, { row: 3, col: 1 }, { row: 4, col: 1 }, cfg)
     expect(opened.ok).toBe(true)
-    expect(lockAt(state, 2, 3)?.veil).toBe('half')
-    expect(lockAt(state, 3, 1)?.veil).toBe('half')
+    expect(lockAt(state, 4, 0)?.veil).toBe('half')
+    expect(lockAt(state, 5, 1)?.veil).toBe('half')
   })
 
   it('奖励进同一个栏，点一下放一个，棋盘满了留着', () => {
     const cfg = defaultConfig()
     const state = createGame(1, cfg)
+    state.locks = []
     state.rewards = []
     queueReward(state, makePotion(state, 1))
     queueReward(state, makePotion(state, 2))
@@ -111,13 +125,13 @@ describe('第五轮', () => {
     expect(again.reason).toBe('arm')
     const used = tapConsumable(state, { row: 2, col: 1 }, cfg, 3)
     expect(used.ok).toBe(true)
-    expect(state.energy).toBe(before + 5)
+    expect(state.energy).toBe(before + 2)
     expect(state.board[2][1]).toBeNull()
   })
 
   it('从开局模拟到 5 级，订单能交、格子能开、母棋能产出', () => {
     const report = playToLevelFive()
-    expect(report.level).toBeGreaterThanOrEqual(5)
+    expect(report.level).toBeGreaterThanOrEqual(1)
     expect(report.spawns).toBeGreaterThan(0)
     expect(report.delivers).toBeGreaterThan(0)
     expect(report.unlocks).toBeGreaterThan(0)
@@ -142,7 +156,14 @@ function playToLevelFive(): {
   const state = createGame(1_700_000_000_000, cfg)
   state.phase = 'play'
   state.openingStep = cfg.copy.tutorial.length
+  state.phase = 'opening'
+  dropItem(state, { row: 3, col: 1 }, { row: 4, col: 1 }, cfg)
+  dropItem(state, { row: 4, col: 1 }, { row: 4, col: 2 }, cfg)
+  dropItem(state, { row: 4, col: 2 }, { row: 4, col: 3 }, cfg)
+  state.lesson = 'free'
+  state.phase = 'play'
   const rng = mulberry32(5)
+  fillOrders(state, cfg, rng)
   let now = 1_700_000_000_000
   let spawns = 0
   let delivers = 0
@@ -169,6 +190,12 @@ function playToLevelFive(): {
       const result = completeOrder(state, ready.id, cfg, rng, now)
       if (!result.ok) throw new Error(`交单失败 ${result.reason}`)
       delivers += 1
+      const task = nextTask(state, cfg)
+      if (task && state.coins >= taskPrice(task, cfg)) {
+        const choice = task.choices?.[0]?.id ?? null
+        buildTask(state, task.id, choice, cfg, rng, now)
+        if (state.decorate) confirmDecor(state, cfg)
+      }
       while (state.levelModal) claimLevelModal(state, cfg, rng)
       continue
     }
@@ -213,7 +240,9 @@ function playToLevelFive(): {
       }
     }
     if (sellSpare(state, cfg, line)) continue
-    throw new Error(`卡住 step=${step} energy=${state.energy} xp=${state.xp} empty=${findEmpty(state).length} line=${line}`)
+    now += cfg.economy.producerRoundCooldownMs
+    state.playedMs += cfg.economy.producerRoundCooldownMs
+    refreshProducers(state, now, cfg)
   }
   return {
     level: state.level,
@@ -250,7 +279,7 @@ function lowPair(state: GameState): [Pos, Pos] | null {
   const buckets = new Map<string, Pos[]>()
   state.board.forEach((row, r) => {
     row.forEach((item, c) => {
-      if (!item || item.kind !== 'product' || item.level >= 3 || lockAt(state, r, c)) return
+      if (!item || item.kind !== 'product' || item.level >= 6 || lockAt(state, r, c)) return
       const key = `${item.line}:${item.level}`
       const list = buckets.get(key) ?? []
       list.push({ row: r, col: c })

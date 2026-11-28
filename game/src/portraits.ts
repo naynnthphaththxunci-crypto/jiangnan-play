@@ -1,25 +1,12 @@
-import teaGuest from './assets/guests/teaGuest.png'
-import scholar from './assets/guests/scholar.png'
-import embroider from './assets/guests/embroider.png'
-import boatman from './assets/guests/boatman.png'
-import squire from './assets/guests/squire.png'
-import fisherman from './assets/guests/fisherman.png'
+import { assignArtSrc } from './artGate'
 import ruyue from './assets/guests/ruyue.png'
-import xiaotao from './assets/guests/xiaotao.png'
 import zhao from './assets/guests/zhao.png'
 import liu from './assets/guests/liu.png'
 import portraitsJson from './data/portraits.json'
 import type { NormBox } from './types'
 
 export const PORTRAITS: Record<string, string> = {
-  teaGuest,
-  scholar,
-  embroider,
-  boatman,
-  squire,
-  fisherman,
   ruyue,
-  xiaotao,
   zhao,
   liu,
 }
@@ -116,7 +103,7 @@ export function guestPortrait(key: string | undefined): GuestImage | null {
   const img = createImage()
   if (!img) return null
   const host = globalThis as { wx?: unknown }
-  img.src = host.wx && src.startsWith('./') ? src.slice(2) : src
+  assignArtSrc(img, host.wx && src.startsWith('./') ? src.slice(2) : src)
   cache.set(src, img)
   return img
 }

@@ -1,8 +1,10 @@
 import type { AudioContextLike, Platform } from './types'
+import { canvasFit, coverCanvas } from '../viewport'
 
 export function createWebPlatform(canvas: HTMLCanvasElement): Platform {
-  let dpr = Math.min(2, window.devicePixelRatio || 1)
+  let dpr = Math.min(3, window.devicePixelRatio || 1)
   let logical = { w: 390, h: 844 }
+  const insets = { top: 0, bottom: 0, capsule: null as { x: number; y: number; w: number; h: number } | null }
   let resizeCb: (() => void) | null = null
   let wheelCb: ((x: number, y: number, dy: number) => void) | null = null
   let keyCb: ((key: string) => void) | null = null
@@ -10,20 +12,55 @@ export function createWebPlatform(canvas: HTMLCanvasElement): Platform {
   let showCb: (() => void) | null = null
   let audio: AudioContextLike | null = null
 
-  const sizeQuery = new URLSearchParams(window.location.search).get('size')?.match(/^(\d+)x(\d+)$/)
-  const DESIGN_W = sizeQuery ? Number(sizeQuery[1]) : 393
-  const DESIGN_H = sizeQuery ? Number(sizeQuery[2]) : 852
+  const readSafe = () => {
+    const probe = document.getElementById('safe-probe')
+    if (!probe) return { top: 0, right: 0, bottom: 0, left: 0 }
+    const style = getComputedStyle(probe)
+    const num = (value: string) => {
+      const parsed = Number.parseFloat(value)
+      return Number.isFinite(parsed) ? parsed : 0
+    }
+    return {
+      top: num(style.paddingTop),
+      right: num(style.paddingRight),
+      bottom: num(style.paddingBottom),
+      left: num(style.paddingLeft),
+    }
+  }
+
   const fit = () => {
-    const parent = canvas.parentElement ?? document.body
-    const pw = parent.clientWidth || window.innerWidth
-    const ph = parent.clientHeight || window.innerHeight
-    const scale = Math.min(pw / DESIGN_W, ph / DESIGN_H)
-    logical = { w: DESIGN_W, h: DESIGN_H }
-    dpr = Math.min(2, window.devicePixelRatio || 1)
-    canvas.style.width = `${Math.max(1, Math.floor(DESIGN_W * scale))}px`
-    canvas.style.height = `${Math.max(1, Math.floor(DESIGN_H * scale))}px`
-    canvas.width = Math.round(DESIGN_W * dpr)
-    canvas.height = Math.round(DESIGN_H * dpr)
+    const vv = window.visualViewport
+    const vw = vv?.width ?? window.innerWidth
+    const vh = vv?.height ?? window.innerHeight
+    const ox = vv?.offsetLeft ?? 0
+    const oy = vv?.offsetTop ?? 0
+    const safe = readSafe()
+    const layoutH = window.innerHeight
+    const viewTop = oy
+    const viewBottom = oy + vh
+    const lvhEl = document.getElementById('lvh-probe')
+    const lvh = lvhEl ? lvhEl.getBoundingClientRect().height : 0
+    const screenH = Math.max(layoutH, viewBottom, lvh)
+    const insetTop = Math.max(0, safe.top - viewTop)
+    const insetBottom = Math.max(0, viewBottom - (layoutH - safe.bottom))
+    const box = canvasFit(vw, vh, insetTop, insetBottom)
+    const cover = coverCanvas(box, ox, oy, screenH)
+    dpr = Math.min(3, window.devicePixelRatio || 1)
+    const cssW = cover.w
+    const cssH = cover.h
+    logical = { w: cssW, h: cssH }
+    const style = canvas.style
+    style.position = 'fixed'
+    style.left = `${cover.left}px`
+    style.top = `${cover.top}px`
+    style.width = `${cssW}px`
+    style.height = `${cssH}px`
+    style.touchAction = 'none'
+    canvas.width = Math.max(1, Math.round(cssW * dpr))
+    canvas.height = Math.max(1, Math.round(cssH * dpr))
+    const hiddenBelow = Math.max(0, cover.top + cover.h - viewBottom)
+    insets.top = Math.max(0, safe.top - cover.top)
+    insets.bottom = hiddenBelow + insetBottom
   }
   fit()
   const refit = () => {
@@ -35,6 +72,7 @@ export function createWebPlatform(canvas: HTMLCanvasElement): Platform {
     window.scrollTo(0, 0)
     refit()
   })
+  window.addEventListener('orientationchange', refit)
   document.addEventListener(
     'touchmove',
     (event) => {
@@ -58,7 +96,7 @@ export function createWebPlatform(canvas: HTMLCanvasElement): Platform {
     get dpr() {
       return dpr
     },
-    insets: { top: 0, bottom: 0 },
+    insets,
     now: () => Date.now(),
     size: () => logical,
     raf: (cb) => {
@@ -79,19 +117,62 @@ export function createWebPlatform(canvas: HTMLCanvasElement): Platform {
       }
     },
     onPointer(down, move, up) {
-      canvas.addEventListener('pointerdown', (event) => {
-        if (event.button !== 0) return
+      const listen = { passive: false } as const
+      const point = (clientX: number, clientY: number) => rel(clientX, clientY)
+      canvas.addEventListener(
+        'touchstart',
+        (event) => {
+          event.preventDefault()
+          for (const touch of event.changedTouches) {
+            const p = point(touch.clientX, touch.clientY)
+            down(p.x, p.y, touch.identifier)
+          }
+        },
+        listen,
+      )
+      canvas.addEventListener(
+        'touchmove',
+        (event) => {
+          event.preventDefault()
+          for (const touch of event.changedTouches) {
+            const p = point(touch.clientX, touch.clientY)
+            move(p.x, p.y, touch.identifier)
+          }
+        },
+        listen,
+      )
+      const touchEnd = (event: TouchEvent) => {
         event.preventDefault()
-        canvas.setPointerCapture(event.pointerId)
-        const p = rel(event.clientX, event.clientY)
-        down(p.x, p.y, event.pointerId)
-      })
+        for (const touch of event.changedTouches) {
+          const p = point(touch.clientX, touch.clientY)
+          up(p.x, p.y, touch.identifier)
+        }
+      }
+      canvas.addEventListener('touchend', touchEnd, listen)
+      canvas.addEventListener('touchcancel', touchEnd, listen)
+      canvas.addEventListener(
+        'pointerdown',
+        (event) => {
+          if (event.pointerType === 'touch' || event.button !== 0) return
+          event.preventDefault()
+          try {
+            canvas.setPointerCapture(event.pointerId)
+          } catch {
+            /* Safari 在指针还没激活时会抛错，不能因此丢掉这次点击 */
+          }
+          const p = point(event.clientX, event.clientY)
+          down(p.x, p.y, event.pointerId)
+        },
+        listen,
+      )
       canvas.addEventListener('pointermove', (event) => {
-        const p = rel(event.clientX, event.clientY)
+        if (event.pointerType === 'touch') return
+        const p = point(event.clientX, event.clientY)
         move(p.x, p.y, event.pointerId)
       })
       const end = (event: PointerEvent) => {
-        const p = rel(event.clientX, event.clientY)
+        if (event.pointerType === 'touch') return
+        const p = point(event.clientX, event.clientY)
         up(p.x, p.y, event.pointerId)
       }
       canvas.addEventListener('pointerup', end)

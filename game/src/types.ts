@@ -17,6 +17,8 @@ export interface LineDef {
   name: string
   color: string
   levels: LevelDef[]
+  /** 点一下收进账户，不进订单。 */
+  collect?: 'coin' | 'gem'
 }
 
 export interface PotionDef {
@@ -36,6 +38,15 @@ export interface ProducerDef {
   name: string
   line: string
   grant: string
+  /** normal 花体力；netSource 出渔网；plant 不花体力；consumable 点完消失。 */
+  kind?: 'normal' | 'netSource' | 'plant' | 'consumable'
+  side?: string
+  sideFrom?: number
+  maxLevel?: number
+  produceFrom?: number
+  drops?: { level: number; hard: number; e1: number; e2: number; e3: number; rare: number; catch1?: number; catch2?: number; catch3?: number }[]
+  tapCooldown?: { taps: [number, number]; seconds: [number, number] } | null
+  bursts?: { level: number; items: number; cooldownMin: number }[]
 }
 
 export interface ChoiceDef {
@@ -86,11 +97,52 @@ export interface BoardTheme {
   ready: string
 }
 
-export interface OpeningStepDef {
-  scene: string
-  speaker: string
-  text: string
-  hotspot: string
+export type ComicEnter =
+  | 'fade-push'
+  | 'pop'
+  | 'slide-right'
+  | 'fade-face'
+  | 'slide-left'
+  | 'pop-right'
+  | 'pop-big'
+  | 'rise'
+  | 'fade'
+  | 'push'
+  | 'slide-slant'
+  | 'slow-push'
+
+export interface ComicPanel {
+  id: string
+  x: number
+  y: number
+  w: number
+  h: number
+  /** 页内叠放，小的在下面。 */
+  z?: number
+}
+
+export interface ComicBeat {
+  kind: 'line' | 'sila' | 'hold'
+  panel: string
+  enter?: ComicEnter
+  ms?: number
+  speaker?: string
+  text?: string
+  x?: number
+  y?: number
+  w?: number
+  cue?: 'crickets' | 'hmm' | 'snore' | 'hmph' | 'tear'
+}
+
+export interface ComicPage {
+  panels: ComicPanel[]
+  beats: ComicBeat[]
+}
+
+export interface OpeningScript {
+  width: number
+  height: number
+  pages: ComicPage[]
 }
 
 export interface ChestWeight {
@@ -105,7 +157,17 @@ export interface Economy {
   startEnergy: number
   startCoins: number
   xpPerTask: number
+  /** 每一级升级要的经验。第 0 项是 1 级升 2 级。表后面的级按上一项再加 15。 */
   levelTaskThresholds: number[]
+  /** 体力瓶 1 到 5 级，相对普通棋子最大格内尺寸的比例。 */
+  potionScales: number[]
+  /** 进门查看热区在文字和手外面再扩这么多，按 1080 画布像素。 */
+  openingHitPad: number
+  /** 对话压暗从 0 到 60% 的毫秒数。 */
+  openingDimMs: number
+  /** 「任意点击继续」那只手相对默认位置的微调，1080 画布像素。 */
+  openingTapHandX: number
+  openingTapHandY: number
   levelRewards: { level: number; rewards: LevelRewardEntry[] }[]
   freeRefill: number
   adEnergy: number
@@ -114,6 +176,8 @@ export interface Economy {
   newbieChestFixed: boolean
   newbieChestCount: number
   newbieChest: number[]
+  /** 引导目标一直点不中时，遮罩最多盖这么久就放开。 */
+  guideTimeoutMs: number
   producerCharges: number
   producerCooldownMs: number
   producerL2Chance: number
@@ -122,6 +186,30 @@ export interface Economy {
   bigOrderL3Times: number
   l3Coins: number
   animMs: number
+  /** 竹帘从屏幕外拉到盖满的时长。缓动是 ease-out，默认不回弹。 */
+  curtainPullMs: number
+  /** 回弹超出屏幕的比例，相对画布高度。默认 0，不超出。 */
+  curtainBounce: number
+  /** 盖满之后、切到新页面前多停多久。 */
+  curtainHoldMs: number
+  /** 选中棋子呼吸时，相对原大的放大比例。0 为关闭。 */
+  selectBreath: number
+  /** 选中棋子完成一次放大缩小的毫秒数。 */
+  selectBreathMs: number
+  /** 点中后呼吸几个来回，然后停在原大。 */
+  selectBreathTimes: number
+  /** 选中框相对格子的大小。1 是正好一格，1.16 是大一圈。 */
+  selectFrameScale: number
+  /** 订单勾相对 PSD 的大小。1 是 140 格上的 68×56。 */
+  tickScale: number
+  /** 勾左上角相对格子左上角的横坐标，按 140 的格子计。 */
+  tickOffsetX: number
+  /** 勾左上角相对格子左上角的纵坐标，按 140 的格子计。 */
+  tickOffsetY: number
+  /** 订单条拖过边界后，最多还能被拉出这么多像素。 */
+  orderOverscroll: number
+  /** 松手后订单条弹回边界的毫秒数。 */
+  orderBounceMs: number
   hitStopMs: number
   snapStrength: number
   dailyChestFromDay: number
@@ -162,9 +250,43 @@ export interface Economy {
   boxCoin: number
   boxGem: number
   giftCooldownMs: number
+  producerRoundBase: number
+  producerRoundStep: number
+  producerRoundCooldownMs: number
+  producerOutputLevel: number
+  producerSideLevel: number
+  producerMainChance: number
+  plantOutputLevel: number
+  plantBurst: number
+  plantCooldownMs: number
+  consumableTaps: number
+  basketLowChance: number
+  netFishCount: number
+  netMaxLevel: number
+  firstProducerLevel: number
+  shopDailyEnergy: number
+  shopPackGems: number
+  shopPackEnergy: number
+  smileUnlockLevel: number
+  /** 达到这个等级，倍速按钮才出现 x4。x8 不进循环。 */
+  speed4Level: number
+  /** 客人 1024 画布缩到设计稿上的比例。0.29 时宽约 297。 */
+  guestCanvasScale: number
+  /** 序列帧客人相对桌子中心的左右微调，屏幕像素。默认 0。 */
+  guestNudgeX: number
+  /** 1 时订单区固定出现阿桨和鲍大叔，方便看序列帧。默认 0。 */
+  testOrderGuests: number
+  /** 131 单之后，食品饮料线占比。 */
+  foodDrinkShare: number
+  /** 这个等级起才出后期卡关单。 */
+  blockFromLevel: number
+  /** 1 时猫粮、饮料恢复旧的按次冷却。默认 0。 */
+  producerCooldownOn: number
+  spawn1High: number
+  spawn2Mid: number
+  spawnTable: { mult: 1 | 2 | 4 | 8; cost: number; enabled: boolean; weights: { level: number; p: number }[] }[]
   purpleBoxCount: number
   bagBoxCount: number
-  blueBoxPotions: number[]
   storageCapacity: number
 }
 
@@ -180,7 +302,7 @@ export interface GameConfig {
   }
   buildings: { steps: StepDef[] }
   characters: CharacterDef[]
-  opening: OpeningStepDef[]
+  opening: OpeningScript
   stories: Record<string, { speaker: string; text: string }[]>
   economy: Economy
   board: BoardFile
@@ -195,7 +317,6 @@ export interface GameConfig {
     gift: string
     potion: string
     chest: string
-    blue: string
     purple: string
     bag: string
     bagPiece: string
@@ -216,7 +337,9 @@ export interface ProductItem {
   kind: 'product'
   line: string
   level: number
-  tag?: 'bag'
+  tag?: 'bag' | 'bubble'
+  /** 气泡到期后变成 1 级金币。0 表示还没开始计时。 */
+  bubbleUntil?: number
 }
 
 export interface ProducerItem {
@@ -233,6 +356,8 @@ export interface PotionItem {
   uid: string
   kind: 'potion'
   tier: number
+  /** 和档位表对不上的体力，比如新手宝箱的 15、6。 */
+  energy?: number
 }
 
 export interface LootDrop {
@@ -244,13 +369,17 @@ export interface LootDrop {
 export interface ChestItem {
   uid: string
   kind: 'chest'
+  box?: 'energy' | 'welcome' | 'red' | 'green' | 'smart' | 'food' | 'meat'
   drops?: LootDrop[]
+  /** 欢迎礼盒可以点开的时间。0 表示下一帧再开始计 2 分钟。 */
+  readyAt?: number
+  confirmGem?: boolean
 }
 
 export interface RewardBoxItem {
   uid: string
   kind: 'rewardBox'
-  box: 'blue' | 'purple' | 'bag' | 'smile'
+  box: 'purple' | 'bag' | 'smile'
   n?: number
   drops?: LootDrop[]
 }
@@ -276,8 +405,13 @@ export interface CellLock {
   cover: 'sand' | 'web' | 'gift'
   veil?: 'full' | 'half'
   giftUntil?: number
+  /** 变成半遮掩时立刻发放，并露出下面的物品。 */
+  prize?: { energy?: number; coins?: number; gems?: number; chest?: boolean }
+  /** 全遮掩刚变成半遮掩的时刻，用来抖一下格子。 */
+  shakeAt?: number
   buried:
     | { kind: 'product'; line: string; level: number }
+    | { kind: 'producer'; id: string; level: number }
     | { kind: 'coin'; amount: number; line?: string; level?: number }
     | { kind: 'gem'; tier: number; line?: string; level?: number }
     | { kind: 'potion'; tier: number; line?: string; level?: number }
@@ -290,6 +424,7 @@ export interface BoardFile {
     mergeA: Pos
     mergeB: Pos
     unlock: Pos
+    mergeD: Pos
     producer: Pos
     gift: Pos
     bagSpot: Pos
@@ -310,11 +445,32 @@ export interface Order {
   scripted?: boolean
   chest?: boolean
   readyAt?: number
+  /** 前期订单号。有这个字段时金币和笑脸照数值表，不按单价重算。 */
+  earlyNo?: number
+  payCoins?: number
+  paySmile?: number
+  /** 这张单的笑脸先记着，等笑脸解锁或领完本轮再补上。 */
+  smilePending?: number
+  smileWait?: 'claim' | 'unlock'
+  blocker?: boolean
 }
 
 export interface LevelRewardEntry {
-  id: 'blue' | 'purple' | 'bag' | 'food' | 'toy' | 'plant' | 'boat' | 'bed' | 'bev' | 'chest' | 'gem'
+  id: string
   name: string
+  producerLevel?: number
+  energy?: number
+  gems?: number
+  line?: string
+  pieceLevel?: number
+  bundle?: LevelRewardEntry[]
+}
+
+export interface GiftModal {
+  mode: 'claim' | 'locked'
+  title: string
+  rewards: LevelRewardEntry[]
+  lockText: string
 }
 
 export interface LevelModal {
@@ -379,8 +535,15 @@ export interface GameState {
   locks: CellLock[]
   phase: 'story' | 'opening' | 'play'
   openingStep: number
+  /** 开场视频之后的主场景和新手对话走到哪一步。 */
+  lesson: 'home1' | 'talk1' | 'merge' | 'mergeC' | 'mergeD' | 'focus' | 'deliver' | 'book' | 'home2' | 'home3' | 'free'
+  /** 金币够做下一则剧情时，合成页才画出剧情书。 */
+  storyBookOn: boolean
+  /** 这张剧情卡不能关掉。订单 2 后的剧情 1、订单 4 后的剧情 2。 */
+  storyForce: boolean
   storyStep: number
   storySeen: boolean
+  soundMuted: boolean
   storageOpen: boolean
   bagPhase: 'place' | 'merge'
   smiles: number
@@ -389,10 +552,38 @@ export interface GameState {
   playStartedAt: number
   levelModal: LevelModal | null
   levelQueue: LevelModal[]
+  giftModal: GiftModal | null
+  /** 4 级笑脸教学只走一次。 */
+  smileTaught: boolean
+  smileLesson: 'off' | 'wait' | 'order'
+  welcomeFreeUsed: boolean
+  /** 剧情 11 之后，回到合成页的下一次合成必掉一个气泡。 */
+  bubbleDue: boolean
+  bubbleDropped: boolean
   smileModal: { names: string[] } | null
   orderBias: string | null
+  spawnMult: 1 | 2 | 4 | 8
+  mintStep: 'off' | 'talk' | 'wait' | 'select' | 'produce' | 'merge' | 'deliver'
+  shopOpen: boolean
+  shopClaimDate: string | null
+  shopPackClaimed: boolean
+  detailLine: string | null
+  meatGuided: boolean
+  bevGuided: boolean
+  mintGuided: boolean
   idCounter: number
   orderCounter: number
+  /** 下一张前期订单号，1 到 131。超过 131 后改自动出单。 */
+  orderSeq: number
+  /** 母棋还没到出货等级、先挂起的前期订单号。解锁后优先出。 */
+  heldOrders: number[]
+  /** 已经出过单的线。后期新解锁的线第一张单立刻用这条线。 */
+  orderedLines: string[]
+  /** 10 级后本轮最后一张难单还在，先不补其他单。 */
+  lateBlock: boolean
+  smileRound: number
+  /** 占位剧情任务框。有值就盖在当前页面上。 */
+  storyCard: { no: number; line?: string } | null
   stats: {
     producerTaps: number
     ordersDone: number

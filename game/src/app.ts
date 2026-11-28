@@ -1,15 +1,23 @@
 import { tutorialHand } from './coach'
+import { SIDE_ICON_LEVEL } from './hechengLayout'
+import { comicCursor, silaJustShown } from './comic'
+import { openingFilm, replayOpeningFilm } from './openingFilm'
+import { alignedHome, storyCardRects } from './homeLayout'
+import { clampHomeCam, defaultHomeCam, homeDaughterRect, homeHostessRect } from './homeMap'
+import { createComicAudio } from './comicAudio'
 import { createSfx, type Sfx } from './audio'
+import { stampEnergyChest } from './balance1120'
 import { defaultConfig, resetEconomy } from './config'
-import { partAt, render } from './draw'
-import { createFx, type Fx } from './fx'
+import { render } from './draw'
+import { hitChainPopup, layoutChainPopup, type ChainFocus } from './chainPopup'
+import { curtainReady as curtainImagesReady } from './curtain'
+import { createFx, easeOutCubic, type Fx } from './fx'
 import { clamp } from './format'
 import {
   cellAt,
   cellCenter,
   guideHole,
-  chainCardRect,
-  chainCloseRect,
+  chestTarget,
   chainPopRect,
   decorPopupRects,
   talkRect,
@@ -19,6 +27,7 @@ import {
   layout,
   levelClaimRect,
   smileDismissRect,
+  shopRects,
   type Frame,
   type Hit,
 } from './layout'
@@ -30,25 +39,35 @@ import {
   advanceBuildStory,
   advanceGuide,
   applyFreeRefill,
+  applyTestGuests,
   arrangeOrders,
   buyEnergyWithGems,
-  collectLock,
   confirmDecor,
   atStep,
+  guideIsLocking,
+  guideLockKey,
   guideSpot,
   beatVisit,
   buildTask,
   canClaimDaily,
   canMerge,
   lineCap,
+  producerCap,
+  activeOverlay,
+  dismissDetail,
+  dismissNotice,
+  pumpMint,
   canSell,
   claimDailyChest,
   claimLevelModal,
   clearSale,
   completeOrder,
+  closeStoryCard,
   createGame,
   currentTutorial,
+  dismissStuckGuide,
   enterKitchen,
+  fillOrders,
   finishTutorial,
   guardedDrop,
   hydrate,
@@ -57,11 +76,11 @@ import {
   nextTask,
   occupied,
   openChest,
+  openStoryCard,
   openRewardBox,
   openSmilePrize,
   pokeGift,
   previewDecor,
-  reopenDecor,
   orderSatisfied,
   orderStripAction,
   reconcileLevel,
@@ -75,7 +94,10 @@ import {
   skipOpening,
   settleGifts,
   skipStory,
+  storyReady,
   scrollOrders,
+  snapOrderScroll,
+  revealOrderTarget,
   smilesVisible,
   startVisit,
   storageTakeIndex,
@@ -85,12 +107,19 @@ import {
   takeReward,
   tapConsumable,
   tapProducer,
+  collectBoardProduct,
+  dropItem,
+  cycleSpawnMult,
+  buyBubble,
+  claimGiftModal,
+  claimShopDaily,
+  claimShopPack,
   tutorialAllowsInspect,
   tutorialDropOk,
   undoSale,
 } from './logic/sim'
 import type { Platform } from './platform/types'
-import { SLIDERS, sliderValue } from './tuner'
+import { SLIDERS, resetSlider, sliderValue } from './tuner'
 import type { ActionResult, GameState, Item, Pos, Rng } from './types'
 
 const SAVE_KEY = 'jiangnan.save.v1'
@@ -124,10 +153,18 @@ export function startGame(platform: Platform): void {
 
   const fx = createFx()
   const sfx = createSfx(() => platform.audio())
-  let view: 'board' | 'house' = 'board'
+  const comicAudio = createComicAudio(() => platform.audio() as AudioContext | null)
+  comicAudio.preload()
+  comicAudio.setMuted(state.soundMuted)
+  sfx.setMuted(state.soundMuted)
+  let view: 'board' | 'house' = state.lesson === 'home1' || state.lesson === 'home2' || state.lesson === 'home3' ? 'house' : 'board'
+  let settingsOpen = false
+  let settingsAt = 0
+  let curtain: { to: 'board' | 'house'; started: number; freeze: number | null } | null = null
   let modal: 'energy' | null = null
   let tuner = false
   let tunerScroll = 0
+  let confirmTunerReset = false
   let cam = { x: 700, y: 980, scale: 0.85 }
   let camReady = false
   let dirty = false
@@ -138,11 +175,16 @@ export function startGame(platform: Platform): void {
   let lastAnim = 0
   let dragId = -1
   let selected: { row: number; col: number } | null = null
+  let selectedAt = 0
   let orderScroll = 0
-  let chain: { line: string; level: number; source: 'order' | 'producer' } | null = null
+  let orderAnim: { from: number; to: number; start: number; dur: number } | null = null
+  let chain: ChainFocus | null = null
+  let orderFocus: { line: string; level: number } | null = null
   let lastInput = platform.now()
+  let guideKey = ''
+  let guideSince = platform.now()
+  let guideMisses = 0
   const pointers = new Map<number, Pointer>()
-  let pinch: { dist: number; scale: number } | null = null
   let frame = makeFrame()
 
   function animAt(real: number): number {
@@ -214,13 +256,16 @@ export function startGame(platform: Platform): void {
       h: size.h,
       insetTop: platform.insets.top,
       insetBottom: platform.insets.bottom,
+      capsule: platform.insets.capsule ?? null,
       mode: current,
       orderCount: state.orders.length,
       orderSlots: state.orders.map((order) => order.slots.length),
+      orderReady: state.orders.map((order) => orderSatisfied(state, order)),
       orderScroll,
+      guestCanvasScale: cfg.economy.guestCanvasScale,
       showHint: false,
       showSheet: false,
-      showSkip: state.phase === 'story' || state.buildStory != null,
+      showSkip: state.buildStory != null,
       showDaily: current === 'board' && state.phase === 'play' && canClaimDaily(state, platform.now(), cfg),
       showHouseBtn: true,
       showStorage: state.storageLesson >= 4,
@@ -234,15 +279,29 @@ export function startGame(platform: Platform): void {
       help: state.showHelp && !tuner && modal == null,
       showEnter: atStep(state, cfg, 'enter'),
       showInfo: false,
+      showShop: state.level >= 3,
+      showStory: storyReady(state, cfg) || state.lesson === 'book',
+      showTask: state.level >= SIDE_ICON_LEVEL,
+      showChest: state.rewards.length > 0,
+      shop: activeOverlay(state) === 'shop',
+      detail: activeOverlay(state) === 'detail',
     })
   }
 
   function ensureCam(): void {
-    if (camReady || frame.map.h <= 0) return
-    cam.x = 700
-    cam.y = 980
-    cam.scale = clamp(Math.min(frame.map.w / 640, frame.map.h / 860), 0.35, 2.6)
+    const next = defaultHomeCam(frame.w, frame.h)
+    cam.x = next.x
+    cam.y = next.y
+    cam.scale = next.scale
     camReady = true
+  }
+
+  function holdHomeCam(): void {
+    if (!camReady) ensureCam()
+    const next = clampHomeCam(cam.x, cam.y, frame.w, frame.h)
+    cam.x = next.x
+    cam.y = next.y
+    cam.scale = next.scale
   }
 
   function fly(item: Item, fromX: number, fromY: number, toX: number, toY: number, hide: Pos[], ease: 'snap' | 'spawn'): void {
@@ -397,7 +456,7 @@ export function startGame(platform: Platform): void {
       return
     }
     const other = state.board[cell.row][cell.col]
-    const cap = item.kind === 'product' || item.kind === 'producer' ? lineCap(cfg, item.line) : 11
+    const cap = item.kind === 'producer' ? producerCap(cfg, item.producerId) : item.kind === 'product' ? lineCap(cfg, item.line) : 11
     fx.hover = { kind: 'cell', row: cell.row, col: cell.col, merge: !!other && canMerge(item, other, cap) }
   }
 
@@ -455,16 +514,24 @@ export function startGame(platform: Platform): void {
     }
     const dest = cellCenter(frame, cell.row, cell.col)
     const event = result.events[0]
-    if (event?.type === 'move') fly(item, x, y, dest.x, dest.y, [cell], 'snap')
-    else if (event?.type === 'swap') {
+    if (event?.type === 'move') {
+      fly(item, x, y, dest.x, dest.y, [cell], 'snap')
+      pickCell(event.toRow, event.toCol)
+    } else if (event?.type === 'swap') {
       const other = state.board[from.row]?.[from.col]
       fly(item, x, y, dest.x, dest.y, [cell], 'snap')
       if (other) fly(other, dest.x, dest.y, origin.x, origin.y, [from], 'snap')
+      pickCell(event.bRow, event.bCol)
+    } else if (event?.type === 'merge') {
+      pickCell(event.row, event.col)
+    } else {
+      pickCell(cell.row, cell.col)
     }
     present(result)
   }
 
   function activate(hit: Hit): void {
+    if (hit.kind !== 'tunerReset') confirmTunerReset = false
     const now = platform.now()
     if (hit.kind === 'enter') {
       enterKitchen(state, cfg)
@@ -477,7 +544,7 @@ export function startGame(platform: Platform): void {
       if (state.sale) {
         const spot = { row: state.sale.row, col: state.sale.col }
         const result = undoSale(state)
-        if (result.ok) selected = spot
+        if (result.ok) pickCell(spot.row, spot.col)
         present(result)
         return
       }
@@ -490,19 +557,15 @@ export function startGame(platform: Platform): void {
     if (hit.kind === 'chain') {
       if (state.phase !== 'play' || !selected) return
       const item = state.board[selected.row]?.[selected.col]
-      if (item?.kind !== 'producer') return
-      chain = { line: item.line, level: item.level, source: 'producer' }
+      if (item?.kind === 'producer') chain = { line: item.line, level: item.level, source: 'producer', producerId: item.producerId }
+      else if (item?.kind === 'product') chain = { line: item.line, level: item.level, source: 'order' }
+      else return
       sfx.ui()
       return
     }
     if (hit.kind === 'house') {
-      clearSale(state)
-      if (atStep(state, cfg, 'build')) finishTutorial(state, cfg, rng)
-      view = 'house'
-      frame = makeFrame()
-      ensureCam()
-      sfx.ui()
-      mark()
+      if (state.lesson === 'book') state.lesson = 'home2'
+      beginCurtain('house')
       return
     }
     if (hit.kind === 'complete') {
@@ -510,7 +573,10 @@ export function startGame(platform: Platform): void {
       const order = state.orders[hit.index]
       const rect = frame.orders[hit.index]
       if (!order || !rect || !orderSatisfied(state, order)) return
-      present(completeOrder(state, order.id, cfg, rng, now), {
+      const removed = hit.index
+      const result = completeOrder(state, order.id, cfg, rng, now)
+      if (result.ok) fx.orderSlide = { index: removed, start: now, dur: 320 }
+      present(result, {
         coinFrom: { x: rect.x + rect.w / 2, y: rect.y + rect.h / 2 },
       })
       return
@@ -519,6 +585,7 @@ export function startGame(platform: Platform): void {
       sfx.ui()
       if (state.phase === 'story') {
         skipStory(state)
+        comicAudio.sync(cfg.opening, state.storyStep, false)
         mark()
         return
       }
@@ -530,7 +597,7 @@ export function startGame(platform: Platform): void {
       return
     }
     if (hit.kind === 'story') {
-      advanceStory(state, cfg)
+      stepStory()
       sfx.ui()
       mark()
       return
@@ -574,8 +641,46 @@ export function startGame(platform: Platform): void {
       modal = null
       return
     }
+    if (hit.kind === 'mult') {
+      const next = cycleSpawnMult(state, cfg)
+      toast(`产出 ${next} 倍`)
+      mark()
+      return
+    }
+    if (hit.kind === 'refill') {
+      modal = 'energy'
+      mark()
+      return
+    }
+    if (hit.kind === 'shop') {
+      state.shopOpen = true
+      mark()
+      return
+    }
+    if (hit.kind === 'shopClose') {
+      state.shopOpen = false
+      if (state.guide === 'smile') state.guide = 'none'
+      mark()
+      return
+    }
+    if (hit.kind === 'shopDaily') {
+      present(claimShopDaily(state, cfg, platform.now()))
+      mark()
+      return
+    }
+    if (hit.kind === 'shopPack') {
+      present(claimShopPack(state, cfg))
+      mark()
+      return
+    }
+    if (hit.kind === 'detailClose') {
+      dismissDetail(state)
+      mark()
+      return
+    }
     if (hit.kind === 'tune' || hit.kind === 'tunerClose') {
       tuner = hit.kind === 'tune'
+      confirmTunerReset = false
       sfx.ui()
       return
     }
@@ -595,21 +700,41 @@ export function startGame(platform: Platform): void {
       return
     }
     if (hit.kind === 'tunerReset') {
+      if (!confirmTunerReset) {
+        confirmTunerReset = true
+        sfx.ui()
+        mark()
+        return
+      }
+      confirmTunerReset = false
       resetEconomy(cfg)
       reconcileLevel(state, cfg, rng)
+      saveNow()
       toast('已恢复默认数值')
+      sfx.ui()
+      return
+    }
+    if (hit.kind === 'tunerItemReset') {
+      confirmTunerReset = false
+      resetSlider(cfg, hit.index)
+      reconcileLevel(state, cfg, rng)
+      saveNow()
       sfx.ui()
       mark()
       return
     }
     if (hit.kind === 'tunerWipe') {
       platform.storageSet(SAVE_KEY, '')
+      stampEnergyChest(cfg)
       state = createGame(platform.now(), cfg)
       view = 'board'
       modal = null
       tuner = false
       selected = null
       chain = null
+      orderScroll = 0
+      replayOpeningFilm(platform.now())
+      saveNow()
       toast('已从剧情重开')
       mark()
       return
@@ -621,8 +746,34 @@ export function startGame(platform: Platform): void {
       return
     }
     if (hit.kind === 'back') {
-      view = 'board'
+      if (state.lesson === 'home1') state.lesson = 'talk1'
+      if (state.lesson === 'home3') {
+        state.lesson = 'free'
+        state.phase = 'play'
+        state.openingStep = cfg.copy.tutorial.length
+        const task = nextTask(state, cfg)
+        if (task) state.guidedTask = task.id
+        state.guide = 'none'
+        state.notice = null
+      }
+      beginCurtain('board')
+      return
+    }
+    if (hit.kind === 'settings') {
+      settingsOpen = !settingsOpen
+      settingsAt = now
       sfx.ui()
+      mark()
+      return
+    }
+    if (hit.kind === 'storyBook') {
+      if (state.lesson === 'book') {
+        state.lesson = 'home2'
+        beginCurtain('house')
+      } else if (storyReady(state, cfg)) {
+        openStoryCard(state, cfg)
+        mark()
+      }
       return
     }
     if (hit.kind === 'zoom') {
@@ -650,7 +801,7 @@ export function startGame(platform: Platform): void {
       return
     }
     if (hit.kind === 'reward') {
-      present(takeReward(state))
+      present(takeReward(state, cfg))
       resolveGuides(state, cfg)
       return
     }
@@ -666,12 +817,13 @@ export function startGame(platform: Platform): void {
     if (hit.kind === 'pending') return
     if (hit.kind === 'order' || hit.kind === 'orderStrip' || hit.kind === 'orderIcon') return
     if (hit.kind === 'cell') {
+      orderFocus = null
       clearSale(state)
       const lock = state.locks.find((entry) => entry.row === hit.row && entry.col === hit.col)
       if (lock?.cover === 'gift' && !state.board[hit.row][hit.col]) {
         state.armed = null
         state.chainPop = null
-        selected = { row: hit.row, col: hit.col }
+        pickCell(hit.row, hit.col)
         present(pokeGift(state, hit, cfg, now))
         return
       }
@@ -679,11 +831,7 @@ export function startGame(platform: Platform): void {
         state.armed = null
         state.chainPop = null
         if (state.phase === 'opening') return
-        if (lock.buried.kind === 'coin' || lock.buried.kind === 'gem') {
-          present(collectLock(state, hit))
-          return
-        }
-        selected = { row: hit.row, col: hit.col }
+        pickCell(hit.row, hit.col)
         return
       }
       const item = state.board[hit.row]?.[hit.col]
@@ -696,7 +844,7 @@ export function startGame(platform: Platform): void {
       if (item.kind === 'potion' || item.kind === 'gem') {
         const result = tapConsumable(state, hit, cfg, now)
         if (result.reason === 'arm') {
-          selected = { row: hit.row, col: hit.col }
+          pickCell(hit.row, hit.col)
           return
         }
         selected = null
@@ -705,13 +853,26 @@ export function startGame(platform: Platform): void {
       }
       state.armed = null
       state.chainPop = null
+      const already = selected?.row === hit.row && selected?.col === hit.col
+      pickCell(hit.row, hit.col)
+      if (!already) {
+        if (state.mintStep === 'select' && item.kind === 'producer' && item.producerId === 'bev') state.mintStep = 'produce'
+        return
+      }
       if (item.kind === 'producer') {
-        selected = { row: hit.row, col: hit.col }
         present(tapProducer(state, hit, cfg, rng, now))
+      } else if (item.kind === 'product' && cfg.items.lines.some((line) => line.id === item.line && line.collect)) {
+        const result = collectBoardProduct(state, hit, cfg)
+        if (result.ok) selected = null
+        present(result)
+      } else if (item.kind === 'product' && item.tag === 'bubble') {
+        const result = buyBubble(state, hit, cfg)
+        if (result.ok) selected = null
+        present(result)
       } else if (item.kind === 'rewardBox') present(openRewardBox(state, hit, cfg, rng))
       else if (item.kind === 'chest') {
         const seen = new Set(occupied(state).map((cell) => cell.item.uid))
-        const result = openChest(state, hit, cfg, rng)
+        const result = openChest(state, hit, cfg, rng, now)
         present(result)
         for (const cell of occupied(state)) {
           if (cell.item.kind === 'potion' && !seen.has(cell.item.uid)) {
@@ -721,9 +882,14 @@ export function startGame(platform: Platform): void {
       } else if (!tutorialAllowsInspect(state)) {
         return
       } else {
-        selected = { row: hit.row, col: hit.col }
+        pickCell(hit.row, hit.col)
       }
     }
+  }
+
+  function pickCell(row: number, col: number): void {
+    selected = { row, col }
+    selectedAt = platform.now()
   }
 
   function zoomAt(sx: number, sy: number, factor: number): void {
@@ -736,61 +902,254 @@ export function startGame(platform: Platform): void {
     cam.y = worldY - (sy - cy) / cam.scale
   }
 
+  function openingMergeSticky(): boolean {
+    if (state.phase !== 'opening') return false
+    const id = currentTutorial(cfg, state)?.id
+    return id === 'merge' || id === 'mergeC' || id === 'mergeD'
+  }
+
+  function noteGuide(now: number): void {
+    const key = guideLockKey(state)
+    if (key === guideKey) return
+    guideKey = key
+    guideSince = now
+    guideMisses = 0
+  }
+
   function tutorialBlocks(hit: Hit): boolean {
+    if (activeOverlay(state) === 'mint' && state.mintStep && state.mintStep !== 'off' && state.mintStep !== 'talk' && state.mintStep !== 'wait') {
+      if (state.mintStep === 'select' || state.mintStep === 'produce') {
+        if (hit.kind !== 'cell') return true
+        const item = state.board[hit.row]?.[hit.col]
+        return !(item?.kind === 'producer' && item.producerId === 'bev' && item.level >= 5)
+      }
+      if (state.mintStep === 'merge') {
+        if (hit.kind !== 'cell') return true
+        const item = state.board[hit.row]?.[hit.col]
+        return !(item?.kind === 'product' && item.line === 'mint')
+      }
+      if (state.mintStep === 'deliver') return hit.kind !== 'complete'
+    }
     if (state.phase !== 'opening') return false
     if (hit.kind === 'skip') return false
     const step = currentTutorial(cfg, state)
     if (!step || step.type === '对话') return false
-    if (step.id === 'enter') return hit.kind !== 'enter'
+    const onCell = (row: number, col: number) => hit.kind === 'cell' && hit.row === row && hit.col === col
     if (step.id === 'merge') {
-      return !(hit.kind === 'cell' && ((hit.row === 3 && hit.col === 2) || (hit.row === 3 && hit.col === 3)))
+      const a = cfg.board.roles.mergeA
+      const b = cfg.board.roles.mergeB
+      return !(onCell(a.row, a.col) || onCell(b.row, b.col))
     }
-    if (step.id === 'unlock') {
+    if (step.id === 'mergeC' || step.id === 'unlock') {
       if (hit.kind !== 'cell') return true
       const item = state.board[hit.row]?.[hit.col]
-      const ready = item?.kind === 'product' && item.line === 'food' && item.level === 2
-      return !(ready || (hit.row === cfg.board.roles.unlock.row && hit.col === cfg.board.roles.unlock.col))
+      const target = cfg.board.roles.unlock
+      return !(item?.kind === 'producer' || onCell(target.row, target.col))
     }
-    if (step.id === 'producerL2' || step.id === 'producerL3') {
+    if (step.id === 'mergeD') {
       if (hit.kind !== 'cell') return true
       const item = state.board[hit.row]?.[hit.col]
-      if (item?.kind !== 'producer' || item.producerId !== 'food') return true
-      if (step.id === 'producerL2') return item.level !== 1
-      return item.level !== 1 && item.level !== 2
+      const target = cfg.board.roles.mergeD
+      return !(item?.kind === 'producer' || (target && onCell(target.row, target.col)))
     }
-    if (step.id === 'produce') {
-      if (hit.kind !== 'cell') return true
-      const item = state.board[hit.row]?.[hit.col]
-      return !(item?.kind === 'producer' && item.level >= cfg.economy.producerSpawnLevel)
-    }
-    if (step.id === 'deliver') return hit.kind !== 'complete'
-    if (step.id === 'stashIn') {
-      if (hit.kind === 'pending') return false
-      if (hit.kind !== 'cell') return true
-      const item = state.board[hit.row]?.[hit.col]
-      return !(item && !(item.kind === 'product' && item.tag === 'bag'))
-    }
-    if (step.id === 'stashOut') return hit.kind !== 'pending'
-    if (step.id === 'bagMerge') {
-      if (hit.kind !== 'cell') return true
-      const item = state.board[hit.row]?.[hit.col]
-      return !(item?.kind === 'product' && item.tag === 'bag')
-    }
-    if (step.id === 'giftTap') {
-      return !(hit.kind === 'cell' && hit.row === cfg.board.roles.gift.row && hit.col === cfg.board.roles.gift.col)
-    }
-    if (step.id === 'giftRush') return hit.kind !== 'rush' && hit.kind !== 'adRush'
-    if (step.id === 'build') return hit.kind !== 'house'
     return true
+  }
+
+  function stepStory(): void {
+    const before = state.storyStep
+    const beforePage = comicCursor(cfg.opening, before)?.page
+    if (before === 0) comicAudio.sync(cfg.opening, 0, true)
+    advanceStory(state, cfg)
+    fx.comicFrom = before
+    fx.comicFadeAt = platform.now()
+    const afterPage = comicCursor(cfg.opening, state.storyStep)?.page
+    if (beforePage !== afterPage) fx.pagePushAt = platform.now()
+    if (silaJustShown(cfg.opening, before, state.storyStep)) {
+      fx.silaAt = platform.now() + 420
+      fx.shakeUntil = fx.silaAt + 460
+    }
+    comicAudio.sync(cfg.opening, state.storyStep, state.phase === 'story')
+  }
+
+  function pressLessonTarget(x: number, y: number): boolean {
+    const hit = hitTest(frame, x, y)
+    if (state.lesson === 'book' && hit?.kind === 'storyBook') {
+      state.guide = 'none'
+      state.notice = null
+      state.lesson = 'home2'
+      beginCurtain('house')
+      return true
+    }
+    if (state.lesson === 'deliver' && hit?.kind === 'complete') {
+      const order = state.orders[hit.index]
+      if (!order) return false
+      const removed = hit.index
+      const result = completeOrder(state, order.id, cfg, rng, platform.now())
+      if (result.ok) fx.orderSlide = { index: removed, start: platform.now(), dur: 320 }
+      present(result)
+      return true
+    }
+    return false
+  }
+
+  function pressHomeBuild(x: number, y: number): boolean {
+    if (view !== 'house') return false
+    if (state.lesson !== 'home1' && state.lesson !== 'home3') return false
+    if (!contains(alignedHome(frame).hit, x, y)) return false
+    if (state.lesson === 'home1') state.lesson = 'talk1'
+    else {
+      state.lesson = 'free'
+      state.phase = 'play'
+      state.openingStep = cfg.copy.tutorial.length
+      const task = nextTask(state, cfg)
+      if (task) state.guidedTask = task.id
+      state.guide = 'none'
+      state.notice = null
+    }
+    beginCurtain('board')
+    return true
+  }
+
+  function guardLesson(x: number, y: number): boolean {
+    const lesson = state.lesson
+    if (!lesson || lesson === 'free' || lesson === 'merge' || lesson === 'mergeC' || lesson === 'mergeD') return false
+    const hit = hitTest(frame, x, y) ?? { kind: 'swallow' as const }
+    if (hit.kind === 'tune') return false
+    if (lesson === 'home1' || lesson === 'home3') return hit.kind !== 'back'
+    if (lesson === 'home2') {
+      state.lesson = 'home3'
+      mark()
+      return true
+    }
+    if (lesson === 'talk1') {
+      state.lesson = 'merge'
+      mark()
+      return true
+    }
+    if (lesson === 'focus') {
+      if (hit.kind !== 'cell') return true
+      const item = state.board[hit.row]?.[hit.col]
+      if (item?.kind === 'producer' && item.producerId === 'food' && item.level >= 4) return false
+      return !(item?.kind === 'product' && item.line === 'food')
+    }
+    if (lesson === 'deliver') return hit.kind !== 'complete'
+    if (lesson === 'book') return hit.kind !== 'storyBook' && hit.kind !== 'house'
+    return false
+  }
+
+  function beginCurtain(to: 'board' | 'house'): void {
+    if (curtain) return
+    if (to === view) return
+    if (to === 'house') {
+      clearSale(state)
+      if (atStep(state, cfg, 'build')) finishTutorial(state, cfg, rng)
+    }
+    curtain = { to, started: platform.now(), freeze: null }
+    sfx.ui()
+    mark()
+  }
+
+  function curtainProgress(now: number): number {
+    if (!curtain) return 0
+    if (curtain.freeze != null) return curtain.freeze
+    const pull = Math.max(1, cfg.economy.curtainPullMs ?? 500)
+    return (now - curtain.started) / pull
   }
 
   function onDown(x: number, y: number, id: number): void {
     sfx.unlock()
     lastInput = platform.now()
-    if (guideSpot(state, cfg) === 'reward') orderScroll = 0
+    if (curtain) return
     frame = makeFrame()
+    if (state.phase === 'story' && !tuner) {
+      if (openingFilm().tap(x, y, platform.now(), cfg) === 'enter') {
+        openingFilm().stop()
+        skipStory(state)
+        view = 'house'
+        saveNow()
+        mark()
+      }
+      return
+    }
+    if (pressHomeBuild(x, y)) return
+    if (pressLessonTarget(x, y)) return
+    if (settingsOpen && view === 'house' && hitTest(frame, x, y)?.kind !== 'settings') {
+      settingsOpen = false
+      settingsAt = platform.now()
+      mark()
+      return
+    }
+    if (guardLesson(x, y)) return
+    if (view === 'house' && hitTest(frame, x, y)?.kind === 'settings') {
+      settingsOpen = !settingsOpen
+      settingsAt = platform.now()
+      sfx.ui()
+      mark()
+      return
+    }
+    if (state.buildStory) {
+      if (hitTest(frame, x, y)?.kind === 'skip') state.buildStory = null
+      else advanceBuildStory(state, cfg)
+      mark()
+      return
+    }
+    const overlay = activeOverlay(state)
+    if (overlay === 'level') {
+      if (contains(levelClaimRect(frame), x, y)) present(claimLevelModal(state, cfg, rng))
+      return
+    }
+    if (overlay === 'gift') {
+      if (contains(levelClaimRect(frame), x, y)) present(claimGiftModal(state, cfg, rng))
+      return
+    }
+    if (overlay === 'smile') {
+      if (contains(smileDismissRect(frame), x, y)) state.smileModal = null
+      return
+    }
+    if (overlay === 'detail') {
+      const hit = hitTest(frame, x, y)
+      if (hit?.kind === 'detailClose') {
+        dismissDetail(state)
+        mark()
+      }
+      return
+    }
+    if (overlay === 'talk') {
+      if (contains(talkRect(frame).ok, x, y)) {
+        if (state.notice) dismissNotice(state)
+        else advanceGuide(state, cfg)
+        mark()
+      }
+      return
+    }
+    if (overlay === 'story') {
+      const card = storyCardRects(frame.w, frame.h)
+      if (contains(card.close, x, y) && !state.storyForce) closeStoryCard(state)
+      else if (contains(card.start, x, y)) {
+        const task = nextTask(state, cfg)
+        if (task) present(buildTask(state, task.id, null, cfg, rng, platform.now()))
+      }
+      mark()
+      return
+    }
+    if (overlay === 'shop') {
+      const shop = shopRects(frame)
+      const shopHit = hitTest(frame, x, y)
+      if (shopHit?.kind === 'shopDaily' || shopHit?.kind === 'shopPack' || shopHit?.kind === 'shopClose') {
+        pointers.set(id, { id, x, y, sx: x, sy: y, hit: shopHit, moved: false, camX: cam.x, camY: cam.y, scroll: tunerScroll, orderScroll, downAt: platform.now() })
+      } else if (!contains(shop.card, x, y)) {
+        state.shopOpen = false
+        mark()
+      }
+      return
+    }
     if (view === 'house' && state.decorate) {
       const popup = decorPopupRects(frame)
+      if (contains(popup.close, x, y)) {
+        state.decorate = null
+        mark()
+        return
+      }
       if (contains(popup.ok, x, y)) {
         present(confirmDecor(state, cfg))
         return
@@ -799,53 +1158,44 @@ export function startGame(platform: Platform): void {
       if (swatch >= 0) {
         previewDecor(state, swatch)
         mark()
-        return
-      }
-    }
-    if (state.buildStory) {
-      if (hitTest(frame, x, y)?.kind === 'skip') state.buildStory = null
-      else advanceBuildStory(state, cfg)
-      mark()
-      return
-    }
-    if (state.levelModal) {
-      if (contains(levelClaimRect(frame), x, y)) present(claimLevelModal(state, cfg, rng))
-      return
-    }
-    if (state.smileModal) {
-      if (contains(smileDismissRect(frame), x, y)) state.smileModal = null
-      return
-    }
-    if (state.notice || state.guide === 'buildTalk' || state.guide === 'backTalk') {
-      if (contains(talkRect(frame).ok, x, y)) {
-        if (state.notice) state.notice = null
-        else advanceGuide(state, cfg)
-        mark()
       }
       return
     }
-    if (state.smiles >= cfg.economy.smileGoal && contains(frame.smileSlot, x, y)) {
+    if (!overlay && state.smiles >= cfg.economy.smileGoal && contains(frame.smileSlot, x, y)) {
       present(openSmilePrize(state, cfg, rng))
       return
     }
     if (chain) {
-      if (!contains(chainCardRect(frame), x, y) || contains(chainCloseRect(frame), x, y)) chain = null
+      const popup = layoutChainPopup(frame, cfg, state, chain)
+      const where = hitChainPopup(popup, x, y)
+      if (where === 'source' && popup.source) {
+        chain = { line: popup.source.piece.line, level: popup.source.level, source: 'producer', producerId: popup.source.producerId }
+        sfx.ui()
+      } else if (where === 'close' || where === 'outside') chain = null
       return
     }
     const step = currentTutorial(cfg, state)
     let hit = hitTest(frame, x, y) ?? { kind: 'swallow' as const }
-    const hole = guideHole(frame, state, cfg)
-    if (hole && hit.kind !== 'tune' && !(state.phase === 'opening' && hit.kind === 'skip') && !contains(hole, x, y)) return
-    if (state.phase === 'story') {
-      if (hit.kind === 'skip') {
-        skipStory(state)
-        sfx.ui()
-        mark()
-      } else if (hit.kind === 'hotspot') {
-        advanceStory(state, cfg)
-        sfx.ui()
-        mark()
+    const hole = state.phase === 'opening' ? null : guideHole(frame, state, cfg)
+    noteGuide(platform.now())
+    if (guideIsLocking(state, cfg)) {
+      const aimed =
+        hit.kind === 'tune' ||
+        (state.phase === 'opening' && hit.kind === 'skip') ||
+        (hole ? contains(hole, x, y) : !tutorialBlocks(hit))
+      if (!aimed) {
+        guideMisses += 1
+        if (!openingMergeSticky() && (guideMisses >= 3 || platform.now() - guideSince > (cfg.economy.guideTimeoutMs ?? 3000))) {
+          dismissStuckGuide(state, cfg)
+          mark()
+          return
+        } else if (hole && !contains(hole, x, y)) {
+          return
+        } else if (tutorialBlocks(hit)) {
+          return
+        }
       }
+    } else if (!overlay && hole && hit.kind !== 'tune' && !contains(hole, x, y)) {
       return
     }
     if (view === 'board' && state.phase === 'play' && state.storageLesson === 1) {
@@ -870,12 +1220,6 @@ export function startGame(platform: Platform): void {
     }
     if (tutorialBlocks(hit)) return
     pointers.set(id, { id, x, y, sx: x, sy: y, hit, moved: false, camX: cam.x, camY: cam.y, scroll: tunerScroll, orderScroll, downAt: platform.now() })
-    if (pointers.size >= 2 && view === 'house') {
-      fx.drag = null
-      dragId = -1
-      const pts = [...pointers.values()]
-      pinch = { dist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1, scale: cam.scale }
-    }
   }
 
   function onMove(x: number, y: number, id: number): void {
@@ -883,13 +1227,7 @@ export function startGame(platform: Platform): void {
     if (!pointer) return
     pointer.x = x
     pointer.y = y
-    if (!pointer.moved && Math.hypot(x - pointer.sx, y - pointer.sy) > 8) pointer.moved = true
-    if (pinch && pointers.size >= 2 && view === 'house') {
-      const pts = [...pointers.values()]
-      const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1
-      cam.scale = clamp(pinch.scale * (dist / pinch.dist), 0.35, 2.6)
-      return
-    }
+    if (!pointer.moved && Math.hypot(x - pointer.sx, y - pointer.sy) > 22) pointer.moved = true
     const hit = pointer.hit
     if (hit.kind === 'slider' && tuner) {
       const spec = SLIDERS[hit.index]
@@ -906,22 +1244,45 @@ export function startGame(platform: Platform): void {
       return
     }
     if (pointer.hit.kind === 'map' && pointer.moved && view === 'house') {
-      cam.x = pointer.camX - (x - pointer.sx) / cam.scale
-      cam.y = pointer.camY - (y - pointer.sy) / cam.scale
+      const next = clampHomeCam(
+        pointer.camX - (x - pointer.sx) / cam.scale,
+        pointer.camY - (y - pointer.sy) / cam.scale,
+        frame.w,
+        frame.h,
+      )
+      cam.x = next.x
+      cam.y = next.y
+      cam.scale = next.scale
       return
     }
+    const onOrderStrip =
+      pointer.sy >= frame.orderClip.y && pointer.sy < frame.orderClip.y + frame.orderClip.h
     if (
       pointer.moved &&
-      (pointer.hit.kind === 'order' || pointer.hit.kind === 'orderStrip' || pointer.hit.kind === 'orderIcon' || pointer.hit.kind === 'complete')
+      (pointer.hit.kind === 'order' ||
+        pointer.hit.kind === 'orderStrip' ||
+        pointer.hit.kind === 'orderIcon' ||
+        pointer.hit.kind === 'complete' ||
+        (onOrderStrip && (pointer.hit.kind === 'swallow' || pointer.hit.kind === 'refill')))
     ) {
-      orderScroll = scrollOrders(pointer.orderScroll, x - pointer.sx, frame.orderMaxScroll)
+      if (!guideIsLocking(state, cfg)) {
+        orderAnim = null
+        orderScroll = scrollOrders(
+          pointer.orderScroll,
+          x - pointer.sx,
+          frame.orderMaxScroll,
+          cfg.economy.orderOverscroll ?? 120,
+        )
+      }
       return
     }
     if (pointer.moved && pointer.hit.kind === 'pending' && dragId < 0 && state.pending.length) {
       fx.drag = { row: -1, col: -1, x, y, pending: true, index: storageTakeIndex(state, cfg) }
       dragId = id
     }
-    if (pointer.moved && pointer.hit.kind === 'cell' && dragId < 0 && frame.mode === 'board' && !tuner && !modal) {
+    const guideHoleNow = guideIsLocking(state, cfg) ? guideHole(frame, state, cfg) : null
+    const pressingGuide = !!guideHoleNow && contains(guideHoleNow, pointer.sx, pointer.sy)
+    if (pointer.moved && pointer.hit.kind === 'cell' && dragId < 0 && frame.mode === 'board' && !tuner && !modal && !pressingGuide) {
       const item = state.board[pointer.hit.row]?.[pointer.hit.col]
       if (item) {
         state.armed = null
@@ -940,12 +1301,30 @@ export function startGame(platform: Platform): void {
   function onUp(x: number, y: number, id: number): void {
     const pointer = pointers.get(id)
     pointers.delete(id)
-    if (pointers.size < 2) pinch = null
     if (!pointer) return
     if (fx.drag && dragId === id) {
       finishDrag(x, y)
       dragId = -1
       return
+    }
+    const hole = guideIsLocking(state, cfg) ? guideHole(frame, state, cfg) : null
+    let ux = x
+    let uy = y
+    if (x === 0 && y === 0 && (pointer.sx !== 0 || pointer.sy !== 0)) {
+      ux = pointer.x
+      uy = pointer.y
+    }
+    if (hole && contains(hole, pointer.sx, pointer.sy)) {
+      const travel = Math.hypot(ux - pointer.sx, uy - pointer.sy)
+      const ended = contains(hole, ux, uy)
+      const quick = platform.now() - pointer.downAt < 450
+      if (ended || travel <= 64 || quick) {
+        const spot = guideSpot(state, cfg)
+        if (spot === 'reward') activate({ kind: 'reward' })
+        else if (spot === 'chest' && state.chestCell) activate({ kind: 'cell', row: state.chestCell.row, col: state.chestCell.col })
+        else activate(pointer.hit)
+        return
+      }
     }
     const strip =
       pointer.hit.kind === 'order' ||
@@ -959,15 +1338,47 @@ export function startGame(platform: Platform): void {
         onComplete: pointer.hit.kind === 'complete',
         onIcon: pointer.hit.kind === 'orderIcon',
       })
+      if (guideIsLocking(state, cfg)) {
+        const hole = guideHole(frame, state, cfg)
+        if (hole && contains(hole, x, y) && contains(hole, pointer.sx, pointer.sy)) activate(pointer.hit)
+        return
+      }
+      if (pointer.moved) {
+        const max = frame.orderMaxScroll
+        if (orderScroll < -0.5 || orderScroll > max + 0.5) {
+          orderAnim = {
+            from: orderScroll,
+            to: orderScroll < 0 ? 0 : max,
+            start: platform.now(),
+            dur: Math.max(1, cfg.economy.orderBounceMs ?? 320),
+          }
+        } else orderScroll = snapOrderScroll(orderScroll, frame.orderPitch, max)
+      }
       if (action === 'complete' && pointer.hit.kind === 'complete') activate(pointer.hit)
       if (action === 'icon' && pointer.hit.kind === 'orderIcon' && state.phase === 'play') {
         const order = state.orders[pointer.hit.order]
         const slot = order?.slots[pointer.hit.slot]
-        if (slot) chain = { line: slot.line, level: slot.level, source: 'order' }
+        if (slot) {
+          selected = null
+          orderFocus = { line: slot.line, level: slot.level }
+          chain = { line: slot.line, level: slot.level, source: 'order' }
+          sfx.ui()
+        }
       }
       return
     }
     if (!pointer.moved) {
+      if (view === 'house' && state.lesson === 'free' && !activeOverlay(state)) {
+        const hostess = homeHostessRect(frame.w, frame.h, cam)
+        const daughter = homeDaughterRect(frame.w, frame.h, cam)
+        const onMother = contains(hostess, pointer.sx, pointer.sy) && contains(hostess, ux, uy)
+        const onDaughter = contains(daughter, pointer.sx, pointer.sy) || contains(daughter, ux, uy)
+        if (onMother && !onDaughter) {
+          openStoryCard(state, cfg)
+          mark()
+          return
+        }
+      }
       if (state.chainPop && frame.mode === 'board') {
         const pop = chainPopRect(frame)
         if (contains(pop.close, x, y) || contains(pop.card, x, y)) {
@@ -978,8 +1389,13 @@ export function startGame(platform: Platform): void {
           return
         }
       }
-      if (view === 'house' && state.decorate) {
+      if (view === 'house' && state.decorate && !activeOverlay(state)) {
         const popup = decorPopupRects(frame)
+        if (contains(popup.close, x, y)) {
+          state.decorate = null
+          mark()
+          return
+        }
         if (contains(popup.ok, x, y)) {
           present(confirmDecor(state, cfg))
           return
@@ -990,16 +1406,7 @@ export function startGame(platform: Platform): void {
           mark()
           return
         }
-        if (pointer.hit.kind !== 'back') return
-      }
-      const held = platform.now() - pointer.downAt
-      if (held > 480 && view === 'house' && pointer.hit.kind === 'map') {
-        const taskId = partAt(frame, cam, x, y)
-        if (taskId && reopenDecor(state, cfg, taskId)) {
-          sfx.ui()
-          mark()
-          return
-        }
+        return
       }
       activate(pointer.hit)
     } else if (pointer.hit.kind === 'slider') saveNow()
@@ -1012,7 +1419,7 @@ export function startGame(platform: Platform): void {
       tunerScroll = clamp(tunerScroll + dy * 0.45, 0, frame.tunerMaxScroll)
       return
     }
-    if (view === 'house' && contains(frame.map, x, y)) zoomAt(x, y, dy > 0 ? 0.92 : 1.08)
+    if (view === 'house' && contains(frame.map, x, y)) return
   })
   platform.onKey((key) => {
     if (key === 'Escape') {
@@ -1021,7 +1428,7 @@ export function startGame(platform: Platform): void {
       else if (state.showHelp) {
         state.showHelp = false
         mark()
-      } else if (view === 'house') view = 'board'
+      } else if (view === 'house') beginCurtain('board')
       return
     }
     if ((key === 't' || key === 'T') && !modal) tuner = !tuner
@@ -1043,12 +1450,36 @@ export function startGame(platform: Platform): void {
     const real = platform.now()
     settleGifts(state, cfg, real)
     arrangeOrders(state, real)
+    applyTestGuests(state, cfg)
     resolveGuides(state, cfg)
-    if (guideSpot(state, cfg) === 'reward') orderScroll = 0
+    noteGuide(real)
+    if (guideIsLocking(state, cfg) && state.lesson === 'free' && !openingMergeSticky() && real - guideSince > (cfg.economy.guideTimeoutMs ?? 3000)) {
+      dismissStuckGuide(state, cfg)
+      mark()
+    }
+    if (orderAnim && dragId < 0) {
+      const t = (real - orderAnim.start) / Math.max(1, orderAnim.dur)
+      if (t >= 1) {
+        orderScroll = orderAnim.to
+        orderAnim = null
+      } else orderScroll = orderAnim.from + (orderAnim.to - orderAnim.from) * easeOutCubic(Math.min(1, t))
+    }
+    if (guideSpot(state, cfg) === 'reward') {
+      frame = makeFrame()
+      const target = chestTarget(frame)
+      if (target) {
+        const next = revealOrderTarget(orderScroll, target, frame.w, frame.orderMaxScroll)
+        if (Math.abs(next - orderScroll) > 0.5) {
+          orderScroll = next
+          orderAnim = null
+        }
+      }
+    }
     refreshGuide(state, cfg, view)
+    pumpMint(state)
     if (atStep(state, cfg, 'giftRush')) {
       const gift = cfg.board.roles.gift
-      selected = { row: gift.row, col: gift.col }
+      if (selected?.row !== gift.row || selected?.col !== gift.col) pickCell(gift.row, gift.col)
     }
     const playDt = Math.min(1000, Math.max(0, real - lastPlay))
     lastPlay = real
@@ -1084,12 +1515,23 @@ export function startGame(platform: Platform): void {
     fx.floaters = fx.floaters.filter((floater) => anim - floater.birth < floater.dur)
     fx.toasts = fx.toasts.filter((entry) => real - entry.birth < entry.dur)
     if (fx.banner && real > fx.banner.until) fx.banner = null
+    if (curtain && curtain.freeze == null) {
+      const pull = Math.max(1, cfg.economy.curtainPullMs ?? 500)
+      const hold = Math.max(0, cfg.economy.curtainHoldMs ?? 0)
+      if (real - curtain.started >= pull + hold) {
+        view = curtain.to
+        curtain = null
+      }
+    }
     frame = makeFrame()
-    if (view === 'house') ensureCam()
+    if (view === 'house') holdHomeCam()
+    else camReady = false
     const ctx = platform.canvas.getContext('2d')
     if (ctx) {
       const dpr = platform.dpr || 1
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = 'high'
       render({
         ctx,
         frame,
@@ -1102,6 +1544,8 @@ export function startGame(platform: Platform): void {
         modal,
         hintText: '',
         selected,
+        selectedAt,
+        orderFocus,
         chain,
         showHand:
           state.phase === 'play' &&
@@ -1109,6 +1553,12 @@ export function startGame(platform: Platform): void {
           !state.smileModal &&
           !tuner &&
           real - lastInput > cfg.economy.idleHintMs,
+        comicHand:
+          state.phase !== 'story' ? 'off' : state.storyStep === 0 ? 'first' : real - lastInput >= 3000 ? 'idle' : 'off',
+        curtain: curtain ? { progress: curtainProgress(real) } : null,
+        confirmReset: confirmTunerReset,
+        settingsOpen,
+        settingsAt,
       })
     }
     if (dirty && real - lastSave > 500) saveNow()
@@ -1125,8 +1575,21 @@ export function startGame(platform: Platform): void {
       view = next
       frame = makeFrame()
     },
+    setOrderScroll(value: number) {
+      orderScroll = value
+      frame = makeFrame()
+    },
     select(row: number, col: number) {
-      selected = { row, col }
+      pickCell(row, col)
+    },
+    get selectedAt() {
+      return selectedAt
+    },
+    drop(from: Pos, to: Pos) {
+      return dropItem(state, from, to, cfg)
+    },
+    produce(row: number, col: number) {
+      return tapProducer(state, { row, col }, cfg, Math.random, platform.now())
     },
     get cfg() {
       return cfg
@@ -1155,6 +1618,18 @@ export function startGame(platform: Platform): void {
     skip() {
       return frame.skip.w > 0 ? frame.skip : frame.sheetSkip
     },
+    mute() {
+      return frame.muteBtn
+    },
+    audioTrace() {
+      return comicAudio.trace()
+    },
+    film() {
+      return openingFilm().status()
+    },
+    audioReady() {
+      return comicAudio.whenReady()
+    },
     buttons() {
       return {
         house: frame.houseBtn,
@@ -1164,6 +1639,32 @@ export function startGame(platform: Platform): void {
         tune: frame.tuneBtn,
         pending: frame.pendingBtn,
       }
+    },
+    curtainReady() {
+      return curtainImagesReady()
+    },
+    curtainAt(progress: number | null) {
+      if (progress == null) {
+        curtain = null
+        return
+      }
+      curtain = { to: view === 'board' ? 'house' : 'board', started: platform.now(), freeze: progress }
+    },
+    pump() {
+      fillOrders(state, cfg, rng)
+    },
+    openChain(next: ChainFocus | null) {
+      chain = next
+      mark()
+    },
+    chainPopup() {
+      return chain ? layoutChainPopup(frame, cfg, state, chain) : null
+    },
+    startCurtain(to: 'board' | 'house') {
+      beginCurtain(to)
+    },
+    get curtain() {
+      return curtain
     },
   }
   ;(globalThis as { __JIANGNAN__?: typeof debug }).__JIANGNAN__ = debug

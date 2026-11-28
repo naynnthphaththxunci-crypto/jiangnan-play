@@ -1,40 +1,13 @@
 {
   "list": [
-    {
-      "id": "food",
-      "name": "猫粮",
-      "line": "food",
-      "grant": "start"
-    },
-    {
-      "id": "toy",
-      "name": "玩具",
-      "line": "toy",
-      "grant": "level:3"
-    },
-    {
-      "id": "plant",
-      "name": "花盆",
-      "line": "plant",
-      "grant": "level:4"
-    },
-    {
-      "id": "boat",
-      "name": "鱼篓",
-      "line": "boat",
-      "grant": "level:5"
-    },
-    {
-      "id": "bed",
-      "name": "猫窝",
-      "line": "bed",
-      "grant": "level:6"
-    },
-    {
-      "id": "bev",
-      "name": "饮料",
-      "line": "bev",
-      "grant": "level:8"
-    }
+    { "id": "food", "name": "猫粮母棋", "line": "food", "side": "meat", "grant": "start", "kind": "normal" },
+    { "id": "bev", "name": "饮料母棋", "line": "bev", "side": "mint", "grant": "level:3", "kind": "normal" },
+    { "id": "toy", "name": "玩具母棋", "line": "toy", "side": "wand", "grant": "level:6", "kind": "normal" },
+    { "id": "bed", "name": "猫窝母棋", "line": "bed", "grant": "level:7", "kind": "normal" },
+    { "id": "boat", "name": "鱼篓母棋", "line": "net", "grant": "level:8", "kind": "netSource" },
+    { "id": "plant", "name": "花盆母棋", "line": "plant", "grant": "level:9", "kind": "plant" },
+    { "id": "basket", "name": "小篮子", "line": "food", "grant": "never", "kind": "consumable" },
+    { "id": "piggy", "name": "存钱罐", "line": "coin", "grant": "never", "kind": "consumable" },
+    { "id": "net", "name": "渔网", "line": "fish", "grant": "never", "kind": "consumable" }
   ]
 }

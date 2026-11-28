@@ -8,10 +8,12 @@ import {
   createGame,
   drinkPotion,
   findProducer,
+  hydrate,
   makeChest,
   makePotion,
   openChest,
   rollEnergy,
+  serialize,
   syncEnergy,
   tapProducer,
   eachCell,
@@ -22,13 +24,18 @@ function boot() {
   const cfg = defaultConfig()
   cfg.economy.producerL2Chance = 0
   const state = createGame(1_700_000_000_000, cfg)
+  state.locks = []
   return { cfg, state }
 }
 
 function producerAt(state: GameState) {
   const found = findProducer(state, 'food')
   if (!found) throw new Error('no food')
-  if (found.item.kind === 'producer') found.item.level = 6
+  if (found.item.kind === 'producer') {
+    found.item.level = 6
+    found.item.charges = 400
+    found.item.cooldownUntil = 0
+  }
   return found
 }
 
@@ -36,14 +43,14 @@ function potionEnergySum(state: GameState, cfg: ReturnType<typeof defaultConfig>
   let sum = 0
   eachCell(state.board, (item) => {
     if (item?.kind === 'potion') {
-      sum += cfg.items.potions.find((p) => p.tier === item.tier)?.energy ?? 0
+      sum += item.energy ?? cfg.items.potions.find((p) => p.tier === item.tier)?.energy ?? 0
     }
   })
   for (const item of state.pending) {
-    if (item.kind === 'potion') sum += cfg.items.potions.find((p) => p.tier === item.tier)?.energy ?? 0
+    if (item.kind === 'potion') sum += item.energy ?? cfg.items.potions.find((p) => p.tier === item.tier)?.energy ?? 0
   }
   for (const item of state.rewards) {
-    if (item.kind === 'potion') sum += cfg.items.potions.find((p) => p.tier === item.tier)?.energy ?? 0
+    if (item.kind === 'potion') sum += item.energy ?? cfg.items.potions.find((p) => p.tier === item.tier)?.energy ?? 0
   }
   return sum
 }
@@ -103,6 +110,7 @@ describe('体力', () => {
 
   it('点满一轮进入冷却，到点后恢复次数', () => {
     const { state, cfg } = boot()
+    cfg.economy.producerCooldownOn = 1
     state.playedMs = cfg.economy.producerGraceMs
     const spot = producerAt(state)
     state.board[3][2] = null
@@ -113,10 +121,11 @@ describe('体力', () => {
     }
     expect(tapProducer(state, spot, cfg, () => 0, 0).ok).toBe(true)
     expect(spot.item.kind === 'producer' && spot.item.charges).toBe(0)
-    expect(spot.item.kind === 'producer' && spot.item.cooldownUntil).toBe(45_000)
+    expect(spot.item.kind === 'producer' && spot.item.cooldownUntil).toBe(cfg.economy.producerRoundCooldownMs)
     expect(tapProducer(state, spot, cfg, () => 0, 10).reason).toBe('cooldown')
     expect(state.energy).toBe(99)
-    const again = tapProducer(state, spot, cfg, () => 0, 45_000)
+    state.energyTs = cfg.economy.producerRoundCooldownMs
+    const again = tapProducer(state, spot, cfg, () => 0, cfg.economy.producerRoundCooldownMs)
     expect(again.ok).toBe(true)
     expect(state.energy).toBe(98)
   })
@@ -128,7 +137,7 @@ describe('体力', () => {
     eachCell(state.board, (item, row, col) => {
       if (item?.kind === 'product') state.board[row][col] = null
     })
-    tapProducer(state, spot, cfg, () => 0.99, 0)
+    tapProducer(state, spot, cfg, () => 0.92, 0)
     const first = state.board.flat().find((cell) => cell?.kind === 'product')
     expect(first && first.kind === 'product' && first.level).toBe(2)
     if (first) {
@@ -137,7 +146,7 @@ describe('体力', () => {
       eachCell(state.board, (item, row, col) => {
         if (item?.kind === 'product') state.board[row][col] = null
       })
-      tapProducer(state, pos, cfg, () => 0.2, 1)
+      tapProducer(state, pos, cfg, () => 0.05, 1)
     }
     const second = state.board.flat().find((cell) => cell?.kind === 'product')
     expect(second && second.kind === 'product' && second.level).toBe(1)
@@ -171,16 +180,17 @@ describe('体力', () => {
 
   it('宝箱权重与新手前两只固定四十八点', () => {
     const { cfg } = boot()
-    expect(rollEnergy(cfg, () => 0)).toBe(5)
-    expect(rollEnergy(cfg, () => 0.399)).toBe(5)
-    expect(rollEnergy(cfg, () => 0.4)).toBe(10)
-    expect(rollEnergy(cfg, () => 0.699)).toBe(10)
-    expect(rollEnergy(cfg, () => 0.7)).toBe(20)
-    expect(rollEnergy(cfg, () => 0.899)).toBe(20)
-    expect(rollEnergy(cfg, () => 0.9)).toBe(40)
+    expect(rollEnergy(cfg, () => 0)).toBe(2)
+    expect(rollEnergy(cfg, () => 0.399)).toBe(2)
+    expect(rollEnergy(cfg, () => 0.4)).toBe(6)
+    expect(rollEnergy(cfg, () => 0.599)).toBe(6)
+    expect(rollEnergy(cfg, () => 0.6)).toBe(15)
+    expect(rollEnergy(cfg, () => 0.799)).toBe(15)
+    expect(rollEnergy(cfg, () => 0.8)).toBe(40)
     expect(rollEnergy(cfg, () => 0.999)).toBe(40)
 
     const state = createGame(1_700_000_000_000, cfg)
+    state.locks = []
     const putChest = () => {
       for (let row = ROWS - 1; row >= 0; row--) {
         for (let col = COLS - 1; col >= 0; col--) {
@@ -201,12 +211,49 @@ describe('体力', () => {
       }
     }
     drain(() => 0.99)
-    expect(potionEnergySum(state, cfg)).toBe(50)
+    const firstTiers = state.board
+      .flat()
+      .filter((item) => item?.kind === 'potion')
+      .map((item) => (item?.kind === 'potion' ? item.tier : 0))
+      .sort((a, b) => b - a)
+    expect(firstTiers).toEqual([4, 3, 2, 1, 1])
+    expect(potionEnergySum(state, cfg)).toBe(65)
     drain(() => 0.99)
-    expect(potionEnergySum(state, cfg)).toBe(100)
+    expect(potionEnergySum(state, cfg)).toBe(265)
     drain(() => 0)
-    expect(potionEnergySum(state, cfg)).toBe(125)
+    expect(potionEnergySum(state, cfg)).toBe(275)
     expect(state.chestsOpened).toBe(3)
+  })
+
+  it('旧存档里的两只 15/6 宝箱表盖不掉第一只固定出货', () => {
+    const cfg = defaultConfig()
+    const state = createGame(1, cfg)
+    state.phase = 'play'
+    state.lesson = 'free'
+    state.chestsOpened = 0
+    const saved = JSON.parse(serialize(state, cfg)) as { economy: typeof cfg.economy }
+    saved.economy.newbieChest = [15, 15, 6, 6, 6]
+    saved.economy.newbieChestCount = 2
+    saved.economy.newbieChestFixed = true
+    const next = defaultConfig()
+    const loaded = hydrate(JSON.stringify(saved), next)
+    expect(loaded).toBeTruthy()
+    expect(next.economy.newbieChest).toEqual([40, 15, 6, 2, 2])
+    expect(next.economy.newbieChestCount).toBe(1)
+    loaded!.locks = []
+    loaded!.board[0][0] = makeChest(loaded!)
+    let guard = 0
+    while (loaded!.board[0][0]?.kind === 'chest' && guard < 8) {
+      openChest(loaded!, { row: 0, col: 0 }, next, () => 0)
+      guard += 1
+    }
+    const tiers = loaded!.board
+      .flat()
+      .filter((item) => item?.kind === 'potion')
+      .map((item) => (item?.kind === 'potion' ? item.tier : 0))
+      .sort((a, b) => b - a)
+    expect(tiers).toEqual([4, 3, 2, 1, 1])
+    expect(loaded!.chestsOpened).toBe(1)
   })
 
   it('每日体力宝箱从第二天起，一天一次，算一次广告按钮', () => {
